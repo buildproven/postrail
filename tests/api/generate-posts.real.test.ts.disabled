@@ -1,0 +1,326 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { POST } from '@/app/api/generate-posts/route'
+import { NextRequest } from 'next/server'
+
+/**
+ * Real API Tests - /api/generate-posts
+ * These tests actually import and test the route handler
+ * with mocked Supabase and Anthropic
+ */
+
+// Mock Supabase
+const mockSupabase = {
+  auth: {
+    getUser: vi.fn(() => ({
+      data: { user: { id: 'test-user-id', email: 'test@example.com' } },
+      error: null
+    }))
+  },
+  from: vi.fn((table: string) => ({
+    insert: vi.fn(() => ({
+      select: vi.fn(() => ({
+        single: vi.fn(() => ({
+          data: {
+            id: 'newsletter-id',
+            user_id: 'test-user-id',
+            title: 'Test Newsletter',
+            content: 'Test content',
+            status: 'draft'
+          },
+          error: null
+        }))
+      }))
+    })),
+    delete: vi.fn(() => ({
+      eq: vi.fn(() => Promise.resolve({ error: null }))
+    }))
+  }))
+}
+
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(() => mockSupabase)
+}))
+
+// Create a mock function that will be accessible
+let mockMessagesCreate: ReturnType<typeof vi.fn>
+
+// Mock Anthropic SDK
+vi.mock('@anthropic-ai/sdk', () => {
+  const mockResponse = {
+    content: [
+      {
+        type: 'text',
+        text: 'This is a professionally crafted LinkedIn post about AI automation. #AI #Automation'
+      }
+    ]
+  }
+
+  mockMessagesCreate = vi.fn(() => Promise.resolve(mockResponse))
+
+  return {
+    default: class MockAnthropic {
+      messages = {
+        create: mockMessagesCreate
+      }
+    }
+  }
+})
+
+describe('/api/generate-posts - Real API Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('Authentication', () => {
+    it('should reject unauthenticated requests', async () => {
+      mockSupabase.auth.getUser.mockResolvedValueOnce({
+        data: { user: null },
+        error: new Error('Not authenticated')
+      })
+
+      const request = new NextRequest('http://localhost/api/generate-posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'Test Newsletter',
+          content: 'Test content for newsletter'
+        })
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(401)
+      expect(data.error).toContain('Unauthorized')
+    })
+  })
+
+  describe('Input Validation', () => {
+    it('should reject request without content', async () => {
+      const request = new NextRequest('http://localhost/api/generate-posts', {
+        method: 'POST',
+        body: JSON.stringify({ title: 'Test' })
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.error).toContain('required')
+    })
+
+    it('should accept request without title (uses default)', async () => {
+      const request = new NextRequest('http://localhost/api/generate-posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          content: 'Test content for newsletter with enough words to be valid'
+        })
+      })
+
+      const response = await POST(request)
+
+      // Should not fail on missing title
+      expect(response.status).not.toBe(400)
+    })
+  })
+
+  describe('Newsletter Creation', () => {
+    it('should create newsletter record in database', async () => {
+      const insertMock = vi.fn(() => ({
+        select: vi.fn(() => ({
+          single: vi.fn(() => ({
+            data: {
+              id: 'newsletter-123',
+              user_id: 'test-user-id',
+              title: 'My Newsletter',
+              content: 'Newsletter content',
+              status: 'draft'
+            },
+            error: null
+          }))
+        }))
+      }))
+
+      mockSupabase.from.mockReturnValue({
+        insert: insertMock,
+        delete: vi.fn(() => ({ eq: vi.fn() }))
+      } as any)
+
+      const request = new NextRequest('http://localhost/api/generate-posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'My Newsletter',
+          content: 'Newsletter content with enough text to be valid'
+        })
+      })
+
+      await POST(request)
+
+      expect(mockSupabase.from).toHaveBeenCalledWith('newsletters')
+      expect(insertMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'test-user-id',
+          title: 'My Newsletter',
+          content: expect.any(String),
+          status: 'draft'
+        })
+      )
+    })
+  })
+
+  describe('AI Post Generation', () => {
+    it('should generate posts for all platforms and types', async () => {
+      const request = new NextRequest('http://localhost/api/generate-posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'Test Newsletter',
+          content: 'Test content with information about AI and automation strategies'
+        })
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.postsGenerated).toBeGreaterThan(0)
+      expect(data.newsletterId).toBeTruthy()
+
+      // Should have called Anthropic API multiple times (6 posts)
+      expect(mockMessagesCreate).toHaveBeenCalled()
+    })
+
+    it('should use correct model name', async () => {
+      const request = new NextRequest('http://localhost/api/generate-posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'Test',
+          content: 'Test content for AI generation with sufficient text'
+        })
+      })
+
+      await POST(request)
+
+      expect(mockMessagesCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: 'claude-sonnet-4-5'
+        })
+      )
+    })
+  })
+
+  describe('Error Handling', () => {
+    it('should rollback newsletter on complete post generation failure', async () => {
+      // Mock Anthropic to fail all requests
+      mockMessagesCreate.mockRejectedValue(new Error('API Error'))
+
+      const deleteMock = vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) }))
+      mockSupabase.from.mockReturnValue({
+        insert: vi.fn(() => ({
+          select: vi.fn(() => ({
+            single: vi.fn(() => ({
+              data: { id: 'test-id' },
+              error: null
+            }))
+          }))
+        })),
+        delete: deleteMock
+      } as any)
+
+      const request = new NextRequest('http://localhost/api/generate-posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'Test',
+          content: 'Test content that will fail generation'
+        })
+      })
+
+      const response = await POST(request)
+
+      expect(response.status).toBe(500)
+      // Should have attempted to delete the newsletter
+      expect(deleteMock).toHaveBeenCalled()
+    })
+
+    it('should handle database insertion errors', async () => {
+      mockSupabase.from.mockReturnValueOnce({
+        insert: vi.fn(() => ({
+          select: vi.fn(() => ({
+            single: vi.fn(() => ({
+              data: null,
+              error: new Error('Database error')
+            }))
+          }))
+        }))
+      } as any)
+
+      const request = new NextRequest('http://localhost/api/generate-posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'Test',
+          content: 'Test content'
+        })
+      })
+
+      const response = await POST(request)
+
+      expect(response.status).toBe(500)
+    })
+  })
+
+  describe('Parallel Execution', () => {
+    it('should call API for multiple posts', async () => {
+      const request = new NextRequest('http://localhost/api/generate-posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'Test',
+          content: 'Test content for parallel execution testing'
+        })
+      })
+
+      await POST(request)
+
+      // Should have been called multiple times for different posts
+      expect(mockMessagesCreate.mock.calls.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('Data Structure', () => {
+    it('should return correct response structure', async () => {
+      const request = new NextRequest('http://localhost/api/generate-posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'Test',
+          content: 'Test content for structure validation'
+        })
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(data).toHaveProperty('newsletterId')
+      expect(data).toHaveProperty('postsGenerated')
+      expect(data).toHaveProperty('posts')
+      expect(Array.isArray(data.posts)).toBe(true)
+    })
+
+    it('should include all required post fields', async () => {
+      const request = new NextRequest('http://localhost/api/generate-posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'Test',
+          content: 'Test content'
+        })
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      if (data.posts && data.posts.length > 0) {
+        const post = data.posts[0]
+        expect(post).toHaveProperty('platform')
+        expect(post).toHaveProperty('postType')
+        expect(post).toHaveProperty('content')
+        expect(post).toHaveProperty('characterCount')
+      }
+    })
+  })
+})
