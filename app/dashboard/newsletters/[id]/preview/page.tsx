@@ -53,6 +53,12 @@ export default async function PreviewPage({ params }: PageProps) {
     console.error('Posts fetch error:', postsError)
   }
 
+  // DEBUG: Log what we got
+  console.log('DEBUG - Newsletter ID:', id)
+  console.log('DEBUG - Posts:', posts)
+  console.log('DEBUG - Posts error:', postsError)
+  console.log('DEBUG - Posts count:', posts?.length || 0)
+
   // Group posts by type
   const preCTAPosts = posts?.filter(p => p.post_type === 'pre_cta') || []
   const postCTAPosts = posts?.filter(p => p.post_type === 'post_cta') || []
@@ -74,10 +80,39 @@ export default async function PreviewPage({ params }: PageProps) {
             posts generated
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground line-clamp-3">
             {newsletter.content.slice(0, 300)}...
           </p>
+          {/* DEBUG: Show what's happening */}
+          {postsError && (
+            <div className="p-4 border border-red-500 bg-red-50 dark:bg-red-950 rounded-lg">
+              <p className="font-semibold text-red-700 dark:text-red-300">
+                ❌ Error fetching posts:
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-400 font-mono mt-2">
+                {JSON.stringify(postsError, null, 2)}
+              </p>
+            </div>
+          )}
+          {!postsError && (!posts || posts.length === 0) && (
+            <div className="p-4 border border-yellow-500 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
+              <p className="font-semibold text-yellow-700 dark:text-yellow-300">
+                ⚠️ No posts found for this newsletter
+              </p>
+              <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
+                Newsletter ID: <code className="font-mono">{id}</code>
+              </p>
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                This might mean:
+              </p>
+              <ul className="text-sm text-yellow-600 dark:text-yellow-400 list-disc list-inside mt-1">
+                <li>Post generation failed during creation</li>
+                <li>Row Level Security is blocking access</li>
+                <li>Posts were saved under a different newsletter ID</li>
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
 

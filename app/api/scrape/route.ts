@@ -126,10 +126,18 @@ export async function POST(request: NextRequest) {
       maxRedirects: 0, // Prevent redirect-based SSRF bypass
     })
 
-    const html = response.data
+    let html = response.data
+
+    // Strip CSS and scripts to prevent JSDOM from hanging on complex pages
+    // JSDOM tries to parse all CSS even with VirtualConsole suppression
+    // This preprocessing prevents the hang entirely
+    html = html
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove style tags
+      .replace(/<link[^>]*rel=["']stylesheet["'][^>]*>/gi, '') // Remove stylesheet links
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove script tags
 
     // Use Mozilla Readability for intelligent content extraction
-    // This is what Firefox Reader Mode uses - it's excellent at finding article content
+    // This is what Firefox Reader Mode uses
     const dom = new JSDOM(html, { url })
     const reader = new Readability(dom.window.document)
     const article = reader.parse()

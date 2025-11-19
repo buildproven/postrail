@@ -28,6 +28,8 @@ const configs = [
       '**/playwright-report/**',
       '**/test-results/**',
       '**/coverage/**',
+      'test-generation.js',
+      'test-full-flow.js',
     ],
   },
   js.configs.recommended,

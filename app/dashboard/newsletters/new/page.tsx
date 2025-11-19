@@ -36,7 +36,9 @@ export default function NewNewsletterPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to scrape URL')
+        const data = await response.json()
+        // Show actual server error message instead of generic error
+        throw new Error(data.error || `Failed to scrape URL (${response.status})`)
       }
 
       const data = await response.json()
@@ -67,14 +69,28 @@ export default function NewNewsletterPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to generate posts')
+        const data = await response.json()
+
+        // Better error messages
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please refresh the page and try again.')
+        } else if (response.status === 500) {
+          throw new Error(data.error || 'Server error during post generation')
+        } else {
+          throw new Error(data.error || 'Failed to generate posts')
+        }
       }
 
       const data = await response.json()
 
+      console.log('✅ Posts generated successfully:', data)
+      console.log(`   Newsletter ID: ${data.newsletterId}`)
+      console.log(`   Posts count: ${data.postsGenerated}`)
+
       // Redirect to preview page with generated posts
       router.push(`/dashboard/newsletters/${data.newsletterId}/preview`)
     } catch (err) {
+      console.error('❌ Post generation failed:', err)
       setError(err instanceof Error ? err.message : 'Failed to generate posts')
     } finally {
       setLoading(false)
