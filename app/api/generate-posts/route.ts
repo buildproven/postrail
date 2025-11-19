@@ -16,7 +16,7 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || 'missing-key',
 })
 
-const PLATFORMS = ['linkedin', 'threads', 'facebook'] as const
+const PLATFORMS = ['linkedin', 'threads', 'facebook', 'twitter'] as const
 const POST_TYPES = ['pre_cta', 'post_cta'] as const
 
 // Character limits per platform
@@ -24,6 +24,7 @@ const CHAR_LIMITS = {
   linkedin: 3000,
   threads: 500,
   facebook: 63206,
+  twitter: 280,
 }
 
 interface GeneratedPost {
@@ -83,7 +84,16 @@ ${
 - Question-based hooks
 - Community-oriented language
 `
-      : `
+      : platform === 'twitter'
+        ? `
+- Punchy, concise, attention-grabbing
+- Start with a hook (question, bold statement, or teaser)
+- Use line breaks for readability
+- Emojis: 1-2 max, strategically placed
+- Hashtags: 1-2 max, highly relevant only
+- Make EVERY word count (280 char limit!)
+`
+        : `
 - Story-driven, community-focused
 - Longer context allowed but keep concise
 - Personal anecdotes welcome
@@ -100,7 +110,7 @@ STRICT REQUIREMENTS:
 - Stay under character limit
 - Match platform tone exactly
 - Include appropriate emojis for platform
-- For post-CTA: Use platform-appropriate trigger words (LinkedIn: "SEND", Threads: "YES", Facebook: "INTERESTED")
+- For post-CTA: Use platform-appropriate trigger words (LinkedIn: "SEND", Threads: "YES", Facebook: "INTERESTED", Twitter: "DM")
 `
 
   const userPrompt = `Newsletter Title: ${newsletterTitle}
