@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=20",
     "npm": ">=10.0.0"
   },
   "scripts": {
@@ -14,7 +14,22 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "security:audit": "npm audit --audit-level high",
+    "security:secrets": "node -e \"const fs=require('fs');const content=fs.readFileSync('package.json','utf8');if(/[\\\"\\'][a-zA-Z0-9+/]{20,}[\\\"\\']/.test(content)){console.error('❌ Potential hardcoded secrets in package.json');process.exit(1)}else{console.log('✅ No secrets detected in package.json')}\"",
+    "security:config": "npx create-quality-automation@latest --security-config",
+    "lighthouse:ci": "lhci autorun",
+    "lighthouse:upload": "lhci upload",
+    "validate:docs": "npx create-quality-automation@latest --validate-docs",
+    "validate:comprehensive": "npx create-quality-automation@latest --comprehensive",
+    "validate:all": "npm run validate:comprehensive && npm run security:audit",
+    "lint:fix": "eslint . --ext .js,.jsx,.mjs,.cjs,.ts,.tsx,.html --fix && stylelint \"app/**/*.{css,scss,sass,less,pcss}\" --fix --allow-empty-input",
+    "prepare": "husky"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.69.0",
@@ -46,20 +61,52 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.14.0",
+    "@playwright/test": "^1.56.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@typescript-eslint/eslint-plugin": "^8.9.0",
+    "@typescript-eslint/parser": "^8.9.0",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9",
     "eslint-config-next": "15.1.4",
+    "eslint-plugin-security": "^3.0.1",
+    "globals": "^15.9.0",
+    "husky": "^9.1.4",
     "jsdom": "^27.2.0",
+    "lint-staged": "^15.2.10",
     "msw": "^2.12.2",
+    "playwright": "^1.56.1",
     "postcss": "^8",
+    "prettier": "^3.3.3",
+    "stylelint": "^16.8.0",
+    "stylelint-config-standard": "^37.0.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "vitest": "^4.0.9"
+  },
+  "lint-staged": {
+    "package.json": [
+      "prettier --write"
+    ],
+    "**/*.{js,jsx,ts,tsx,mjs,cjs,html}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "app/**/*.{css,scss,sass,less,pcss}": [
+      "stylelint --fix",
+      "prettier --write"
+    ]
+  },
+  "volta": {
+    "node": "20.11.1",
+    "npm": "10.2.4"
   }
 }

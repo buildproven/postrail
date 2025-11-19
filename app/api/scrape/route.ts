@@ -4,16 +4,13 @@ import { JSDOM } from 'jsdom'
 import axios from 'axios'
 import { createClient } from '@/lib/supabase/server'
 
-// SSRF Protection: Common newsletter platforms for optimized extraction
-// Note: All public domains are allowed, these just get special parsing logic
-const KNOWN_PLATFORMS = [
-  'beehiiv.com',
-  'substack.com',
-  'ghost.io',
-  'convertkit.com',
-  'buttondown.email',
-  'medium.com',
-]
+// SSRF Protection Strategy:
+// No domain allowlist - users may have newsletters on ANY domain (custom domains, self-hosted, etc.)
+// Instead, we rely on multi-layered SSRF protection:
+// 1. DNS resolution to IP addresses
+// 2. Private IP range blocking (localhost, 192.168.x.x, 10.x.x.x, AWS metadata, etc.)
+// 3. Redirect prevention (maxRedirects: 0)
+// 4. Protocol restriction (HTTP/HTTPS only)
 
 // Maximum response size (5MB)
 const MAX_RESPONSE_SIZE = 5 * 1024 * 1024
@@ -35,7 +32,9 @@ function isPrivateIP(ip: string): boolean {
   return false
 }
 
-async function isAllowedUrl(url: string): Promise<{ allowed: boolean; error?: string }> {
+async function isAllowedUrl(
+  url: string
+): Promise<{ allowed: boolean; error?: string }> {
   try {
     const parsedUrl = new URL(url)
 
@@ -53,16 +52,22 @@ async function isAllowedUrl(url: string): Promise<{ allowed: boolean; error?: st
       const addresses = await dns.resolve4(hostname)
       for (const ip of addresses) {
         if (isPrivateIP(ip)) {
-          return { allowed: false, error: 'Domain resolves to private IP address' }
+          return {
+            allowed: false,
+            error: 'Domain resolves to private IP address',
+          }
         }
       }
-    } catch (dnsError) {
+    } catch {
       // If IPv4 fails, try IPv6
       try {
         const addresses = await dns.resolve6(hostname)
         for (const ip of addresses) {
           if (isPrivateIP(ip)) {
-            return { allowed: false, error: 'Domain resolves to private IP address' }
+            return {
+              allowed: false,
+              error: 'Domain resolves to private IP address',
+            }
           }
         }
       } catch {
@@ -81,7 +86,10 @@ export async function POST(request: NextRequest) {
   try {
     // Auth check: require authenticated user
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json(
@@ -93,10 +101,7 @@ export async function POST(request: NextRequest) {
     const { url } = await request.json()
 
     if (!url) {
-      return NextResponse.json(
-        { error: 'URL is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
 
     // SSRF Protection: validate URL with DNS resolution
@@ -112,7 +117,8 @@ export async function POST(request: NextRequest) {
     // CRITICAL: Disable redirects to prevent SSRF bypass via 302 to private IP
     const response = await axios.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; LetterFlow/1.0; +https://letterflow.io)',
+        'User-Agent':
+          'Mozilla/5.0 (compatible; LetterFlow/1.0; +https://letterflow.io)',
       },
       timeout: 10000,
       maxContentLength: MAX_RESPONSE_SIZE,
@@ -130,7 +136,10 @@ export async function POST(request: NextRequest) {
 
     if (!article) {
       return NextResponse.json(
-        { error: 'Could not extract article content. This might not be an article page.' },
+        {
+          error:
+            'Could not extract article content. This might not be an article page.',
+        },
         { status: 400 }
       )
     }
@@ -183,7 +192,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to scrape URL. Please try pasting the content manually.' },
+      {
+        error: 'Failed to scrape URL. Please try pasting the content manually.',
+      },
       { status: 500 }
     )
   }

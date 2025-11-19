@@ -1,18 +1,24 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PostPreviewCard } from '@/components/post-preview-card'
 import Link from 'next/link'
 
 interface PageProps {
-  params: Promise<{
+  params: {
     id: string
-  }>
+  }
 }
 
 export default async function PreviewPage({ params }: PageProps) {
-  const { id } = await params
+  const { id } = params
   const supabase = await createClient()
 
   const {
@@ -48,8 +54,8 @@ export default async function PreviewPage({ params }: PageProps) {
   }
 
   // Group posts by type
-  const preCTAPosts = posts?.filter((p) => p.post_type === 'pre_cta') || []
-  const postCTAPosts = posts?.filter((p) => p.post_type === 'post_cta') || []
+  const preCTAPosts = posts?.filter(p => p.post_type === 'pre_cta') || []
+  const postCTAPosts = posts?.filter(p => p.post_type === 'post_cta') || []
 
   return (
     <div className="space-y-6">
@@ -64,8 +70,8 @@ export default async function PreviewPage({ params }: PageProps) {
         <CardHeader>
           <CardTitle>{newsletter.title}</CardTitle>
           <CardDescription>
-            {newsletter.content.split(' ').length} words •{' '}
-            {posts?.length || 0} posts generated
+            {newsletter.content.split(' ').length} words • {posts?.length || 0}{' '}
+            posts generated
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -77,28 +83,24 @@ export default async function PreviewPage({ params }: PageProps) {
 
       <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-semibold mb-2">
-            Pre-CTA Posts
-          </h2>
+          <h2 className="text-2xl font-semibold mb-2">Pre-CTA Posts</h2>
           <p className="text-sm text-muted-foreground mb-4">
             Teaser posts to publish 24-8 hours before your newsletter
           </p>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {preCTAPosts.map((post) => (
+            {preCTAPosts.map(post => (
               <PostPreviewCard key={post.id} post={post} />
             ))}
           </div>
         </div>
 
         <div>
-          <h2 className="text-2xl font-semibold mb-2">
-            Post-CTA Posts
-          </h2>
+          <h2 className="text-2xl font-semibold mb-2">Post-CTA Posts</h2>
           <p className="text-sm text-muted-foreground mb-4">
             Engagement posts to publish 48-72 hours after your newsletter
           </p>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {postCTAPosts.map((post) => (
+            {postCTAPosts.map(post => (
               <PostPreviewCard key={post.id} post={post} />
             ))}
           </div>

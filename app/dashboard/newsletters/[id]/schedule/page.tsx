@@ -3,10 +3,16 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
-export default async function SchedulePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default async function SchedulePage({
+  params,
+}: {
+  params: { id: string }
+}) {
+  const { id } = params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   if (!user) {
     redirect('/auth/login')
@@ -47,11 +53,16 @@ export default async function SchedulePage({ params }: { params: Promise<{ id: s
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h3 className="font-semibold text-blue-900 mb-2">Coming Soon</h3>
         <p className="text-blue-800 text-sm mb-3">
-          Post scheduling will be available in a future update. You'll be able to:
+          Post scheduling will be available in a future update. You&apos;ll be
+          able to:
         </p>
         <ul className="space-y-1 text-sm text-blue-700 list-disc list-inside">
-          <li>Schedule pre-CTA posts 24-8 hours before newsletter publication</li>
-          <li>Schedule post-CTA engagement posts 48-72 hours after publication</li>
+          <li>
+            Schedule pre-CTA posts 24-8 hours before newsletter publication
+          </li>
+          <li>
+            Schedule post-CTA engagement posts 48-72 hours after publication
+          </li>
           <li>Set custom posting times for each platform</li>
           <li>View a calendar of all scheduled posts</li>
           <li>Automatically publish to connected social media accounts</li>
@@ -60,7 +71,9 @@ export default async function SchedulePage({ params }: { params: Promise<{ id: s
 
       {posts && posts.length > 0 ? (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Generated Posts Ready to Schedule</h2>
+          <h2 className="text-xl font-semibold">
+            Generated Posts Ready to Schedule
+          </h2>
 
           {/* Pre-CTA Posts */}
           <div className="border rounded-lg p-6 bg-white">
@@ -69,16 +82,20 @@ export default async function SchedulePage({ params }: { params: Promise<{ id: s
               Publish 24-8 hours before your newsletter
             </p>
             <div className="grid gap-3">
-              {posts.filter(p => p.post_type === 'pre_cta').map(post => (
-                <div key={post.id} className="p-4 border rounded bg-gray-50">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium capitalize">{post.platform}</span>
-                    <span className="text-sm text-gray-500">
-                      {post.character_count} characters
-                    </span>
+              {posts
+                .filter(p => p.post_type === 'pre_cta')
+                .map(post => (
+                  <div key={post.id} className="p-4 border rounded bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium capitalize">
+                        {post.platform}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {post.character_count} characters
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
 
@@ -89,16 +106,20 @@ export default async function SchedulePage({ params }: { params: Promise<{ id: s
               Publish 48-72 hours after your newsletter
             </p>
             <div className="grid gap-3">
-              {posts.filter(p => p.post_type === 'post_cta').map(post => (
-                <div key={post.id} className="p-4 border rounded bg-gray-50">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium capitalize">{post.platform}</span>
-                    <span className="text-sm text-gray-500">
-                      {post.character_count} characters
-                    </span>
+              {posts
+                .filter(p => p.post_type === 'post_cta')
+                .map(post => (
+                  <div key={post.id} className="p-4 border rounded bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium capitalize">
+                        {post.platform}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {post.character_count} characters
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         </div>

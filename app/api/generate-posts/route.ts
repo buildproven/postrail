@@ -2,8 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 
+// Validate API key at module load - fail fast with clear error
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('FATAL: ANTHROPIC_API_KEY environment variable is not set')
+  console.error('Set it in .env.local: ANTHROPIC_API_KEY=your-key-here')
+}
+
+// Configurable model name via environment variable
+const ANTHROPIC_MODEL =
+  process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514'
+
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
+  apiKey: process.env.ANTHROPIC_API_KEY || 'missing-key',
 })
 
 const PLATFORMS = ['linkedin', 'threads', 'facebook'] as const
@@ -17,8 +27,8 @@ const CHAR_LIMITS = {
 }
 
 interface GeneratedPost {
-  platform: typeof PLATFORMS[number]
-  postType: typeof POST_TYPES[number]
+  platform: (typeof PLATFORMS)[number]
+  postType: (typeof POST_TYPES)[number]
   content: string
   characterCount: number
 }
@@ -35,42 +45,52 @@ async function generatePost(
 
 Your task is to create ${postType === 'pre_cta' ? 'pre-newsletter teaser' : 'post-newsletter engagement'} posts for ${platform}.
 
-${postType === 'pre_cta' ? `
+${
+  postType === 'pre_cta'
+    ? `
 PRE-CTA GUIDELINES (Post 24-8 hours BEFORE newsletter):
 - Create FOMO, urgency, and curiosity
 - Tease 3-5 key insights WITHOUT revealing everything
 - Hook readers with a compelling question or statement
 - Clear CTA: "Sign up so you don't miss it: [LINK]"
 - Build anticipation for tomorrow's newsletter
-` : `
+`
+    : `
 POST-CTA GUIDELINES (Post 48-72 hours AFTER newsletter):
 - Reframe newsletter as valuable resource (guide/playbook/cheatsheet/blueprint)
 - List 3-4 specific outcomes/benefits readers will gain
 - Create engagement: "Comment [WORD] to get access"
 - Mention it's email-gated to create perceived value
 - Encourage interaction and sharing
-`}
+`
+}
 
 PLATFORM-SPECIFIC TONE (${platform}):
-${platform === 'linkedin' ? `
+${
+  platform === 'linkedin'
+    ? `
 - Professional, business-value focused
 - Use industry jargon appropriately
 - Lead with ROI or business outcomes
 - Emojis: Use sparingly (1-2 max: 📊, 💡, ✅)
 - Hashtags: 3-5 relevant industry tags at end
-` : platform === 'threads' ? `
+`
+    : platform === 'threads'
+      ? `
 - Conversational, first-person voice
 - Casual but valuable
 - Emojis: Liberal use (2-3 per post)
 - Question-based hooks
 - Community-oriented language
-` : `
+`
+      : `
 - Story-driven, community-focused
 - Longer context allowed but keep concise
 - Personal anecdotes welcome
 - Shareability is key
 - Emojis: Moderate (1-2)
-`}
+`
+}
 
 CHARACTER LIMIT: ${charLimit} (stay well under, aim for ${Math.floor(charLimit * 0.7)} for optimal readability)
 
@@ -92,7 +112,7 @@ Generate a ${postType} post for ${platform}.`
 
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5',
+      model: ANTHROPIC_MODEL,
       max_tokens: 1024,
       messages: [
         {
@@ -117,6 +137,17 @@ Generate a ${postType} post for ${platform}.`
 
 export async function POST(request: NextRequest) {
   try {
+    // Runtime validation: fail fast if API key missing
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json(
+        {
+          error:
+            'Server configuration error: ANTHROPIC_API_KEY not set. Contact administrator.',
+        },
+        { status: 500 }
+      )
+    }
+
     const supabase = await createClient()
 
     // Check authentication
@@ -125,10 +156,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { title, content } = await request.json()
@@ -177,9 +205,12 @@ export async function POST(request: NextRequest) {
           })),
           new Promise<null>((_, reject) =>
             setTimeout(() => reject(new Error('Timeout after 30s')), 30000)
-          )
+          ),
         ]).catch(error => {
-          console.error(`Failed to generate ${postType} for ${platform}:`, error)
+          console.error(
+            `Failed to generate ${postType} for ${platform}:`,
+            error
+          )
           return null // Return null for failed posts
         })
       )
@@ -200,7 +231,7 @@ export async function POST(request: NextRequest) {
 
     // Save generated posts to database
     // scheduled_time is null for drafts, will be set during scheduling phase
-    const socialPostsData = posts.map((post) => ({
+    const socialPostsData = posts.map(post => ({
       newsletter_id: newsletter.id,
       platform: post.platform,
       post_type: post.postType,

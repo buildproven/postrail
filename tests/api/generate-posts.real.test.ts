@@ -13,10 +13,10 @@ const mockSupabase = {
   auth: {
     getUser: vi.fn(() => ({
       data: { user: { id: 'test-user-id', email: 'test@example.com' } },
-      error: null
-    }))
+      error: null,
+    })),
   },
-  from: vi.fn((table: string) => ({
+  from: vi.fn(() => ({
     insert: vi.fn(() => ({
       select: vi.fn(() => ({
         single: vi.fn(() => ({
@@ -25,65 +25,64 @@ const mockSupabase = {
             user_id: 'test-user-id',
             title: 'Test Newsletter',
             content: 'Test content',
-            status: 'draft'
+            status: 'draft',
           },
-          error: null
-        }))
-      }))
+          error: null,
+        })),
+      })),
     })),
     delete: vi.fn(() => ({
-      eq: vi.fn(() => Promise.resolve({ error: null }))
-    }))
-  }))
+      eq: vi.fn(() => Promise.resolve({ error: null })),
+    })),
+  })),
 }
 
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(() => mockSupabase)
+  createClient: vi.fn(() => mockSupabase),
 }))
 
-// Create a mock function that will be accessible
-let mockMessagesCreate: ReturnType<typeof vi.fn>
+// Mock Anthropic SDK - use a wrapper to avoid hoisting issues
+const mockMessagesCreate = vi.fn()
 
-// Mock Anthropic SDK
 vi.mock('@anthropic-ai/sdk', () => {
-  const mockResponse = {
-    content: [
-      {
-        type: 'text',
-        text: 'This is a professionally crafted LinkedIn post about AI automation. #AI #Automation'
-      }
-    ]
-  }
-
-  mockMessagesCreate = vi.fn(() => Promise.resolve(mockResponse))
-
   return {
     default: class MockAnthropic {
       messages = {
-        create: mockMessagesCreate
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        create: (...args: any[]) => mockMessagesCreate(...args),
       }
-    }
+    },
   }
 })
 
 describe('/api/generate-posts - Real API Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // Set default mock response for Anthropic
+    mockMessagesCreate.mockResolvedValue({
+      content: [
+        {
+          type: 'text',
+          text: 'This is a professionally crafted LinkedIn post about AI automation. #AI #Automation',
+        },
+      ],
+    })
   })
 
   describe('Authentication', () => {
     it('should reject unauthenticated requests', async () => {
       mockSupabase.auth.getUser.mockResolvedValueOnce({
         data: { user: null },
-        error: new Error('Not authenticated')
+        error: new Error('Not authenticated'),
       })
 
       const request = new NextRequest('http://localhost/api/generate-posts', {
         method: 'POST',
         body: JSON.stringify({
           title: 'Test Newsletter',
-          content: 'Test content for newsletter'
-        })
+          content: 'Test content for newsletter',
+        }),
       })
 
       const response = await POST(request)
@@ -98,7 +97,7 @@ describe('/api/generate-posts - Real API Tests', () => {
     it('should reject request without content', async () => {
       const request = new NextRequest('http://localhost/api/generate-posts', {
         method: 'POST',
-        body: JSON.stringify({ title: 'Test' })
+        body: JSON.stringify({ title: 'Test' }),
       })
 
       const response = await POST(request)
@@ -112,8 +111,8 @@ describe('/api/generate-posts - Real API Tests', () => {
       const request = new NextRequest('http://localhost/api/generate-posts', {
         method: 'POST',
         body: JSON.stringify({
-          content: 'Test content for newsletter with enough words to be valid'
-        })
+          content: 'Test content for newsletter with enough words to be valid',
+        }),
       })
 
       const response = await POST(request)
@@ -133,24 +132,25 @@ describe('/api/generate-posts - Real API Tests', () => {
               user_id: 'test-user-id',
               title: 'My Newsletter',
               content: 'Newsletter content',
-              status: 'draft'
+              status: 'draft',
             },
-            error: null
-          }))
-        }))
+            error: null,
+          })),
+        })),
       }))
 
       mockSupabase.from.mockReturnValue({
         insert: insertMock,
-        delete: vi.fn(() => ({ eq: vi.fn() }))
+        delete: vi.fn(() => ({ eq: vi.fn() })),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
 
       const request = new NextRequest('http://localhost/api/generate-posts', {
         method: 'POST',
         body: JSON.stringify({
           title: 'My Newsletter',
-          content: 'Newsletter content with enough text to be valid'
-        })
+          content: 'Newsletter content with enough text to be valid',
+        }),
       })
 
       await POST(request)
@@ -161,7 +161,7 @@ describe('/api/generate-posts - Real API Tests', () => {
           user_id: 'test-user-id',
           title: 'My Newsletter',
           content: expect.any(String),
-          status: 'draft'
+          status: 'draft',
         })
       )
     })
@@ -173,8 +173,9 @@ describe('/api/generate-posts - Real API Tests', () => {
         method: 'POST',
         body: JSON.stringify({
           title: 'Test Newsletter',
-          content: 'Test content with information about AI and automation strategies'
-        })
+          content:
+            'Test content with information about AI and automation strategies',
+        }),
       })
 
       const response = await POST(request)
@@ -193,15 +194,16 @@ describe('/api/generate-posts - Real API Tests', () => {
         method: 'POST',
         body: JSON.stringify({
           title: 'Test',
-          content: 'Test content for AI generation with sufficient text'
-        })
+          content: 'Test content for AI generation with sufficient text',
+        }),
       })
 
       await POST(request)
 
+      // Should use ANTHROPIC_MODEL env var or default
       expect(mockMessagesCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: 'claude-sonnet-4-5'
+          model: expect.stringMatching(/claude-sonnet-4/),
         })
       )
     })
@@ -212,25 +214,28 @@ describe('/api/generate-posts - Real API Tests', () => {
       // Mock Anthropic to fail all requests
       mockMessagesCreate.mockRejectedValue(new Error('API Error'))
 
-      const deleteMock = vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) }))
+      const deleteMock = vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ error: null })),
+      }))
       mockSupabase.from.mockReturnValue({
         insert: vi.fn(() => ({
           select: vi.fn(() => ({
             single: vi.fn(() => ({
               data: { id: 'test-id' },
-              error: null
-            }))
-          }))
+              error: null,
+            })),
+          })),
         })),
-        delete: deleteMock
+        delete: deleteMock,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
 
       const request = new NextRequest('http://localhost/api/generate-posts', {
         method: 'POST',
         body: JSON.stringify({
           title: 'Test',
-          content: 'Test content that will fail generation'
-        })
+          content: 'Test content that will fail generation',
+        }),
       })
 
       const response = await POST(request)
@@ -246,18 +251,19 @@ describe('/api/generate-posts - Real API Tests', () => {
           select: vi.fn(() => ({
             single: vi.fn(() => ({
               data: null,
-              error: new Error('Database error')
-            }))
-          }))
-        }))
+              error: new Error('Database error'),
+            })),
+          })),
+        })),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
 
       const request = new NextRequest('http://localhost/api/generate-posts', {
         method: 'POST',
         body: JSON.stringify({
           title: 'Test',
-          content: 'Test content'
-        })
+          content: 'Test content',
+        }),
       })
 
       const response = await POST(request)
@@ -272,8 +278,8 @@ describe('/api/generate-posts - Real API Tests', () => {
         method: 'POST',
         body: JSON.stringify({
           title: 'Test',
-          content: 'Test content for parallel execution testing'
-        })
+          content: 'Test content for parallel execution testing',
+        }),
       })
 
       await POST(request)
@@ -289,8 +295,8 @@ describe('/api/generate-posts - Real API Tests', () => {
         method: 'POST',
         body: JSON.stringify({
           title: 'Test',
-          content: 'Test content for structure validation'
-        })
+          content: 'Test content for structure validation',
+        }),
       })
 
       const response = await POST(request)
@@ -307,8 +313,8 @@ describe('/api/generate-posts - Real API Tests', () => {
         method: 'POST',
         body: JSON.stringify({
           title: 'Test',
-          content: 'Test content'
-        })
+          content: 'Test content',
+        }),
       })
 
       const response = await POST(request)

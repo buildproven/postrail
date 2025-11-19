@@ -14,19 +14,21 @@ vi.mock('@/lib/supabase/server', () => ({
     auth: {
       getUser: vi.fn(() => ({
         data: { user: { id: 'test-user-id', email: 'test@example.com' } },
-        error: null
-      }))
-    }
-  }))
+        error: null,
+      })),
+    },
+  })),
 }))
 
 // Mock axios to prevent actual HTTP requests
 vi.mock('axios', () => ({
   default: {
-    get: vi.fn(() => Promise.resolve({
-      data: '<html><body><article>Test content</article></body></html>'
-    }))
-  }
+    get: vi.fn(() =>
+      Promise.resolve({
+        data: '<html><body><article>Test content</article></body></html>',
+      })
+    ),
+  },
 }))
 
 describe('SSRF Protection - /api/scrape', () => {
@@ -41,14 +43,15 @@ describe('SSRF Protection - /api/scrape', () => {
         auth: {
           getUser: vi.fn(() => ({
             data: { user: null },
-            error: new Error('Not authenticated')
-          }))
-        }
+            error: new Error('Not authenticated'),
+          })),
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
 
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({ url: 'https://example.beehiiv.com/p/test' })
+        body: JSON.stringify({ url: 'https://example.beehiiv.com/p/test' }),
       })
 
       const response = await POST(request)
@@ -68,7 +71,7 @@ describe('SSRF Protection - /api/scrape', () => {
 
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({ url: 'https://beehiiv.com/p/test' })
+        body: JSON.stringify({ url: 'https://beehiiv.com/p/test' }),
       })
 
       const response = await POST(request)
@@ -83,7 +86,7 @@ describe('SSRF Protection - /api/scrape', () => {
 
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({ url: 'https://newsletter.beehiiv.com/p/test' })
+        body: JSON.stringify({ url: 'https://newsletter.beehiiv.com/p/test' }),
       })
 
       const response = await POST(request)
@@ -94,27 +97,29 @@ describe('SSRF Protection - /api/scrape', () => {
     it('should reject SSRF attempt: beehiiv.com.attacker.tld', async () => {
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({ url: 'https://beehiiv.com.attacker.tld/p/test' })
+        body: JSON.stringify({
+          url: 'https://beehiiv.com.attacker.tld/p/test',
+        }),
       })
 
       const response = await POST(request)
       const data = await response.json()
 
       expect(response.status).toBe(403)
-      expect(data.error).toContain('not allowed')
+      expect(data.error).toContain('not in allowlist')
     })
 
     it('should reject non-allowlisted domain', async () => {
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({ url: 'https://evil.com/p/test' })
+        body: JSON.stringify({ url: 'https://evil.com/p/test' }),
       })
 
       const response = await POST(request)
       const data = await response.json()
 
       expect(response.status).toBe(403)
-      expect(data.error).toContain('not allowed')
+      expect(data.error).toContain('not in allowlist')
     })
   })
 
@@ -126,7 +131,7 @@ describe('SSRF Protection - /api/scrape', () => {
 
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({ url: 'https://malicious.beehiiv.com/p/test' })
+        body: JSON.stringify({ url: 'https://malicious.beehiiv.com/p/test' }),
       })
 
       const response = await POST(request)
@@ -143,7 +148,7 @@ describe('SSRF Protection - /api/scrape', () => {
 
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({ url: 'https://attacker.beehiiv.com/p/test' })
+        body: JSON.stringify({ url: 'https://attacker.beehiiv.com/p/test' }),
       })
 
       const response = await POST(request)
@@ -160,7 +165,7 @@ describe('SSRF Protection - /api/scrape', () => {
 
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({ url: 'https://metadata.beehiiv.com/p/test' })
+        body: JSON.stringify({ url: 'https://metadata.beehiiv.com/p/test' }),
       })
 
       const response = await POST(request)
@@ -177,7 +182,7 @@ describe('SSRF Protection - /api/scrape', () => {
 
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({ url: 'https://internal.beehiiv.com/p/test' })
+        body: JSON.stringify({ url: 'https://internal.beehiiv.com/p/test' }),
       })
 
       const response = await POST(request)
@@ -192,7 +197,7 @@ describe('SSRF Protection - /api/scrape', () => {
     it('should reject non-HTTP(S) protocols', async () => {
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({ url: 'file:///etc/passwd' })
+        body: JSON.stringify({ url: 'file:///etc/passwd' }),
       })
 
       const response = await POST(request)
@@ -207,7 +212,7 @@ describe('SSRF Protection - /api/scrape', () => {
     it('should reject missing URL', async () => {
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
       })
 
       const response = await POST(request)
@@ -220,7 +225,7 @@ describe('SSRF Protection - /api/scrape', () => {
     it('should reject malformed URL', async () => {
       const request = new NextRequest('http://localhost/api/scrape', {
         method: 'POST',
-        body: JSON.stringify({ url: 'not-a-valid-url' })
+        body: JSON.stringify({ url: 'not-a-valid-url' }),
       })
 
       const response = await POST(request)

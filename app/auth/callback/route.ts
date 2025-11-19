@@ -1,11 +1,35 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+// Allowlist of safe redirect paths within our app
+const ALLOWED_REDIRECTS = [
+  '/dashboard',
+  '/dashboard/newsletters',
+  '/dashboard/newsletters/new',
+  '/dashboard/platforms',
+  '/dashboard/settings',
+]
+
+function isValidRedirect(path: string): boolean {
+  // Must start with / (relative path)
+  if (!path.startsWith('/')) return false
+
+  // Prevent protocol-relative URLs (//evil.com)
+  if (path.startsWith('//')) return false
+
+  // Must be in allowlist or start with allowed prefix
+  return ALLOWED_REDIRECTS.some(
+    allowed => path === allowed || path.startsWith(`${allowed}/`)
+  )
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  // if "next" is in param, use it as the redirect URL
-  const next = searchParams.get('next') ?? '/dashboard'
+  const requestedNext = searchParams.get('next') ?? '/dashboard'
+
+  // Validate redirect target - prevent open redirect vulnerability
+  const next = isValidRedirect(requestedNext) ? requestedNext : '/dashboard'
 
   if (code) {
     const supabase = await createClient()

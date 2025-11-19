@@ -45,3 +45,8 @@ next-env.d.ts
 *.swp
 *.swo
 *~
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.auth/*.json
