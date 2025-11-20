@@ -190,7 +190,7 @@ describe('Command Execution - Isolated Environment', () => {
     const scripts = pkg.scripts
 
     // Check for common mistakes
-    Object.entries(scripts).forEach(([name, command]) => {
+    Object.values(scripts).forEach(command => {
       // Should not have undefined variables
       expect(command).not.toContain('undefined')
       expect(command).not.toContain('$undefined')

@@ -31,8 +31,8 @@ describe.skipIf(!shouldRunContractTests)(
       let Anthropic: any
 
       beforeAll(async () => {
-        const module = await import('@anthropic-ai/sdk')
-        Anthropic = module.default
+        const anthropicModule = await import('@anthropic-ai/sdk')
+        Anthropic = anthropicModule.default
       })
 
       it('should verify Anthropic messages.create contract', async () => {
@@ -89,8 +89,8 @@ describe.skipIf(!shouldRunContractTests)(
       let TwitterApi: any
 
       beforeAll(async () => {
-        const module = await import('twitter-api-v2')
-        TwitterApi = module.TwitterApi
+        const twitterModule = await import('twitter-api-v2')
+        TwitterApi = twitterModule.TwitterApi
       })
 
       it('should verify Twitter v2.me() contract', async () => {
@@ -161,8 +161,8 @@ describe.skipIf(!shouldRunContractTests)(
       let createClient: any
 
       beforeAll(async () => {
-        const module = await import('@supabase/supabase-js')
-        createClient = module.createClient
+        const supabaseModule = await import('@supabase/supabase-js')
+        createClient = supabaseModule.createClient
       })
 
       it('should verify Supabase client creation', () => {
@@ -254,6 +254,7 @@ describe.skipIf(!shouldRunContractTests)(
 
 describe('SDK Version Compatibility Checks (Always Run)', () => {
   it('should verify all critical dependencies are installed', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf-8'))
 
     const criticalDeps = [
@@ -271,6 +272,7 @@ describe('SDK Version Compatibility Checks (Always Run)', () => {
   })
 
   it('should verify no conflicting package versions', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf-8'))
 
     // React and React DOM should match versions
@@ -284,6 +286,7 @@ describe('SDK Version Compatibility Checks (Always Run)', () => {
 
   it('should verify TypeScript is properly configured', () => {
     const tsconfig = JSON.parse(
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('fs').readFileSync('tsconfig.json', 'utf-8')
     )
 

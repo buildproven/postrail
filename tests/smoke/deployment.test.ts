@@ -13,7 +13,6 @@
 
 import { describe, it, expect } from 'vitest'
 import fs from 'fs'
-import path from 'path'
 
 describe('Pre-Deployment Smoke Tests', () => {
   describe('Configuration Files', () => {
