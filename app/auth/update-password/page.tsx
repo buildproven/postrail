@@ -41,7 +41,7 @@ export default function UpdatePasswordPage() {
       } else {
         router.push('/auth/login?message=Password updated successfully')
       }
-    } catch (error) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)

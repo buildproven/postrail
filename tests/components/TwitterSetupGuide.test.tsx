@@ -227,13 +227,6 @@ describe('TwitterSetupGuide - API Integration', () => {
 
 describe('TwitterSetupGuide - Security', () => {
   it('should clear credentials from state after connection', () => {
-    const credentials = {
-      apiKey: 'test-key',
-      apiSecret: 'test-secret',
-      accessToken: 'test-token',
-      accessTokenSecret: 'test-token-secret',
-    }
-
     // After successful connection, clear credentials
     const clearedCredentials = {
       apiKey: '',

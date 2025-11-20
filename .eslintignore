@@ -1,2 +1,3 @@
 test-generation.js
 test-full-flow.js
+coverage/

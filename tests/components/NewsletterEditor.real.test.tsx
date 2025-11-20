@@ -3,8 +3,9 @@
  * Tests Tiptap integration with actual editor behavior
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 
 // Mock Tiptap using factory functions
 vi.mock('@tiptap/react', () => ({

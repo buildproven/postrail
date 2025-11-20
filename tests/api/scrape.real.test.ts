@@ -3,6 +3,7 @@
  * Tests actual code execution with mocked dependencies
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from '@/app/api/scrape/route'
 import { NextRequest } from 'next/server'

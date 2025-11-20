@@ -2,6 +2,7 @@
  * Mock Twitter API client for testing
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { vi } from 'vitest'
 
 export const createMockTwitterClient = () => {

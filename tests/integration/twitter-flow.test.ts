@@ -373,7 +373,6 @@ describe('Twitter Integration - Security Flow', () => {
   })
 
   it('should hash credentials for quick lookup', () => {
-    const credentialsString = 'key:secret:token:token-secret'
     const hash = 'a'.repeat(64) // SHA-256 hash
 
     expect(hash.length).toBe(64)

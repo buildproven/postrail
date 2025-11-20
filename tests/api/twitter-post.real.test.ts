@@ -3,6 +3,7 @@
  * Tests actual code execution with mocked dependencies
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from '@/app/api/platforms/twitter/post/route'
 import { NextRequest } from 'next/server'
@@ -44,7 +45,6 @@ vi.mock('@/lib/crypto', () => ({
 }))
 
 import { createClient } from '@/lib/supabase/server'
-import { TwitterApi } from 'twitter-api-v2'
 import { decrypt } from '@/lib/crypto'
 
 // Helper to create properly mocked Supabase with table-specific chains

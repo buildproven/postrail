@@ -99,7 +99,6 @@ describe('PostPreviewCard', () => {
   })
 
   it('should calculate percentage correctly', () => {
-    const post = { ...mockPost, character_count: 2700 }
     const percentage = (2700 / 3000) * 100
 
     expect(percentage).toBe(90)

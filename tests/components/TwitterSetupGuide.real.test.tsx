@@ -3,6 +3,7 @@
  * Tests actual component rendering and interaction
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { TwitterSetupGuide } from '@/components/twitter-setup-guide'
@@ -49,7 +50,7 @@ describe('TwitterSetupGuide - Real Tests', () => {
   describe('Credentials step', () => {
     beforeEach(() => {
       // Start on credentials step
-      const { container } = render(<TwitterSetupGuide />)
+      render(<TwitterSetupGuide />)
       const button = screen.getByRole('button', { name: /I Have My Keys/i })
       fireEvent.click(button)
     })

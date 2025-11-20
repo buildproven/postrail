@@ -3,6 +3,7 @@
  * Tests server-side Supabase client creation with cookie handling
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock @supabase/ssr and next/headers using factory functions

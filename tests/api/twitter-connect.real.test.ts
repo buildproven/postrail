@@ -3,6 +3,7 @@
  * Tests actual code execution with mocked dependencies
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST, GET, DELETE } from '@/app/api/platforms/twitter/connect/route'
 import { NextRequest } from 'next/server'
@@ -46,7 +47,7 @@ vi.mock('twitter-api-v2', () => {
 vi.mock('@/lib/crypto', () => ({
   encrypt: vi.fn((text: string) => `encrypted:${text}`),
   decrypt: vi.fn((text: string) => text.replace('encrypted:', '')),
-  hash: vi.fn((text: string) => 'a'.repeat(64)),
+  hash: vi.fn(() => 'a'.repeat(64)),
 }))
 
 import { createClient } from '@/lib/supabase/server'
@@ -220,7 +221,7 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
           }
         )
 
-        const response = await POST(request)
+        await POST(request)
 
         expect(mockTwitterClientInstance.v2.me).toHaveBeenCalled()
       })
@@ -390,13 +391,6 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest(
-        'http://localhost:3000/api/platforms/twitter/connect',
-        {
-          method: 'GET',
-        }
-      )
-
       const response = await GET()
       const data = await response.json()
 
@@ -419,13 +413,6 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
       })
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
-
-      const request = new NextRequest(
-        'http://localhost:3000/api/platforms/twitter/connect',
-        {
-          method: 'GET',
-        }
-      )
 
       const response = await GET()
       const data = await response.json()
@@ -452,13 +439,6 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest(
-        'http://localhost:3000/api/platforms/twitter/connect',
-        {
-          method: 'DELETE',
-        }
-      )
-
       const response = await DELETE()
       const data = await response.json()
 
@@ -477,13 +457,6 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
       const mockSupabase = createMockSupabaseClient()
       mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthError())
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
-
-      const request = new NextRequest(
-        'http://localhost:3000/api/platforms/twitter/connect',
-        {
-          method: 'DELETE',
-        }
-      )
 
       const response = await DELETE()
       const data = await response.json()
