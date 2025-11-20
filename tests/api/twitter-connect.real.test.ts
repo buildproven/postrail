@@ -6,18 +6,34 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST, GET, DELETE } from '@/app/api/platforms/twitter/connect/route'
 import { NextRequest } from 'next/server'
-import { createMockSupabaseClient, mockSupabaseAuthUser, mockSupabaseAuthError } from '../../mocks/supabase'
-import { createMockTwitterClient } from '../../mocks/twitter-api'
+import { createMockSupabaseClient, mockSupabaseAuthUser, mockSupabaseAuthError } from '../mocks/supabase'
+import { createMockTwitterClient } from '../mocks/twitter-api'
 
 // Mock Supabase
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }))
 
+// Create a factory to hold the mock instance
+let mockTwitterClientInstance: any = null
+
 // Mock Twitter API
-vi.mock('twitter-api-v2', () => ({
-  TwitterApi: vi.fn(),
-}))
+vi.mock('twitter-api-v2', () => {
+  // Create a mock constructor function
+  function MockTwitterApi(this: any) {
+    console.log('[MOCK] TwitterApi constructor called, instance:', mockTwitterClientInstance ? 'SET' : 'NULL')
+    // Return the mock instance
+    if (mockTwitterClientInstance) {
+      return mockTwitterClientInstance
+    }
+    // Fallback: return empty object with minimal structure
+    return { v2: { me: vi.fn() } }
+  }
+
+  return {
+    TwitterApi: MockTwitterApi,
+  }
+})
 
 // Mock crypto
 vi.mock('@/lib/crypto', () => ({
@@ -63,8 +79,8 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
         const mockSupabase = createMockSupabaseClient()
         mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
 
-        const mockTwitterClient = createMockTwitterClient()
-        vi.mocked(TwitterApi).mockImplementation(() => mockTwitterClient as any)
+        // Set the mock instance that TwitterApi constructor will return
+        mockTwitterClientInstance = createMockTwitterClient()
 
         mockSupabase.from('platform_connections').upsert.mockResolvedValue({ data: null, error: null })
 
@@ -81,6 +97,13 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
         })
 
         const response = await POST(request)
+        const data = await response.json()
+
+        if (response.status !== 200) {
+          console.log('ERROR - Expected 200, got:', response.status, data)
+          console.log('Was TwitterApi called?', vi.mocked(TwitterApi).mock.calls.length)
+          console.log('Was me() called?', mockTwitterClientInstance?.v2?.me?.mock?.calls?.length || 'mock not set')
+        }
 
         expect(response.status).toBe(200)
       })
@@ -139,8 +162,7 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
       })
 
       it('should validate credentials with Twitter API', async () => {
-        const mockTwitterClient = createMockTwitterClient()
-        vi.mocked(TwitterApi).mockImplementation(() => mockTwitterClient as any)
+        mockTwitterClientInstance = createMockTwitterClient()
 
         const mockSupabase = createMockSupabaseClient()
         mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
@@ -159,14 +181,12 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
         const response = await POST(request)
 
-        expect(mockTwitterClient.v2.me).toHaveBeenCalled()
+        expect(mockTwitterClientInstance.v2.me).toHaveBeenCalled()
       })
 
       it('should handle invalid Twitter credentials', async () => {
-        const mockTwitterClient = createMockTwitterClient()
-        mockTwitterClient.v2.me.mockRejectedValue(new Error('Unauthorized'))
-
-        vi.mocked(TwitterApi).mockImplementation(() => mockTwitterClient as any)
+        mockTwitterClientInstance = createMockTwitterClient()
+        mockTwitterClientInstance.v2.me.mockRejectedValue(new Error('Unauthorized'))
 
         const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
           method: 'POST',
@@ -191,8 +211,7 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
         const mockSupabase = createMockSupabaseClient()
         mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
 
-        const mockTwitterClient = createMockTwitterClient()
-        vi.mocked(TwitterApi).mockImplementation(() => mockTwitterClient as any)
+        mockTwitterClientInstance = createMockTwitterClient()
 
         const upsertSpy = vi.fn().mockResolvedValue({ data: null, error: null })
         mockSupabase.from('platform_connections').upsert = upsertSpy
@@ -222,8 +241,7 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
         const mockSupabase = createMockSupabaseClient()
         mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
 
-        const mockTwitterClient = createMockTwitterClient()
-        vi.mocked(TwitterApi).mockImplementation(() => mockTwitterClient as any)
+        mockTwitterClientInstance = createMockTwitterClient()
 
         mockSupabase.from('platform_connections').upsert.mockResolvedValue({ data: null, error: null })
 
@@ -249,11 +267,13 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
         const mockSupabase = createMockSupabaseClient()
         mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
 
-        const mockTwitterClient = createMockTwitterClient()
-        vi.mocked(TwitterApi).mockImplementation(() => mockTwitterClient as any)
+        mockTwitterClientInstance = createMockTwitterClient()
 
         const upsertSpy = vi.fn().mockResolvedValue({ data: null, error: null })
-        mockSupabase.from('platform_connections').upsert = upsertSpy
+        // Override from() to return object with our spy
+        mockSupabase.from = vi.fn(() => ({
+          upsert: upsertSpy,
+        })) as any
 
         vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
@@ -288,17 +308,20 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
       const mockSupabase = createMockSupabaseClient()
       mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
 
-      mockSupabase.from('platform_connections').select.mockReturnThis()
-      mockSupabase.from('platform_connections').eq.mockReturnThis()
-      mockSupabase.from('platform_connections').single.mockResolvedValue({
-        data: {
-          platform_username: 'testuser',
-          platform_user_id: '123456',
-          connected_at: new Date().toISOString(),
-          is_active: true,
-        },
-        error: null,
-      })
+      const mockChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {
+            platform_username: 'testuser',
+            platform_user_id: '123456',
+            connected_at: new Date().toISOString(),
+            is_active: true,
+          },
+          error: null,
+        }),
+      }
+      mockSupabase.from = vi.fn(() => mockChain) as any
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
@@ -344,9 +367,13 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
       const mockSupabase = createMockSupabaseClient()
       mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
 
-      const deleteSpy = vi.fn().mockReturnThis()
-      mockSupabase.from('platform_connections').delete = deleteSpy
-      mockSupabase.from('platform_connections').eq.mockResolvedValue({ data: null, error: null })
+      const eq2Spy = vi.fn().mockResolvedValue({ data: null, error: null })
+      const eq1Spy = vi.fn(() => ({ eq: eq2Spy }))
+      const deleteSpy = vi.fn(() => ({ eq: eq1Spy }))
+
+      mockSupabase.from = vi.fn(() => ({
+        delete: deleteSpy,
+      })) as any
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
@@ -357,9 +384,15 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
       const response = await DELETE()
       const data = await response.json()
 
+      if (response.status !== 200) {
+        console.log('DELETE ERROR:', response.status, data)
+      }
+
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
       expect(deleteSpy).toHaveBeenCalled()
+      expect(eq1Spy).toHaveBeenCalled()
+      expect(eq2Spy).toHaveBeenCalled()
     })
 
     it('should reject unauthenticated delete requests', async () => {

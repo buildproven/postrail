@@ -297,10 +297,15 @@ comment YES and i'll send it to you 💌
   })
 
   describe('Content Structure Validation', () => {
-    it('should have clear hook in first line', () => {
-      const allPosts = Object.values(samplePosts)
+    it('should have clear hook in first line of PRE-CTA posts', () => {
+      // Only PRE-CTA posts need attention-grabbing hooks
+      // POST-CTA posts announce value/resources
+      const preCTAPosts = [
+        samplePosts.linkedin_pre_cta,
+        samplePosts.threads_pre_cta,
+      ]
 
-      allPosts.forEach(post => {
+      preCTAPosts.forEach(post => {
         const firstLine = post.trim().split('\n')[0]
         expect(firstLine.length).toBeGreaterThan(10)
         expect(firstLine.length).toBeLessThan(150)
