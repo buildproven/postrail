@@ -1,0 +1,51 @@
+# Gitleaks configuration
+# https://github.com/gitleaks/gitleaks
+
+title = "Gitleaks Configuration"
+
+[extend]
+# Use default gitleaks rules
+useDefault = true
+
+[allowlist]
+description = "Allowlist for false positives"
+
+# Ignore test files and documentation
+paths = [
+  '''.*\.test\.(ts|tsx|js|jsx)$''',
+  '''.*\.spec\.(ts|tsx|js|jsx)$''',
+  '''^tests/.*''',
+  '''^docs/.*''',
+  '''^\.github/.*''',
+  '''.*\.example$''',
+  '''.*\.md$''',
+  '''^coverage/.*''',
+  '''package-lock\.json$''',
+]
+
+# Ignore common false positives
+regexes = [
+  # React key props
+  '''key=\{.*\}''',
+  # Package version patterns
+  '''"[^"]+": "\^[0-9]+\.[0-9]+\.[0-9]+"''',
+  # Null/empty values
+  ''':\s*null''',
+  ''':\s*""''',
+  # Example/placeholder patterns
+  '''your-api-key-here''',
+  '''example\.com''',
+  '''fake-token''',
+  '''test-secret''',
+]
+
+# Ignore specific strings that are definitely not secrets
+stopwords = [
+  "example",
+  "test",
+  "fake",
+  "mock",
+  "placeholder",
+  "your-api-key",
+  "TODO",
+]
