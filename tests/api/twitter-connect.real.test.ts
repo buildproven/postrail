@@ -6,8 +6,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST, GET, DELETE } from '@/app/api/platforms/twitter/connect/route'
 import { NextRequest } from 'next/server'
-import { createMockSupabaseClient, mockSupabaseAuthUser, mockSupabaseAuthError } from '../../mocks/supabase'
-import { createMockTwitterClient } from '../../mocks/twitter-api'
+import { createMockSupabaseClient, mockSupabaseAuthUser, mockSupabaseAuthError } from '../mocks/supabase'
+import { createMockTwitterClient } from '../mocks/twitter-api'
 
 // Mock Supabase
 vi.mock('@/lib/supabase/server', () => ({
@@ -15,9 +15,13 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 
 // Mock Twitter API
-vi.mock('twitter-api-v2', () => ({
-  TwitterApi: vi.fn(),
-}))
+vi.mock('twitter-api-v2', () => {
+  const MockTwitterApi = vi.fn()
+  MockTwitterApi.prototype = {}
+  return {
+    TwitterApi: MockTwitterApi,
+  }
+})
 
 // Mock crypto
 vi.mock('@/lib/crypto', () => ({
