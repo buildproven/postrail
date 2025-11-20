@@ -24,7 +24,9 @@ describe('TwitterSetupGuide - Real Tests', () => {
       render(<TwitterSetupGuide />)
 
       expect(screen.getByText(/Connect Twitter \(BYOK\)/i)).toBeInTheDocument()
-      expect(screen.getByText(/create your own Twitter Developer account/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/create your own Twitter Developer account/i)
+      ).toBeInTheDocument()
     })
 
     it('should have button to proceed to credentials', () => {
@@ -68,12 +70,15 @@ describe('TwitterSetupGuide - Real Tests', () => {
       const apiKeyInput = screen.getByLabelText(/API Key/i)
       const apiSecretInput = screen.getByLabelText(/API Secret/i)
       const accessTokenInput = screen.getByLabelText(/^Access Token$/i)
-      const accessTokenSecretInput = screen.getByLabelText(/Access Token Secret/i)
+      const accessTokenSecretInput =
+        screen.getByLabelText(/Access Token Secret/i)
 
       fireEvent.change(apiKeyInput, { target: { value: 'test-key' } })
       fireEvent.change(apiSecretInput, { target: { value: 'test-secret' } })
       fireEvent.change(accessTokenInput, { target: { value: 'test-token' } })
-      fireEvent.change(accessTokenSecretInput, { target: { value: 'test-token-secret' } })
+      fireEvent.change(accessTokenSecretInput, {
+        target: { value: 'test-token-secret' },
+      })
 
       const button = screen.getByRole('button', { name: /^Connect Twitter$/i })
       expect(button).not.toBeDisabled()
@@ -88,15 +93,23 @@ describe('TwitterSetupGuide - Real Tests', () => {
       fireEvent.click(screen.getByRole('button', { name: /I Have My Keys/i }))
 
       // Fill in credentials
-      fireEvent.change(screen.getByLabelText(/API Key/i), { target: { value: 'test-key' } })
-      fireEvent.change(screen.getByLabelText(/API Secret/i), { target: { value: 'test-secret' } })
-      fireEvent.change(screen.getByLabelText(/^Access Token$/i), { target: { value: 'test-token' } })
+      fireEvent.change(screen.getByLabelText(/API Key/i), {
+        target: { value: 'test-key' },
+      })
+      fireEvent.change(screen.getByLabelText(/API Secret/i), {
+        target: { value: 'test-secret' },
+      })
+      fireEvent.change(screen.getByLabelText(/^Access Token$/i), {
+        target: { value: 'test-token' },
+      })
       fireEvent.change(screen.getByLabelText(/Access Token Secret/i), {
         target: { value: 'test-token-secret' },
       })
 
       // Submit
-      fireEvent.click(screen.getByRole('button', { name: /^Connect Twitter$/i }))
+      fireEvent.click(
+        screen.getByRole('button', { name: /^Connect Twitter$/i })
+      )
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
@@ -122,13 +135,21 @@ describe('TwitterSetupGuide - Real Tests', () => {
       fireEvent.click(screen.getByRole('button', { name: /I Have My Keys/i }))
 
       // Fill and submit
-      fireEvent.change(screen.getByLabelText(/API Key/i), { target: { value: 'test-key' } })
-      fireEvent.change(screen.getByLabelText(/API Secret/i), { target: { value: 'test-secret' } })
-      fireEvent.change(screen.getByLabelText(/^Access Token$/i), { target: { value: 'test-token' } })
+      fireEvent.change(screen.getByLabelText(/API Key/i), {
+        target: { value: 'test-key' },
+      })
+      fireEvent.change(screen.getByLabelText(/API Secret/i), {
+        target: { value: 'test-secret' },
+      })
+      fireEvent.change(screen.getByLabelText(/^Access Token$/i), {
+        target: { value: 'test-token' },
+      })
       fireEvent.change(screen.getByLabelText(/Access Token Secret/i), {
         target: { value: 'test-token-secret' },
       })
-      fireEvent.click(screen.getByRole('button', { name: /^Connect Twitter$/i }))
+      fireEvent.click(
+        screen.getByRole('button', { name: /^Connect Twitter$/i })
+      )
 
       await waitFor(() => {
         expect(screen.getByText(/Twitter Connected!/i)).toBeInTheDocument()
@@ -143,13 +164,21 @@ describe('TwitterSetupGuide - Real Tests', () => {
 
       // Go to credentials step and submit
       fireEvent.click(screen.getByRole('button', { name: /I Have My Keys/i }))
-      fireEvent.change(screen.getByLabelText(/API Key/i), { target: { value: 'test-key' } })
-      fireEvent.change(screen.getByLabelText(/API Secret/i), { target: { value: 'test-secret' } })
-      fireEvent.change(screen.getByLabelText(/^Access Token$/i), { target: { value: 'test-token' } })
+      fireEvent.change(screen.getByLabelText(/API Key/i), {
+        target: { value: 'test-key' },
+      })
+      fireEvent.change(screen.getByLabelText(/API Secret/i), {
+        target: { value: 'test-secret' },
+      })
+      fireEvent.change(screen.getByLabelText(/^Access Token$/i), {
+        target: { value: 'test-token' },
+      })
       fireEvent.change(screen.getByLabelText(/Access Token Secret/i), {
         target: { value: 'test-token-secret' },
       })
-      fireEvent.click(screen.getByRole('button', { name: /^Connect Twitter$/i }))
+      fireEvent.click(
+        screen.getByRole('button', { name: /^Connect Twitter$/i })
+      )
 
       await waitFor(() => {
         expect(screen.getByText(/Twitter Connected!/i)).toBeInTheDocument()
@@ -173,13 +202,21 @@ describe('TwitterSetupGuide - Real Tests', () => {
 
       // Go to credentials step and submit
       fireEvent.click(screen.getByRole('button', { name: /I Have My Keys/i }))
-      fireEvent.change(screen.getByLabelText(/API Key/i), { target: { value: 'bad-key' } })
-      fireEvent.change(screen.getByLabelText(/API Secret/i), { target: { value: 'bad-secret' } })
-      fireEvent.change(screen.getByLabelText(/^Access Token$/i), { target: { value: 'bad-token' } })
+      fireEvent.change(screen.getByLabelText(/API Key/i), {
+        target: { value: 'bad-key' },
+      })
+      fireEvent.change(screen.getByLabelText(/API Secret/i), {
+        target: { value: 'bad-secret' },
+      })
+      fireEvent.change(screen.getByLabelText(/^Access Token$/i), {
+        target: { value: 'bad-token' },
+      })
       fireEvent.change(screen.getByLabelText(/Access Token Secret/i), {
         target: { value: 'bad-token-secret' },
       })
-      fireEvent.click(screen.getByRole('button', { name: /^Connect Twitter$/i }))
+      fireEvent.click(
+        screen.getByRole('button', { name: /^Connect Twitter$/i })
+      )
 
       await waitFor(() => {
         expect(screen.getByText(/Invalid credentials/i)).toBeInTheDocument()
@@ -189,7 +226,7 @@ describe('TwitterSetupGuide - Real Tests', () => {
     it('should show loading state during connection', async () => {
       ;(global.fetch as any).mockImplementation(
         () =>
-          new Promise((resolve) =>
+          new Promise(resolve =>
             setTimeout(
               () =>
                 resolve({
@@ -205,13 +242,21 @@ describe('TwitterSetupGuide - Real Tests', () => {
 
       // Go to credentials step and submit
       fireEvent.click(screen.getByRole('button', { name: /I Have My Keys/i }))
-      fireEvent.change(screen.getByLabelText(/API Key/i), { target: { value: 'test-key' } })
-      fireEvent.change(screen.getByLabelText(/API Secret/i), { target: { value: 'test-secret' } })
-      fireEvent.change(screen.getByLabelText(/^Access Token$/i), { target: { value: 'test-token' } })
+      fireEvent.change(screen.getByLabelText(/API Key/i), {
+        target: { value: 'test-key' },
+      })
+      fireEvent.change(screen.getByLabelText(/API Secret/i), {
+        target: { value: 'test-secret' },
+      })
+      fireEvent.change(screen.getByLabelText(/^Access Token$/i), {
+        target: { value: 'test-token' },
+      })
       fireEvent.change(screen.getByLabelText(/Access Token Secret/i), {
         target: { value: 'test-token-secret' },
       })
-      fireEvent.click(screen.getByRole('button', { name: /^Connect Twitter$/i }))
+      fireEvent.click(
+        screen.getByRole('button', { name: /^Connect Twitter$/i })
+      )
 
       // Should show loading text
       expect(screen.getByText(/Connecting.../i)).toBeInTheDocument()
@@ -230,7 +275,9 @@ describe('TwitterSetupGuide - Real Tests', () => {
 
       // Find and click the eye icon button for API Secret
       const toggleButtons = screen.getAllByRole('button')
-      const apiSecretToggle = toggleButtons.find((btn) => btn.getAttribute('aria-label')?.includes('API Secret'))
+      const apiSecretToggle = toggleButtons.find(btn =>
+        btn.getAttribute('aria-label')?.includes('API Secret')
+      )
 
       if (apiSecretToggle) {
         fireEvent.click(apiSecretToggle)
@@ -239,11 +286,12 @@ describe('TwitterSetupGuide - Real Tests', () => {
     })
 
     it('should toggle Access Token Secret visibility', () => {
-      const accessTokenSecretInput = screen.getByLabelText(/Access Token Secret/i)
+      const accessTokenSecretInput =
+        screen.getByLabelText(/Access Token Secret/i)
       expect(accessTokenSecretInput).toHaveAttribute('type', 'password')
 
       const toggleButtons = screen.getAllByRole('button')
-      const accessTokenSecretToggle = toggleButtons.find((btn) =>
+      const accessTokenSecretToggle = toggleButtons.find(btn =>
         btn.getAttribute('aria-label')?.includes('Access Token Secret')
       )
 

@@ -75,6 +75,7 @@
 The dev server needs to reload the new environment variables:
 
 1. **Stop the server**:
+
    ```bash
    # Find the process
    ps aux | grep "next dev"
@@ -84,6 +85,7 @@ The dev server needs to reload the new environment variables:
    ```
 
 2. **Restart it**:
+
    ```bash
    cd /Users/brettstark/Projects/letterflow
    npm run dev
@@ -130,6 +132,7 @@ The dev server needs to reload the new environment variables:
 ## Expected Results
 
 ✅ **If everything works**:
+
 - You can sign up
 - Email confirmation works
 - You can log in
@@ -140,11 +143,13 @@ The dev server needs to reload the new environment variables:
 ❌ **Common Issues**:
 
 ### "Invalid API key"
+
 - Check you copied the **anon/public** key (not service_role)
 - Remove any spaces from the key in `.env.local`
 - Restart dev server
 
 ### Email not arriving
+
 - Check spam folder
 - Wait 2-3 minutes
 - Supabase free tier can be slow with emails
@@ -153,11 +158,13 @@ The dev server needs to reload the new environment variables:
   - Turn off "Confirm email"
 
 ### Can't access dashboard after login
+
 - Check browser console for errors
 - Verify RLS policies were created in SQL
 - Make sure all SQL ran successfully
 
 ### "User not found" on login
+
 - Confirm your email first
 - Check Supabase → Authentication → Users to see if account exists
 
@@ -341,11 +348,13 @@ create policy "Users can update analytics for their posts"
 ## After Testing Successfully
 
 Once authentication works, you're ready to:
+
 1. Start building Week 2 features (Newsletter input & AI)
 2. Or explore the Supabase dashboard
 3. Or customize the landing page
 
 **Next command**:
+
 ```bash
 /sc:implement "Newsletter input form with URL scraping and Claude AI post generation"
 ```
@@ -355,6 +364,7 @@ Once authentication works, you're ready to:
 ## Troubleshooting Help
 
 If you run into issues during testing, let me know:
+
 - What step you're on
 - What error message you see
 - Screenshots help!

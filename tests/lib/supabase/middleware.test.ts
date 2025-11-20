@@ -49,11 +49,15 @@ describe('lib/supabase/middleware', () => {
         const response = await updateSession(mockRequest)
 
         expect(response.status).toBe(307) // Redirect status
-        expect(response.headers.get('location')).toBe('http://localhost:3000/auth/login')
+        expect(response.headers.get('location')).toBe(
+          'http://localhost:3000/auth/login'
+        )
       })
 
       it('should redirect to /auth/login for nested dashboard routes', async () => {
-        mockRequest = new NextRequest('http://localhost:3000/dashboard/newsletters')
+        mockRequest = new NextRequest(
+          'http://localhost:3000/dashboard/newsletters'
+        )
         mockSupabaseClient.auth.getUser.mockResolvedValue({
           data: { user: null },
           error: null,
@@ -62,7 +66,9 @@ describe('lib/supabase/middleware', () => {
         const response = await updateSession(mockRequest)
 
         expect(response.status).toBe(307)
-        expect(response.headers.get('location')).toBe('http://localhost:3000/auth/login')
+        expect(response.headers.get('location')).toBe(
+          'http://localhost:3000/auth/login'
+        )
       })
 
       it('should allow access to auth pages when not authenticated', async () => {
@@ -126,7 +132,9 @@ describe('lib/supabase/middleware', () => {
         const response = await updateSession(mockRequest)
 
         expect(response.status).toBe(307)
-        expect(response.headers.get('location')).toBe('http://localhost:3000/dashboard')
+        expect(response.headers.get('location')).toBe(
+          'http://localhost:3000/dashboard'
+        )
       })
 
       it('should redirect from /auth/signup to /dashboard when authenticated', async () => {
@@ -144,7 +152,9 @@ describe('lib/supabase/middleware', () => {
         const response = await updateSession(mockRequest)
 
         expect(response.status).toBe(307)
-        expect(response.headers.get('location')).toBe('http://localhost:3000/dashboard')
+        expect(response.headers.get('location')).toBe(
+          'http://localhost:3000/dashboard'
+        )
       })
 
       it('should allow access to public routes when authenticated', async () => {
@@ -216,7 +226,11 @@ describe('lib/supabase/middleware', () => {
 
         // Call setAll with test cookies
         const cookiesToSet = [
-          { name: 'new-session', value: 'new-token', options: { maxAge: 3600 } },
+          {
+            name: 'new-session',
+            value: 'new-token',
+            options: { maxAge: 3600 },
+          },
         ]
         cookieConfig.cookies.setAll(cookiesToSet)
 

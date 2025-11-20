@@ -53,11 +53,13 @@ nvm use
 ### Authentication Flow (Supabase)
 
 **Three-Layer Architecture**:
+
 1. **Client-side** (`lib/supabase/client.ts`): Browser components use `createClient()`
 2. **Server-side** (`lib/supabase/server.ts`): Server Components/API routes use async `createClient()`
 3. **Middleware** (`lib/supabase/middleware.ts`): Session refresh via `updateSession()`
 
 **Middleware Protection**:
+
 - Routes starting with `/dashboard/*` require authentication → redirect to `/auth/login` if not authenticated
 - Routes starting with `/auth/*` redirect authenticated users → redirect to `/dashboard`
 - Middleware runs on ALL routes except static files (via `config.matcher`)
@@ -65,21 +67,26 @@ nvm use
 ### API Route Patterns
 
 **Authentication Check** (all API routes):
+
 ```typescript
 const supabase = await createClient()
-const { data: { user } } = await supabase.auth.getUser()
+const {
+  data: { user },
+} = await supabase.auth.getUser()
 if (!user) {
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 }
 ```
 
 **SSRF Protection** (`/api/scrape`):
+
 - DNS resolution to IP addresses before fetching
 - Private IP range blocking (localhost, 192.168.x.x, AWS metadata, etc.)
 - Zero redirects (`maxRedirects: 0`) to prevent 302-based bypasses
 - No domain allowlist (users may have newsletters on ANY domain)
 
 **AI Generation** (`/api/generate-posts`):
+
 - Parallel post generation (3 platforms × 2 post types = 6 posts)
 - Timeout protection (30s per post)
 - Transaction-safe: rollback newsletter creation if posts fail to save
@@ -88,20 +95,24 @@ if (!user) {
 ### Database Schema
 
 **Key Tables**:
+
 - `newsletters`: User's imported newsletters (title, content, status)
 - `social_posts`: Generated posts per platform (platform, post_type, content, scheduled_time, status)
 
 **Relationships**:
+
 - One newsletter → Many social_posts (6 posts per newsletter: 3 platforms × 2 types)
 
 ### Component Patterns
 
 **shadcn/ui Components**:
+
 - Located in `components/ui/` (button, input, card, badge, etc.)
 - Use Radix UI primitives with Tailwind styling
 - Configured via `components.json`
 
 **Custom Components**:
+
 - `newsletter-editor.tsx`: Tiptap rich text editor for newsletter content
 - `post-preview-card.tsx`: Social post preview with character count badges
 
@@ -110,15 +121,18 @@ if (!user) {
 **Current State**: Placeholder tests (72 tests, 28 real, 44 placeholders)
 
 **Real Tests**:
+
 - SSRF protection validation (12 tests in `tests/api/scrape.test.ts`)
 - PostPreviewCard component (16 tests)
 
 **Placeholder Tests** (validate business logic, NOT actual code):
+
 - API routes: Test logic patterns without importing actual route handlers
 - Components: Test calculations without rendering components
 - Integration: Test business rules without Supabase/Anthropic mocking
 
 **When Writing New Tests**:
+
 - Unit tests: Import and test actual components/functions
 - API tests: Mock `@/lib/supabase/server` and external services (axios, Anthropic)
 - Integration tests: Use Playwright for end-to-end flows
@@ -127,11 +141,13 @@ if (!user) {
 ## Environment Variables
 
 **Required for Development** (see `.env.local.example`):
+
 - `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anonymous key
 - `ANTHROPIC_API_KEY`: Claude API key for post generation
 
 **Optional** (for future OAuth implementation):
+
 - `LINKEDIN_CLIENT_ID/SECRET`: LinkedIn OAuth
 - `META_APP_ID/SECRET`: Facebook/Threads OAuth
 - `NEXTAUTH_SECRET/URL`: NextAuth configuration
@@ -142,21 +158,25 @@ if (!user) {
 ### AI Post Generation Strategy
 
 **Pre-CTA Posts** (24-8 hours before newsletter):
+
 - Create FOMO, urgency, curiosity
 - Tease 3-5 key insights without revealing everything
 - Clear CTA: "Sign up so you don't miss it"
 
 **Post-CTA Posts** (48-72 hours after newsletter):
+
 - Reframe as valuable resource (guide/playbook/blueprint)
 - List 3-4 specific outcomes/benefits
 - Engagement trigger: "Comment [WORD] to get access"
 
 **Platform Tones**:
+
 - **LinkedIn**: Professional, ROI-focused, sparse emojis (1-2), 3-5 hashtags
 - **Threads**: Conversational, casual, liberal emojis (2-3), question hooks
 - **Facebook**: Story-driven, community-focused, moderate emojis (1-2)
 
 **Character Limits**:
+
 - LinkedIn: 3000 (target 70% = 2100)
 - Threads: 500 (target 70% = 350)
 - Facebook: 63206 (target 70% = 44244)
@@ -164,6 +184,7 @@ if (!user) {
 ### URL Scraping with Mozilla Readability
 
 Uses `@mozilla/readability` (same as Firefox Reader Mode) for intelligent content extraction:
+
 - Automatically finds article content
 - Removes ads, navigation, footers
 - Preserves paragraph structure
@@ -172,6 +193,7 @@ Uses `@mozilla/readability` (same as Firefox Reader Mode) for intelligent conten
 ### Security Considerations
 
 **SSRF Protection Implementation**:
+
 1. Parse URL and validate protocol (HTTP/HTTPS only)
 2. Resolve hostname to IP via DNS
 3. Block private IP ranges (RFC 1918, link-local, localhost)
@@ -179,6 +201,7 @@ Uses `@mozilla/readability` (same as Firefox Reader Mode) for intelligent conten
 5. Limit response size to 5MB
 
 **Authentication**:
+
 - All `/api/*` routes check for authenticated user
 - Middleware handles session refresh and route protection
 - No API keys or secrets in client-side code
@@ -214,15 +237,17 @@ npx shadcn@latest add [component-name]
 ### Working with Supabase
 
 **Server Components/API Routes**:
+
 ```typescript
 import { createClient } from '@/lib/supabase/server'
-const supabase = await createClient()  // Note: async
+const supabase = await createClient() // Note: async
 ```
 
 **Client Components**:
+
 ```typescript
 import { createClient } from '@/lib/supabase/client'
-const supabase = createClient()  // Note: synchronous
+const supabase = createClient() // Note: synchronous
 ```
 
 ## Project Structure Logic
@@ -265,6 +290,7 @@ tests/
 ## Development Roadmap Context
 
 **Current Phase**: Week 2 - AI Generation (partially complete)
+
 - ✅ Newsletter input module
 - ✅ Claude AI integration
 - ✅ Post generation for 3 platforms
@@ -273,6 +299,7 @@ tests/
 - ⏳ Analytics dashboard
 
 **Future Phases**:
+
 - Week 3-4: LinkedIn, Threads, Facebook OAuth + posting APIs
 - Week 5: Upstash Redis queue + QStash scheduling
 - Week 6: Analytics dashboard + PWA setup

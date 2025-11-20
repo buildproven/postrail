@@ -7,6 +7,7 @@
 **Real regression protection**: Only SSRF security (12 tests) and PostPreviewCard component (16 tests) are properly tested. Everything else provides **zero protection** against regressions.
 
 ### What This Means:
+
 - **Not testing components**: Tests never import or render React components
 - **Not testing API routes**: Tests never import or call route handlers
 - **Not testing integrations**: No Supabase, Anthropic, or HTTP mocking
@@ -30,6 +31,7 @@ tests/
 ## What These Tests Actually Do
 
 ### ❌ What They DON'T Test:
+
 - **Not testing actual API routes** - They never import or call the route handlers
 - **Not rendering components** - They never import or render React components
 - **Not mocking Supabase** - No database interaction testing
@@ -37,6 +39,7 @@ tests/
 - **Not testing integrations** - No actual HTTP requests or database queries
 
 ### ✅ What They DO Test:
+
 - Business logic calculations (character limits, percentages, word counts)
 - Data structure validation (correct fields, types, combinations)
 - Configuration constants (platform limits, post type options)
@@ -74,6 +77,7 @@ Total Tests: 72
 ### Example of Placeholder Test:
 
 **tests/components/NewsletterEditor.test.tsx:14-18**
+
 ```typescript
 it('should calculate word count correctly', () => {
   const content = 'This is a test newsletter with ten words exactly here'
@@ -87,6 +91,7 @@ This tests string splitting logic, NOT the actual NewsletterEditor component. Th
 ## What Real Tests Would Look Like
 
 ### Real Component Test Example:
+
 ```typescript
 import { render, screen } from '@testing-library/react'
 import { NewsletterEditor } from '@/components/newsletter-editor'
@@ -104,6 +109,7 @@ it('should update word count when content changes', async () => {
 ```
 
 ### Real API Test Example:
+
 ```typescript
 import { POST } from '@/app/api/scrape/route'
 import { createClient } from '@/lib/supabase/server'
@@ -112,12 +118,14 @@ vi.mock('@/lib/supabase/server')
 vi.mock('axios')
 
 it('should reject SSRF attempts', async () => {
-  const mockSupabase = { auth: { getUser: () => ({ data: { user: { id: '123' } } }) } }
+  const mockSupabase = {
+    auth: { getUser: () => ({ data: { user: { id: '123' } } }) },
+  }
   vi.mocked(createClient).mockReturnValue(mockSupabase)
 
   const request = new Request('http://localhost/api/scrape', {
     method: 'POST',
-    body: JSON.stringify({ url: 'https://beehiiv.com.attacker.tld' })
+    body: JSON.stringify({ url: 'https://beehiiv.com.attacker.tld' }),
   })
 
   const response = await POST(request)
@@ -139,6 +147,7 @@ These were created to satisfy the "add tests" requirement quickly, but they don'
 Since automated tests don't cover real functionality, manual testing is critical:
 
 ### 1. Authentication Flow
+
 ```bash
 1. Go to /auth/login
 2. Sign in with magic link
@@ -148,6 +157,7 @@ Since automated tests don't cover real functionality, manual testing is critical
 ```
 
 ### 2. URL Scraping (SSRF Protection)
+
 ```bash
 # Test valid newsletter URL
 curl -X POST http://localhost:3000/api/scrape \
@@ -163,6 +173,7 @@ curl -X POST http://localhost:3000/api/scrape \
 ```
 
 ### 3. AI Generation
+
 ```bash
 1. Create newsletter at /dashboard/newsletters/new
 2. Import or paste content
@@ -173,6 +184,7 @@ curl -X POST http://localhost:3000/api/scrape \
 ```
 
 ### 4. Preview Page
+
 ```bash
 1. Navigate to /dashboard/newsletters/[id]/preview
 2. Verify posts grouped by type (Pre-CTA, Post-CTA)
@@ -181,6 +193,7 @@ curl -X POST http://localhost:3000/api/scrape \
 ```
 
 ### 5. Navigation
+
 ```bash
 1. Test /dashboard/newsletters shows newsletter list
 2. Test /dashboard/platforms shows platform connections stub
@@ -191,6 +204,7 @@ curl -X POST http://localhost:3000/api/scrape \
 ## Security Testing Checklist
 
 ### SSRF Protection:
+
 - [ ] Reject `https://beehiiv.com.attacker.tld` (subdomain bypass)
 - [ ] Reject `http://127.0.0.1` (localhost)
 - [ ] Reject `http://192.168.1.1` (private IP)
@@ -199,6 +213,7 @@ curl -X POST http://localhost:3000/api/scrape \
 - [ ] Accept `https://beehiiv.com/p/post` (exact match)
 
 ### Authentication:
+
 - [ ] `/api/scrape` requires auth (401 without token)
 - [ ] `/api/generate-posts` requires auth (401 without token)
 - [ ] Dashboard pages redirect to login when not authenticated
@@ -208,6 +223,7 @@ curl -X POST http://localhost:3000/api/scrape \
 To create a meaningful test suite:
 
 ### Phase 1: Component Tests
+
 ```bash
 # Install additional dependencies if needed
 npm install -D @testing-library/user-event
@@ -220,6 +236,7 @@ tests/components/
 ```
 
 ### Phase 2: API Tests
+
 ```bash
 # Create real API tests with mocking
 tests/api/
@@ -229,6 +246,7 @@ tests/api/
 ```
 
 ### Phase 3: Integration Tests
+
 ```bash
 # Use Playwright for E2E testing
 npm install -D @playwright/test
@@ -242,6 +260,7 @@ tests/e2e/
 ## Test Philosophy (Aspirational)
 
 **What we should have**:
+
 - Real component rendering with @testing-library/react
 - API route testing with request/response mocking
 - Supabase client mocking for database operations
@@ -249,6 +268,7 @@ tests/e2e/
 - E2E tests with Playwright for critical user flows
 
 **What we have**:
+
 - Business logic validation (useful but insufficient)
 - Configuration constant testing
 - Data structure validation
@@ -269,6 +289,7 @@ nvm use
 ```
 
 On Node 14, tests fail immediately with:
+
 ```
 Unexpected token '??='
 ```
@@ -278,6 +299,7 @@ Unexpected token '??='
 ## Status: ⚠️ Placeholder Tests Only
 
 **Reality Check**:
+
 - ✅ 72/72 tests passing
 - 🔴 0% real application coverage
 - 🔴 No regression protection
@@ -288,6 +310,7 @@ Unexpected token '??='
 **Manual testing is currently the primary quality assurance method.**
 
 To see the placeholder tests run:
+
 ```bash
 npm run test:ui
 ```

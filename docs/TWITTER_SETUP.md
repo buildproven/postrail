@@ -89,6 +89,7 @@ LetterFlow uses a **BYOK (Bring Your Own Keys)** approach for Twitter integratio
 5. Click **"Connect Twitter"**
 
 LetterFlow will:
+
 - Validate your credentials
 - Test posting permissions
 - Encrypt and store the credentials securely
@@ -97,6 +98,7 @@ LetterFlow will:
 ## Step 6: Start Posting!
 
 Once connected:
+
 1. Create a newsletter in LetterFlow
 2. Generate social media posts (Twitter will be included)
 3. Schedule or post immediately
@@ -105,11 +107,13 @@ Once connected:
 ## Quota & Rate Limits
 
 **Twitter Free Tier Limits (per user, per month):**
+
 - **500 posts/month** (read + write combined)
 - **1,500 API requests/month**
 - Sufficient for ~2 posts per day
 
 **Best practices:**
+
 - LetterFlow generates 2 posts per newsletter (pre-CTA + post-CTA)
 - With 2 newsletters/week, you'll use ~16 posts/month
 - Plenty of headroom for the free tier!
@@ -150,18 +154,20 @@ Once connected:
 ## Cost
 
 **FREE** for typical usage:
+
 - Twitter Developer Account: Free
 - Twitter Free Tier: 500 posts/month (plenty for newsletters)
 - LetterFlow: Uses your own quota, no additional cost
 
 ## BYOK vs Traditional OAuth
 
-| Approach | User Setup | Quota | Scalability |
-|----------|-----------|-------|-------------|
-| **BYOK (LetterFlow)** | 10-min setup | 500/month per user | Infinite |
-| **Traditional OAuth** | 1-click | 500/month shared | Limited |
+| Approach              | User Setup   | Quota              | Scalability |
+| --------------------- | ------------ | ------------------ | ----------- |
+| **BYOK (LetterFlow)** | 10-min setup | 500/month per user | Infinite    |
+| **Traditional OAuth** | 1-click      | 500/month shared   | Limited     |
 
 **Why BYOK?**
+
 - Each user gets their own 500 posts/month
 - SaaS can scale to 1000+ users
 - No shared quota issues

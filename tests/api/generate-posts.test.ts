@@ -58,7 +58,11 @@ describe('Post Generation Logic', () => {
   it('should handle platform-specific prompt requirements', () => {
     const linkedinPromptKeywords = ['Professional', 'business-value', 'ROI']
     const threadsPromptKeywords = ['Conversational', 'casual', 'Community']
-    const facebookPromptKeywords = ['Story-driven', 'community-focused', 'Shareability']
+    const facebookPromptKeywords = [
+      'Story-driven',
+      'community-focused',
+      'Shareability',
+    ]
 
     // Verify keywords exist for each platform
     expect(linkedinPromptKeywords).toContain('Professional')

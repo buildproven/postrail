@@ -11,12 +11,14 @@
 ## What We've Built So Far
 
 ✅ **Next.js 15 Project Initialized**
+
 - TypeScript configured
 - Tailwind CSS setup
 - App Router structure
 - ESLint configured
 
 ✅ **Project Structure Created**
+
 ```
 letterflow/
 ├── app/
@@ -32,6 +34,7 @@ letterflow/
 ```
 
 ✅ **Landing Page**
+
 - Clean hero section
 - "How it works" section
 - CTA buttons for Sign Up / Log In
@@ -49,6 +52,7 @@ npm install
 ```
 
 This will install:
+
 - Next.js 15
 - React 19
 - TypeScript
@@ -94,6 +98,7 @@ cp .env.local.example .env.local
 ```
 
 You'll need:
+
 - **Supabase**: Create project at supabase.com
 - **Anthropic API**: Get key at console.anthropic.com
 - **LinkedIn OAuth**: Register app at linkedin.com/developers
@@ -112,6 +117,7 @@ Open http://localhost:3000
 ## Development Workflow (Week-by-Week)
 
 ### Week 1: Foundation (Current)
+
 - ✅ Project setup
 - ⏳ Install dependencies
 - ⏳ Setup Supabase
@@ -119,6 +125,7 @@ Open http://localhost:3000
 - ⏳ Create dashboard layout
 
 ### Week 2: AI Generation
+
 - Newsletter input form
 - URL scraping (Cheerio/Playwright)
 - Claude API integration
@@ -126,22 +133,26 @@ Open http://localhost:3000
 - Preview & editing interface
 
 ### Week 3: LinkedIn Integration
+
 - OAuth flow
 - Post publishing API
 - Error handling
 
 ### Week 4: Threads + Facebook
+
 - Meta OAuth
 - Posting to both platforms
 - Testing & validation
 
 ### Week 5: Scheduling
+
 - Upstash Redis setup
 - QStash configuration
 - Queue system
 - Background jobs
 
 ### Week 6: Analytics & Polish
+
 - Platform metrics
 - Analytics dashboard
 - PWA setup
@@ -175,22 +186,26 @@ npm run db:studio    # Open Prisma Studio
 ### Why These Technologies?
 
 **Next.js 15**
+
 - Latest App Router for better performance
 - Server components by default
 - Built-in API routes
 
 **Supabase**
+
 - Free tier perfect for MVP
 - PostgreSQL database
 - Built-in authentication
 - Real-time subscriptions
 
 **Anthropic Claude**
+
 - Better at long-form content than GPT
 - More affordable for newsletter-length text
 - Excellent instruction following
 
 **Render (hosting)**
+
 - Free tier includes cron jobs
 - PostgreSQL database included
 - No cold starts on paid tier
@@ -199,16 +214,19 @@ npm run db:studio    # Open Prisma Studio
 ### Cost Structure
 
 **Development (Months 1-2)**
+
 - Hosting: $0 (Render free)
 - Database: $0 (Render PostgreSQL)
 - AI: $10-20/month
 - **Total: $10-20/month**
 
 **Personal Use (Month 3+)**
+
 - Same as development
 - **Total: $10-20/month**
 
 **Scaling to 100 Users**
+
 - Hosting: $85/month
 - Database: $20/month
 - Queue: $10/month
@@ -222,17 +240,20 @@ npm run db:studio    # Open Prisma Studio
 ## Monetization Plan
 
 ### Free Tier
+
 - 2 newsletters/month
 - 2 platforms (LinkedIn + Threads)
 - Manual scheduling
 
 ### Pro Tier ($29/month)
+
 - Unlimited newsletters
 - All 3 platforms
 - Auto-scheduling
 - Advanced analytics
 
 ### Agency Tier ($99/month)
+
 - 5 team members
 - 10 newsletter brands
 - White-label option
@@ -251,17 +272,20 @@ npm run db:studio    # Open Prisma Studio
 ## Resources
 
 ### Documentation
+
 - [Next.js Docs](https://nextjs.org/docs)
 - [Tailwind CSS Docs](https://tailwindcss.com/docs)
 - [Supabase Docs](https://supabase.com/docs)
 - [shadcn/ui Docs](https://ui.shadcn.com)
 
 ### Platform APIs
+
 - [LinkedIn API](https://learn.microsoft.com/en-us/linkedin)
 - [Threads API](https://developers.facebook.com/docs/threads)
 - [Facebook Graph API](https://developers.facebook.com/docs/graph-api)
 
 ### AI
+
 - [Anthropic Claude Docs](https://docs.anthropic.com)
 
 ---
@@ -269,6 +293,7 @@ npm run db:studio    # Open Prisma Studio
 ## Troubleshooting
 
 ### npm install fails
+
 ```bash
 # Clear cache and try again
 npm cache clean --force
@@ -277,12 +302,14 @@ npm install
 ```
 
 ### TypeScript errors
+
 ```bash
 # Restart TypeScript server in VS Code
 # Command Palette → TypeScript: Restart TS Server
 ```
 
 ### Port 3000 already in use
+
 ```bash
 # Kill process on port 3000
 lsof -ti:3000 | xargs kill -9

@@ -6,7 +6,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST, GET, DELETE } from '@/app/api/platforms/twitter/connect/route'
 import { NextRequest } from 'next/server'
-import { createMockSupabaseClient, mockSupabaseAuthUser, mockSupabaseAuthError } from '../mocks/supabase'
+import {
+  createMockSupabaseClient,
+  mockSupabaseAuthUser,
+  mockSupabaseAuthError,
+} from '../mocks/supabase'
 import { createMockTwitterClient } from '../mocks/twitter-api'
 
 // Mock Supabase
@@ -21,7 +25,10 @@ let mockTwitterClientInstance: any = null
 vi.mock('twitter-api-v2', () => {
   // Create a mock constructor function
   function MockTwitterApi(this: any) {
-    console.log('[MOCK] TwitterApi constructor called, instance:', mockTwitterClientInstance ? 'SET' : 'NULL')
+    console.log(
+      '[MOCK] TwitterApi constructor called, instance:',
+      mockTwitterClientInstance ? 'SET' : 'NULL'
+    )
     // Return the mock instance
     if (mockTwitterClientInstance) {
       return mockTwitterClientInstance
@@ -58,15 +65,18 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
         mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthError())
         vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-        const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-          method: 'POST',
-          body: JSON.stringify({
-            apiKey: 'test-key',
-            apiSecret: 'test-secret',
-            accessToken: 'test-token',
-            accessTokenSecret: 'test-token-secret',
-          }),
-        })
+        const request = new NextRequest(
+          'http://localhost:3000/api/platforms/twitter/connect',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              apiKey: 'test-key',
+              apiSecret: 'test-secret',
+              accessToken: 'test-token',
+              accessTokenSecret: 'test-token-secret',
+            }),
+          }
+        )
 
         const response = await POST(request)
         const data = await response.json()
@@ -77,32 +87,46 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
       it('should accept authenticated requests', async () => {
         const mockSupabase = createMockSupabaseClient()
-        mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+        mockSupabase.auth.getUser.mockResolvedValue(
+          mockSupabaseAuthUser('user-123', 'test@example.com')
+        )
 
         // Set the mock instance that TwitterApi constructor will return
         mockTwitterClientInstance = createMockTwitterClient()
 
-        mockSupabase.from('platform_connections').upsert.mockResolvedValue({ data: null, error: null })
+        mockSupabase
+          .from('platform_connections')
+          .upsert.mockResolvedValue({ data: null, error: null })
 
         vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-        const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-          method: 'POST',
-          body: JSON.stringify({
-            apiKey: 'test-key',
-            apiSecret: 'test-secret',
-            accessToken: 'test-token',
-            accessTokenSecret: 'test-token-secret',
-          }),
-        })
+        const request = new NextRequest(
+          'http://localhost:3000/api/platforms/twitter/connect',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              apiKey: 'test-key',
+              apiSecret: 'test-secret',
+              accessToken: 'test-token',
+              accessTokenSecret: 'test-token-secret',
+            }),
+          }
+        )
 
         const response = await POST(request)
         const data = await response.json()
 
         if (response.status !== 200) {
           console.log('ERROR - Expected 200, got:', response.status, data)
-          console.log('Was TwitterApi called?', vi.mocked(TwitterApi).mock.calls.length)
-          console.log('Was me() called?', mockTwitterClientInstance?.v2?.me?.mock?.calls?.length || 'mock not set')
+          console.log(
+            'Was TwitterApi called?',
+            vi.mocked(TwitterApi).mock.calls.length
+          )
+          console.log(
+            'Was me() called?',
+            mockTwitterClientInstance?.v2?.me?.mock?.calls?.length ||
+              'mock not set'
+          )
         }
 
         expect(response.status).toBe(200)
@@ -112,19 +136,24 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
     describe('Validation', () => {
       beforeEach(() => {
         const mockSupabase = createMockSupabaseClient()
-        mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+        mockSupabase.auth.getUser.mockResolvedValue(
+          mockSupabaseAuthUser('user-123', 'test@example.com')
+        )
         vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
       })
 
       it('should require all 4 credentials', async () => {
-        const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-          method: 'POST',
-          body: JSON.stringify({
-            apiKey: 'test-key',
-            apiSecret: 'test-secret',
-            // Missing accessToken and accessTokenSecret
-          }),
-        })
+        const request = new NextRequest(
+          'http://localhost:3000/api/platforms/twitter/connect',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              apiKey: 'test-key',
+              apiSecret: 'test-secret',
+              // Missing accessToken and accessTokenSecret
+            }),
+          }
+        )
 
         const response = await POST(request)
         const data = await response.json()
@@ -136,15 +165,18 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
       })
 
       it('should reject empty credentials', async () => {
-        const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-          method: 'POST',
-          body: JSON.stringify({
-            apiKey: '',
-            apiSecret: 'test-secret',
-            accessToken: 'test-token',
-            accessTokenSecret: 'test-token-secret',
-          }),
-        })
+        const request = new NextRequest(
+          'http://localhost:3000/api/platforms/twitter/connect',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              apiKey: '',
+              apiSecret: 'test-secret',
+              accessToken: 'test-token',
+              accessTokenSecret: 'test-token-secret',
+            }),
+          }
+        )
 
         const response = await POST(request)
         const data = await response.json()
@@ -157,7 +189,9 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
     describe('Twitter API Validation', () => {
       beforeEach(() => {
         const mockSupabase = createMockSupabaseClient()
-        mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+        mockSupabase.auth.getUser.mockResolvedValue(
+          mockSupabaseAuthUser('user-123', 'test@example.com')
+        )
         vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
       })
 
@@ -165,19 +199,26 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
         mockTwitterClientInstance = createMockTwitterClient()
 
         const mockSupabase = createMockSupabaseClient()
-        mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
-        mockSupabase.from('platform_connections').upsert.mockResolvedValue({ data: null, error: null })
+        mockSupabase.auth.getUser.mockResolvedValue(
+          mockSupabaseAuthUser('user-123', 'test@example.com')
+        )
+        mockSupabase
+          .from('platform_connections')
+          .upsert.mockResolvedValue({ data: null, error: null })
         vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-        const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-          method: 'POST',
-          body: JSON.stringify({
-            apiKey: 'valid-key',
-            apiSecret: 'valid-secret',
-            accessToken: 'valid-token',
-            accessTokenSecret: 'valid-token-secret',
-          }),
-        })
+        const request = new NextRequest(
+          'http://localhost:3000/api/platforms/twitter/connect',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              apiKey: 'valid-key',
+              apiSecret: 'valid-secret',
+              accessToken: 'valid-token',
+              accessTokenSecret: 'valid-token-secret',
+            }),
+          }
+        )
 
         const response = await POST(request)
 
@@ -186,17 +227,22 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
       it('should handle invalid Twitter credentials', async () => {
         mockTwitterClientInstance = createMockTwitterClient()
-        mockTwitterClientInstance.v2.me.mockRejectedValue(new Error('Unauthorized'))
+        mockTwitterClientInstance.v2.me.mockRejectedValue(
+          new Error('Unauthorized')
+        )
 
-        const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-          method: 'POST',
-          body: JSON.stringify({
-            apiKey: 'invalid-key',
-            apiSecret: 'invalid-secret',
-            accessToken: 'invalid-token',
-            accessTokenSecret: 'invalid-token-secret',
-          }),
-        })
+        const request = new NextRequest(
+          'http://localhost:3000/api/platforms/twitter/connect',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              apiKey: 'invalid-key',
+              apiSecret: 'invalid-secret',
+              accessToken: 'invalid-token',
+              accessTokenSecret: 'invalid-token-secret',
+            }),
+          }
+        )
 
         const response = await POST(request)
         const data = await response.json()
@@ -209,7 +255,9 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
     describe('Credential Storage', () => {
       it('should encrypt credentials before storage', async () => {
         const mockSupabase = createMockSupabaseClient()
-        mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+        mockSupabase.auth.getUser.mockResolvedValue(
+          mockSupabaseAuthUser('user-123', 'test@example.com')
+        )
 
         mockTwitterClientInstance = createMockTwitterClient()
 
@@ -218,15 +266,18 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
         vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-        const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-          method: 'POST',
-          body: JSON.stringify({
-            apiKey: 'plain-key',
-            apiSecret: 'plain-secret',
-            accessToken: 'plain-token',
-            accessTokenSecret: 'plain-token-secret',
-          }),
-        })
+        const request = new NextRequest(
+          'http://localhost:3000/api/platforms/twitter/connect',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              apiKey: 'plain-key',
+              apiSecret: 'plain-secret',
+              accessToken: 'plain-token',
+              accessTokenSecret: 'plain-token-secret',
+            }),
+          }
+        )
 
         const response = await POST(request)
 
@@ -239,23 +290,30 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
       it('should hash credentials for lookup', async () => {
         const mockSupabase = createMockSupabaseClient()
-        mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+        mockSupabase.auth.getUser.mockResolvedValue(
+          mockSupabaseAuthUser('user-123', 'test@example.com')
+        )
 
         mockTwitterClientInstance = createMockTwitterClient()
 
-        mockSupabase.from('platform_connections').upsert.mockResolvedValue({ data: null, error: null })
+        mockSupabase
+          .from('platform_connections')
+          .upsert.mockResolvedValue({ data: null, error: null })
 
         vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-        const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-          method: 'POST',
-          body: JSON.stringify({
-            apiKey: 'key',
-            apiSecret: 'secret',
-            accessToken: 'token',
-            accessTokenSecret: 'token-secret',
-          }),
-        })
+        const request = new NextRequest(
+          'http://localhost:3000/api/platforms/twitter/connect',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              apiKey: 'key',
+              apiSecret: 'secret',
+              accessToken: 'token',
+              accessTokenSecret: 'token-secret',
+            }),
+          }
+        )
 
         const response = await POST(request)
 
@@ -265,7 +323,9 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
       it('should upsert connection on user_id + platform', async () => {
         const mockSupabase = createMockSupabaseClient()
-        mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+        mockSupabase.auth.getUser.mockResolvedValue(
+          mockSupabaseAuthUser('user-123', 'test@example.com')
+        )
 
         mockTwitterClientInstance = createMockTwitterClient()
 
@@ -277,15 +337,18 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
         vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-        const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-          method: 'POST',
-          body: JSON.stringify({
-            apiKey: 'key',
-            apiSecret: 'secret',
-            accessToken: 'token',
-            accessTokenSecret: 'token-secret',
-          }),
-        })
+        const request = new NextRequest(
+          'http://localhost:3000/api/platforms/twitter/connect',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              apiKey: 'key',
+              apiSecret: 'secret',
+              accessToken: 'token',
+              accessTokenSecret: 'token-secret',
+            }),
+          }
+        )
 
         const response = await POST(request)
 
@@ -306,7 +369,9 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
   describe('GET - Check Connection Status', () => {
     it('should return connected status for authenticated user', async () => {
       const mockSupabase = createMockSupabaseClient()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       const mockChain = {
         select: vi.fn().mockReturnThis(),
@@ -325,9 +390,12 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-        method: 'GET',
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/connect',
+        {
+          method: 'GET',
+        }
+      )
 
       const response = await GET()
       const data = await response.json()
@@ -339,7 +407,9 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
     it('should return not connected if no connection exists', async () => {
       const mockSupabase = createMockSupabaseClient()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       mockSupabase.from('platform_connections').select.mockReturnThis()
       mockSupabase.from('platform_connections').eq.mockReturnThis()
@@ -350,9 +420,12 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-        method: 'GET',
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/connect',
+        {
+          method: 'GET',
+        }
+      )
 
       const response = await GET()
       const data = await response.json()
@@ -365,7 +438,9 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
   describe('DELETE - Disconnect Twitter', () => {
     it('should delete connection for authenticated user', async () => {
       const mockSupabase = createMockSupabaseClient()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       const eq2Spy = vi.fn().mockResolvedValue({ data: null, error: null })
       const eq1Spy = vi.fn(() => ({ eq: eq2Spy }))
@@ -377,9 +452,12 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-        method: 'DELETE',
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/connect',
+        {
+          method: 'DELETE',
+        }
+      )
 
       const response = await DELETE()
       const data = await response.json()
@@ -400,9 +478,12 @@ describe('/api/platforms/twitter/connect - Real Integration Tests', () => {
       mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthError())
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/connect', {
-        method: 'DELETE',
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/connect',
+        {
+          method: 'DELETE',
+        }
+      )
 
       const response = await DELETE()
       const data = await response.json()

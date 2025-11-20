@@ -28,7 +28,9 @@ export default function Home() {
           <h2 className="text-2xl font-semibold mb-4">How it works</h2>
           <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400">
             <li>Paste your newsletter content or provide a URL</li>
-            <li>AI generates optimized posts for LinkedIn, Threads, and Facebook</li>
+            <li>
+              AI generates optimized posts for LinkedIn, Threads, and Facebook
+            </li>
             <li>Schedule posts to publish before and after your newsletter</li>
             <li>Track performance with built-in analytics</li>
           </ol>
@@ -41,5 +43,5 @@ export default function Home() {
         </p>
       </footer>
     </div>
-  );
+  )
 }

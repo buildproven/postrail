@@ -159,7 +159,8 @@ describe('Twitter Integration - Post Generation Flow', () => {
     const totalPosts = platforms.length * postTypes.length
     expect(totalPosts).toBe(8) // 4 platforms × 2 post types
 
-    const twitterPosts = platforms.filter(p => p === 'twitter').length * postTypes.length
+    const twitterPosts =
+      platforms.filter(p => p === 'twitter').length * postTypes.length
     expect(twitterPosts).toBe(2) // 2 Twitter posts per newsletter
   })
 
@@ -268,7 +269,9 @@ describe('Twitter Integration - Multi-User Isolation', () => {
     }
 
     expect(user1Connection.user_id).not.toBe(user2Connection.user_id)
-    expect(user1Connection.metadata.apiKey).not.toBe(user2Connection.metadata.apiKey)
+    expect(user1Connection.metadata.apiKey).not.toBe(
+      user2Connection.metadata.apiKey
+    )
   })
 
   it('should enforce unique constraint on user+platform', () => {
@@ -311,8 +314,12 @@ describe('Twitter Integration - Quota Management', () => {
       remaining: 380,
     }
 
-    expect(user1Quota.remaining).toBe(user1Quota.limit - user1Quota.postsThisMonth)
-    expect(user2Quota.remaining).toBe(user2Quota.limit - user2Quota.postsThisMonth)
+    expect(user1Quota.remaining).toBe(
+      user1Quota.limit - user1Quota.postsThisMonth
+    )
+    expect(user2Quota.remaining).toBe(
+      user2Quota.limit - user2Quota.postsThisMonth
+    )
 
     // Users don't share quotas
     expect(user1Quota.userId).not.toBe(user2Quota.userId)
@@ -340,7 +347,8 @@ describe('Twitter Integration - Quota Management', () => {
 
     // With 2 newsletters per week, 8 per month = 16 Twitter posts
     const newslettersPerMonth = 8
-    const twitterPostsPerMonth = newslettersPerMonth * postsPerNewsletter.twitter
+    const twitterPostsPerMonth =
+      newslettersPerMonth * postsPerNewsletter.twitter
 
     expect(twitterPostsPerMonth).toBe(16)
     expect(twitterPostsPerMonth).toBeLessThan(500) // Well under free tier limit

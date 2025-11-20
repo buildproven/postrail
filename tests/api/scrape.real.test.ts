@@ -6,7 +6,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from '@/app/api/scrape/route'
 import { NextRequest } from 'next/server'
-import { createMockSupabaseClient, mockSupabaseAuthUser, mockSupabaseAuthError } from '../mocks/supabase'
+import {
+  createMockSupabaseClient,
+  mockSupabaseAuthUser,
+  mockSupabaseAuthError,
+} from '../mocks/supabase'
 
 // Mock Supabase
 vi.mock('@/lib/supabase/server', () => ({
@@ -57,7 +61,9 @@ describe('/api/scrape - Real Integration Tests', () => {
 
     it('should accept authenticated requests', async () => {
       const mockSupabase = createMockSupabaseClient()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
       // Mock DNS and axios
@@ -86,7 +92,9 @@ describe('/api/scrape - Real Integration Tests', () => {
   describe('URL Validation', () => {
     beforeEach(() => {
       const mockSupabase = createMockSupabaseClient()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
     })
 
@@ -133,7 +141,9 @@ describe('/api/scrape - Real Integration Tests', () => {
   describe('SSRF Protection', () => {
     beforeEach(() => {
       const mockSupabase = createMockSupabaseClient()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
     })
 
@@ -207,7 +217,9 @@ describe('/api/scrape - Real Integration Tests', () => {
   describe('Content Scraping', () => {
     beforeEach(() => {
       const mockSupabase = createMockSupabaseClient()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
       vi.mocked(dns.resolve4).mockResolvedValue(['93.184.216.34'] as any)
     })

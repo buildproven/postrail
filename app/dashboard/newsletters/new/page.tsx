@@ -2,7 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -38,7 +44,9 @@ export default function NewNewsletterPage() {
       if (!response.ok) {
         const data = await response.json()
         // Show actual server error message instead of generic error
-        throw new Error(data.error || `Failed to scrape URL (${response.status})`)
+        throw new Error(
+          data.error || `Failed to scrape URL (${response.status})`
+        )
       }
 
       const data = await response.json()
@@ -73,7 +81,9 @@ export default function NewNewsletterPage() {
 
         // Better error messages
         if (response.status === 401) {
-          throw new Error('Authentication required. Please refresh the page and try again.')
+          throw new Error(
+            'Authentication required. Please refresh the page and try again.'
+          )
         } else if (response.status === 500) {
           throw new Error(data.error || 'Server error during post generation')
         } else {
@@ -117,7 +127,8 @@ export default function NewNewsletterPage() {
             <CardHeader>
               <CardTitle>Import from URL</CardTitle>
               <CardDescription>
-                Paste your newsletter URL from beehiiv, Substack, or any other platform
+                Paste your newsletter URL from beehiiv, Substack, or any other
+                platform
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -129,7 +140,7 @@ export default function NewNewsletterPage() {
                     type="url"
                     placeholder="https://yoursite.beehiiv.com/p/your-newsletter"
                     value={url}
-                    onChange={(e) => setUrl(e.target.value)}
+                    onChange={e => setUrl(e.target.value)}
                     disabled={loading}
                   />
                   <Button onClick={handleUrlImport} disabled={loading || !url}>
@@ -155,7 +166,7 @@ export default function NewNewsletterPage() {
                     <Input
                       id="imported-title"
                       value={title}
-                      onChange={(e) => setTitle(e.target.value)}
+                      onChange={e => setTitle(e.target.value)}
                       placeholder="Enter newsletter title"
                     />
                   </div>
@@ -163,7 +174,10 @@ export default function NewNewsletterPage() {
                     <Label htmlFor="imported-content">Content Preview</Label>
                     <Textarea
                       id="imported-content"
-                      value={content.slice(0, 500) + (content.length > 500 ? '...' : '')}
+                      value={
+                        content.slice(0, 500) +
+                        (content.length > 500 ? '...' : '')
+                      }
                       readOnly
                       rows={10}
                       className="font-mono text-sm"
@@ -192,7 +206,7 @@ export default function NewNewsletterPage() {
                 <Input
                   id="manual-title"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={e => setTitle(e.target.value)}
                   placeholder="The 1k challenge: How to get your first 1,000 subscribers"
                   disabled={loading}
                 />

@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button'
 
 export default async function NewslettersPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   if (!user) {
     redirect('/auth/login')
@@ -46,7 +48,7 @@ export default async function NewslettersPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {newsletters.map((newsletter) => (
+          {newsletters.map(newsletter => (
             <div
               key={newsletter.id}
               className="p-6 border rounded-lg hover:shadow-md transition-shadow"
@@ -61,16 +63,22 @@ export default async function NewslettersPage() {
                   </p>
                   <div className="flex gap-4 text-sm text-gray-500">
                     <span>
-                      Status: <span className="capitalize">{newsletter.status}</span>
+                      Status:{' '}
+                      <span className="capitalize">{newsletter.status}</span>
                     </span>
                     <span>
-                      Created: {new Date(newsletter.created_at).toLocaleDateString()}
+                      Created:{' '}
+                      {new Date(newsletter.created_at).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Link href={`/dashboard/newsletters/${newsletter.id}/preview`}>
-                    <Button variant="outline" size="sm">View Posts</Button>
+                  <Link
+                    href={`/dashboard/newsletters/${newsletter.id}/preview`}
+                  >
+                    <Button variant="outline" size="sm">
+                      View Posts
+                    </Button>
                   </Link>
                 </div>
               </div>

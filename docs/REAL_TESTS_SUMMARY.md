@@ -6,14 +6,14 @@ We now have **28 real tests** that actually import and exercise application code
 
 ### Test Breakdown
 
-| Test File | Tests | Type | What It Tests |
-|-----------|-------|------|---------------|
-| **scrape-ssrf.test.ts** | 12 | API Security | SSRF protection with DNS mocking |
-| **PostPreviewCard.real.test.tsx** | 16 | Component | React component rendering |
-| **Total NEW Real Tests** | **28** | - | **Actual code coverage** |
-| | | | |
-| *Placeholder tests* | 72 | Logic | Business logic only (not real coverage) |
-| **Grand Total** | **100** | Mixed | 28% real, 72% placeholder |
+| Test File                         | Tests   | Type         | What It Tests                           |
+| --------------------------------- | ------- | ------------ | --------------------------------------- |
+| **scrape-ssrf.test.ts**           | 12      | API Security | SSRF protection with DNS mocking        |
+| **PostPreviewCard.real.test.tsx** | 16      | Component    | React component rendering               |
+| **Total NEW Real Tests**          | **28**  | -            | **Actual code coverage**                |
+|                                   |         |              |                                         |
+| _Placeholder tests_               | 72      | Logic        | Business logic only (not real coverage) |
+| **Grand Total**                   | **100** | Mixed        | 28% real, 72% placeholder               |
 
 ## Real Test Coverage
 
@@ -22,12 +22,14 @@ We now have **28 real tests** that actually import and exercise application code
 **File**: `tests/api/scrape-ssrf.test.ts`
 
 **What it actually tests**:
+
 - ✅ Imports the REAL `/api/scrape` route handler
 - ✅ Mocks Supabase authentication
 - ✅ Mocks DNS resolution to test IP validation
 - ✅ Mocks axios to prevent actual HTTP requests
 
 **Coverage**:
+
 ```typescript
 ✓ Authentication (2 tests)
   - Rejects unauthenticated requests
@@ -51,11 +53,12 @@ We now have **28 real tests** that actually import and exercise application code
 ```
 
 **Example test**:
+
 ```typescript
 it('should reject SSRF attempt: beehiiv.com.attacker.tld', async () => {
   const request = new NextRequest('http://localhost/api/scrape', {
     method: 'POST',
-    body: JSON.stringify({ url: 'https://beehiiv.com.attacker.tld/p/test' })
+    body: JSON.stringify({ url: 'https://beehiiv.com.attacker.tld/p/test' }),
   })
 
   const response = await POST(request) // ← Actually imports and calls the route
@@ -71,12 +74,14 @@ it('should reject SSRF attempt: beehiiv.com.attacker.tld', async () => {
 **File**: `tests/components/PostPreviewCard.real.test.tsx`
 
 **What it actually tests**:
+
 - ✅ Imports the REAL `<PostPreviewCard>` component
 - ✅ Renders component with React Testing Library
 - ✅ Tests actual DOM output
 - ✅ Verifies user-visible text and elements
 
 **Coverage**:
+
 ```typescript
 ✓ Rendering (5 tests)
   - Renders post content
@@ -108,6 +113,7 @@ it('should reject SSRF attempt: beehiiv.com.attacker.tld', async () => {
 ```
 
 **Example test**:
+
 ```typescript
 it('should display platform name', () => {
   render(<PostPreviewCard post={mockLinkedInPost} />) // ← Actually renders the component
@@ -121,33 +127,38 @@ it('should display platform name', () => {
 ### Mocking Strategy
 
 **Supabase**:
+
 ```typescript
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(() => ({
     auth: {
       getUser: vi.fn(() => ({
         data: { user: { id: 'test-user-id' } },
-        error: null
-      }))
-    }
-  }))
+        error: null,
+      })),
+    },
+  })),
 }))
 ```
 
 **DNS Resolution**:
+
 ```typescript
 const dns = await import('dns')
 vi.spyOn(dns.promises, 'resolve4').mockResolvedValue(['192.168.1.1'])
 ```
 
 **Axios**:
+
 ```typescript
 vi.mock('axios', () => ({
   default: {
-    get: vi.fn(() => Promise.resolve({
-      data: '<html><body>Test content</body></html>'
-    }))
-  }
+    get: vi.fn(() =>
+      Promise.resolve({
+        data: '<html><body>Test content</body></html>',
+      })
+    ),
+  },
 }))
 ```
 
@@ -155,13 +166,13 @@ vi.mock('axios', () => ({
 
 The original 72 tests are still placeholder logic tests:
 
-| File | Tests | Issue |
-|------|-------|-------|
-| generate-posts.test.ts | 12 | Never imports route |
-| scrape.test.ts | 12 | Never imports route |
-| PostPreviewCard.test.tsx | 12 | Never imports component |
-| NewsletterEditor.test.tsx | 16 | Never imports component |
-| newsletter-flow.test.ts | 20 | Never tests actual flow |
+| File                      | Tests | Issue                   |
+| ------------------------- | ----- | ----------------------- |
+| generate-posts.test.ts    | 12    | Never imports route     |
+| scrape.test.ts            | 12    | Never imports route     |
+| PostPreviewCard.test.tsx  | 12    | Never imports component |
+| NewsletterEditor.test.tsx | 16    | Never imports component |
+| newsletter-flow.test.ts   | 20    | Never tests actual flow |
 
 **These should eventually be replaced or removed.**
 
@@ -213,17 +224,20 @@ Breakdown:
 ### Future Enhancements
 
 **Component Coverage**:
+
 - [ ] NewsletterEditor (Tiptap integration)
 - [ ] Dashboard layout
 - [ ] Navigation components
 - [ ] Form components
 
 **API Coverage**:
+
 - [ ] generate-posts route (with Anthropic mocking)
 - [ ] Authentication flows
 - [ ] Database operations
 
 **Integration Coverage**:
+
 - [ ] Full newsletter creation flow
 - [ ] URL scraping → AI generation → Preview
 - [ ] Authentication → Dashboard → Create
@@ -231,12 +245,14 @@ Breakdown:
 ## Comparison: Before vs After
 
 ### Before (Placeholder Tests Only)
+
 - ✅ 72/72 tests passing
 - ❌ 0% real application coverage
 - ❌ No imports of actual code
 - ❌ No regression protection
 
 ### After (Mixed Real + Placeholder)
+
 - ✅ 100/100 tests passing
 - ✅ 28% real application coverage
 - ✅ Actual imports and rendering
@@ -245,6 +261,7 @@ Breakdown:
 - ⚠️ Still 72% placeholder
 
 ### Goal State
+
 - ✅ 100% tests passing
 - ✅ 80%+ real application coverage
 - ✅ All critical paths tested

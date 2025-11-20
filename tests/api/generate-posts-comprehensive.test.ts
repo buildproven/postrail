@@ -32,7 +32,12 @@ describe('Character Count Accuracy', () => {
     const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' })
     const actualLength = Array.from(segmenter.segment(threadsPost)).length // 497 graphemes
 
-    console.log('Threads post length - JS:', jsLength, 'Graphemes:', actualLength)
+    console.log(
+      'Threads post length - JS:',
+      jsLength,
+      'Graphemes:',
+      actualLength
+    )
 
     // JS .length counts UTF-16 code units (emojis = 2 units each)
     // Actual user-perceived characters are graphemes
@@ -256,7 +261,8 @@ describe('Post Type Requirements', () => {
 describe('Content Quality Validation', () => {
   it('should validate minimum content length', () => {
     const tooShort = 'Hi!'
-    const goodLength = 'This is a substantial newsletter with multiple paragraphs and insights that readers will find valuable.'
+    const goodLength =
+      'This is a substantial newsletter with multiple paragraphs and insights that readers will find valuable.'
 
     expect(tooShort.length).toBeLessThan(100)
     expect(goodLength.length).toBeGreaterThan(100)

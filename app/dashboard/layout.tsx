@@ -51,15 +51,15 @@ export default async function DashboardLayout({
               Settings
             </Link>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground">{user.email}</span>
+              <span className="text-sm text-muted-foreground">
+                {user.email}
+              </span>
               <LogoutButton />
             </div>
           </div>
         </div>
       </nav>
-      <main className="container mx-auto py-6 px-4">
-        {children}
-      </main>
+      <main className="container mx-auto py-6 px-4">{children}</main>
     </div>
   )
 }

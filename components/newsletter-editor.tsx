@@ -11,7 +11,11 @@ interface NewsletterEditorProps {
   disabled?: boolean
 }
 
-export function NewsletterEditor({ content, onChange, disabled }: NewsletterEditorProps) {
+export function NewsletterEditor({
+  content,
+  onChange,
+  disabled,
+}: NewsletterEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -22,7 +26,8 @@ export function NewsletterEditor({ content, onChange, disabled }: NewsletterEdit
     content,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg max-w-none focus:outline-none min-h-[300px] p-4 border rounded-md',
+        class:
+          'prose prose-sm sm:prose lg:prose-lg max-w-none focus:outline-none min-h-[300px] p-4 border rounded-md',
       },
     },
     onUpdate: ({ editor }) => {

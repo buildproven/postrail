@@ -3,9 +3,11 @@
 ## What We Built
 
 ### ✅ Newsletter Input System
+
 **Location**: `/dashboard/newsletters/new`
 
 **Features**:
+
 - **Dual Input Methods**:
   - Tab 1: Import from URL (beehiiv, Substack, generic)
   - Tab 2: Manual paste with rich text editor
@@ -14,9 +16,11 @@
 - **Validation**: Error handling for failed scrapes
 
 ### ✅ AI Post Generation
+
 **Location**: `/api/generate-posts`
 
 **Features**:
+
 - **Claude 3.5 Sonnet Integration**: Latest model for best quality
 - **6 Posts Generated**:
   - LinkedIn Pre-CTA + Post-CTA
@@ -31,9 +35,11 @@
   - Facebook: Story-driven, community-focused
 
 ### ✅ Post Preview System
+
 **Location**: `/dashboard/newsletters/[id]/preview`
 
 **Features**:
+
 - **Visual Post Cards**: Platform icons, character counts
 - **Character Limit Indicators**:
   - Green: Under limit
@@ -43,12 +49,15 @@
 - **Newsletter Summary**: Title, word count, content preview
 
 ### ✅ Character Limit Enforcement
+
 **Platforms**:
+
 - LinkedIn: 3,000 chars
 - Threads: 500 chars
 - Facebook: 63,206 chars
 
 **Implementation**:
+
 - Real-time character counting
 - Visual warnings (badges)
 - Smart truncation in prompts
@@ -88,6 +97,7 @@ Total lines of code: ~900
 ## How It Works (User Flow)
 
 ### 1. Create Newsletter
+
 ```
 User navigates to: /dashboard/newsletters/new
 
@@ -104,6 +114,7 @@ Option B: Manual Paste
 ```
 
 ### 2. Generate Posts
+
 ```
 User clicks: "Generate Social Posts"
 
@@ -117,6 +128,7 @@ Backend process:
 ```
 
 ### 3. Preview & Edit
+
 ```
 User lands on: /dashboard/newsletters/[id]/preview
 
@@ -133,9 +145,11 @@ Sees:
 ## API Endpoints Created
 
 ### POST /api/scrape
+
 **Purpose**: Extract newsletter content from URL
 
 **Request**:
+
 ```json
 {
   "url": "https://newsletteroperator.beehiiv.com/p/example"
@@ -143,6 +157,7 @@ Sees:
 ```
 
 **Response**:
+
 ```json
 {
   "title": "Newsletter Title",
@@ -152,6 +167,7 @@ Sees:
 ```
 
 **Features**:
+
 - Detects beehiiv, Substack, generic sites
 - Removes headers, footers, ads
 - Cleans whitespace
@@ -161,9 +177,11 @@ Sees:
 ---
 
 ### POST /api/generate-posts
+
 **Purpose**: Generate 6 AI social posts from newsletter
 
 **Request**:
+
 ```json
 {
   "title": "Newsletter Title",
@@ -172,6 +190,7 @@ Sees:
 ```
 
 **Response**:
+
 ```json
 {
   "newsletterId": "uuid",
@@ -182,13 +201,14 @@ Sees:
       "postType": "pre_cta",
       "content": "Generated post text...",
       "characterCount": 287
-    },
+    }
     // ... 5 more posts
   ]
 }
 ```
 
 **Process**:
+
 1. Authenticate user
 2. Create newsletter record
 3. Generate 6 posts with Claude
@@ -200,6 +220,7 @@ Sees:
 ## AI Prompt Engineering
 
 ### Pre-CTA Prompt Strategy
+
 ```
 Goal: Create FOMO and urgency
 
@@ -213,6 +234,7 @@ Elements:
 ```
 
 ### Post-CTA Prompt Strategy
+
 ```
 Goal: Drive engagement and email signups
 
@@ -233,12 +255,12 @@ Elements:
 
 ```json
 {
-  "@tiptap/react": "^2.x",          // Rich text editor
-  "@tiptap/starter-kit": "^2.x",    // Editor extensions
+  "@tiptap/react": "^2.x", // Rich text editor
+  "@tiptap/starter-kit": "^2.x", // Editor extensions
   "@tiptap/extension-placeholder": "^2.x",
-  "cheerio": "^1.x",                // HTML parsing
-  "axios": "^1.x",                  // HTTP requests
-  "@anthropic-ai/sdk": "^0.69.0"    // Claude API (already added)
+  "cheerio": "^1.x", // HTML parsing
+  "axios": "^1.x", // HTTP requests
+  "@anthropic-ai/sdk": "^0.69.0" // Claude API (already added)
 }
 ```
 
@@ -264,6 +286,7 @@ ANTHROPIC_API_KEY=sk-ant-api03-...
 ## Testing the Feature
 
 ### 1. Setup Anthropic API Key (5 min)
+
 ```bash
 # Visit https://console.anthropic.com
 # Create API key
@@ -274,6 +297,7 @@ ANTHROPIC_API_KEY=sk-ant-api03-...
 ```
 
 ### 2. Test URL Import (2 min)
+
 ```
 1. Go to http://localhost:3000/dashboard
 2. Click "Create Newsletter Post"
@@ -283,6 +307,7 @@ ANTHROPIC_API_KEY=sk-ant-api03-...
 ```
 
 ### 3. Test Manual Paste (1 min)
+
 ```
 1. Switch to "Paste Content" tab
 2. Enter title: "Test Newsletter"
@@ -291,6 +316,7 @@ ANTHROPIC_API_KEY=sk-ant-api03-...
 ```
 
 ### 4. Test AI Generation (30 sec)
+
 ```
 1. Click "Generate Social Posts"
 2. Wait ~5-10 seconds
@@ -299,6 +325,7 @@ ANTHROPIC_API_KEY=sk-ant-api03-...
 ```
 
 ### 5. Verify Post Quality (2 min)
+
 ```
 Check each post for:
 - ✓ Appropriate platform tone
@@ -314,6 +341,7 @@ Check each post for:
 ## Known Limitations (To Fix in Week 3+)
 
 ### Not Yet Implemented:
+
 - ❌ Edit post functionality (button exists, doesn't work)
 - ❌ Regenerate post functionality (button exists, doesn't work)
 - ❌ Scheduling posts (next phase)
@@ -321,6 +349,7 @@ Check each post for:
 - ❌ Actual publishing (Week 5)
 
 ### Potential Issues:
+
 - ⚠️ URL scraping may fail on sites with paywalls
 - ⚠️ AI generation cost: ~$0.015 per newsletter
 - ⚠️ Character limits enforced in prompts, not hard-coded
@@ -331,16 +360,19 @@ Check each post for:
 ## Performance Metrics
 
 ### Generation Speed:
+
 - URL scraping: 1-3 seconds
 - AI generation (6 posts): 5-10 seconds
 - Total time: 6-13 seconds
 
 ### API Costs (per newsletter):
+
 - Claude API: ~$0.015 (6 posts)
 - Monthly (50 newsletters): ~$0.75
 - Monthly (200 newsletters): ~$3.00
 
 ### Character Counts (typical):
+
 - LinkedIn Pre-CTA: 250-400 chars
 - LinkedIn Post-CTA: 350-500 chars
 - Threads Pre-CTA: 200-350 chars
@@ -352,14 +384,14 @@ Check each post for:
 
 ## Week 2 vs Week 1 Comparison
 
-| Metric | Week 1 | Week 2 |
-|--------|--------|--------|
-| **Time spent** | 2 hours | 1.5 hours |
-| **Files created** | 30+ | 7 |
-| **API routes** | 1 (auth callback) | 2 (scrape, generate) |
-| **External APIs** | 1 (Supabase) | 2 (+Anthropic) |
-| **User-facing pages** | 4 | 2 |
-| **Working features** | Auth | Newsletter input + AI |
+| Metric                | Week 1            | Week 2                |
+| --------------------- | ----------------- | --------------------- |
+| **Time spent**        | 2 hours           | 1.5 hours             |
+| **Files created**     | 30+               | 7                     |
+| **API routes**        | 1 (auth callback) | 2 (scrape, generate)  |
+| **External APIs**     | 1 (Supabase)      | 2 (+Anthropic)        |
+| **User-facing pages** | 4                 | 2                     |
+| **Working features**  | Auth              | Newsletter input + AI |
 
 **Total project time so far**: ~3.5 hours
 **Estimated remaining**: ~12-15 hours (Weeks 3-6)
@@ -369,6 +401,7 @@ Check each post for:
 ## Next Steps (Week 3: LinkedIn Integration)
 
 ### Goals:
+
 1. **LinkedIn OAuth Setup**
    - Create LinkedIn app
    - Implement OAuth flow
@@ -387,6 +420,7 @@ Check each post for:
 **Estimated time**: 6-8 hours
 
 **Command to start**:
+
 ```bash
 /sc:implement "LinkedIn OAuth integration with connection management and manual post publishing"
 ```
@@ -396,6 +430,7 @@ Check each post for:
 ## Success Criteria: ✅ ACHIEVED
 
 Week 2 Goals:
+
 - [x] Newsletter input form (URL + manual)
 - [x] URL scraping for beehiiv/Substack
 - [x] Rich text editor
@@ -435,20 +470,24 @@ Week 2 Goals:
 ## Troubleshooting
 
 ### "Invalid API key" from Anthropic
+
 - Check you set `ANTHROPIC_API_KEY` in `.env.local`
 - Verify key starts with `sk-ant-api03-`
 - Restart dev server after adding key
 
 ### URL scraping fails
+
 - Check URL is publicly accessible
 - Try different URL
 - Fallback to manual paste
 
 ### Posts over character limit
+
 - Shouldn't happen (prompts enforce limits)
 - If it does: Regenerate or edit manually (Week 3+)
 
 ### No posts generated
+
 - Check Supabase is setup (tables exist)
 - Check auth is working (logged in user)
 - Check browser console for errors

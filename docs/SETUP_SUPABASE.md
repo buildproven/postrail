@@ -209,6 +209,7 @@ create policy "Users can update analytics for their posts"
 ## Step 5: Test Connection
 
 1. Start your dev server:
+
 ```bash
 npm run dev
 ```
@@ -231,16 +232,19 @@ npm run dev
 ## Common Issues
 
 ### Email not arriving
+
 - Check **Authentication** → **Email Templates** → Make sure SMTP is configured
 - For development, check the **Logs** tab for email debug info
 - Supabase free tier sends emails from their domain (works for testing)
 
 ### "Invalid API key" error
+
 - Make sure you copied the **anon/public** key, not the service_role key
 - Check there are no extra spaces in `.env.local`
 - Restart your dev server after changing `.env.local`
 
 ### RLS policies blocking access
+
 - Make sure you're logged in
 - Check the browser console for detailed error messages
 - Verify policies are created correctly in SQL Editor
@@ -248,6 +252,7 @@ npm run dev
 ## Next Steps
 
 Once Supabase is working:
+
 1. Test signup/login flow
 2. Verify you can access the dashboard
 3. Move on to implementing newsletter input (Week 2)

@@ -208,7 +208,9 @@ describe('Crypto Utilities - Twitter Credential Workflow', () => {
     expect(decrypt(encrypted.apiKey)).toBe(credentials.apiKey)
     expect(decrypt(encrypted.apiSecret)).toBe(credentials.apiSecret)
     expect(decrypt(encrypted.accessToken)).toBe(credentials.accessToken)
-    expect(decrypt(encrypted.accessTokenSecret)).toBe(credentials.accessTokenSecret)
+    expect(decrypt(encrypted.accessTokenSecret)).toBe(
+      credentials.accessTokenSecret
+    )
   })
 
   it('should create hash for credential lookup', () => {

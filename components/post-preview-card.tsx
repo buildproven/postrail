@@ -1,6 +1,12 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Linkedin, Facebook } from 'lucide-react'
@@ -29,7 +35,7 @@ const PLATFORM_CONFIG = {
     name: 'Threads',
     icon: () => (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 14.582c-.085 2.275-1.251 3.647-3.326 3.936-2.075.289-4.138-.479-5.527-2.051l1.502-1.104c1.021 1.155 2.433 1.713 4.028 1.476 1.595-.237 2.389-1.106 2.439-2.617.05-1.511-.67-2.48-2.164-2.917-1.494-.437-2.839.022-4.042 1.348l-1.318-1.206c1.636-1.804 3.591-2.479 5.862-2.028 2.271.451 3.633 2.042 3.546 4.163z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 14.582c-.085 2.275-1.251 3.647-3.326 3.936-2.075.289-4.138-.479-5.527-2.051l1.502-1.104c1.021 1.155 2.433 1.713 4.028 1.476 1.595-.237 2.389-1.106 2.439-2.617.05-1.511-.67-2.48-2.164-2.917-1.494-.437-2.839.022-4.042 1.348l-1.318-1.206c1.636-1.804 3.591-2.479 5.862-2.028 2.271.451 3.633 2.042 3.546 4.163z" />
       </svg>
     ),
     color: 'bg-black',
@@ -61,11 +67,21 @@ export function PostPreviewCard({ post }: PostPreviewCardProps) {
             <div>
               <CardTitle className="text-base">{config.name}</CardTitle>
               <CardDescription className="text-xs">
-                {post.post_type === 'pre_cta' ? 'Pre-CTA Teaser' : 'Post-CTA Engagement'}
+                {post.post_type === 'pre_cta'
+                  ? 'Pre-CTA Teaser'
+                  : 'Post-CTA Engagement'}
               </CardDescription>
             </div>
           </div>
-          <Badge variant={isOverLimit ? 'destructive' : isNearLimit ? 'outline' : 'secondary'}>
+          <Badge
+            variant={
+              isOverLimit
+                ? 'destructive'
+                : isNearLimit
+                  ? 'outline'
+                  : 'secondary'
+            }
+          >
             {post.character_count}/{config.limit}
           </Badge>
         </div>

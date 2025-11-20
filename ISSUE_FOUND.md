@@ -5,6 +5,7 @@
 **The `/api/generate-posts` endpoint is returning `401 Unauthorized`**
 
 This means:
+
 - You're trying to generate posts while NOT logged in
 - OR your session has expired
 
@@ -21,6 +22,7 @@ $ node test-full-flow.js
 ```
 
 **Server logs confirm:**
+
 ```
 POST /api/generate-posts 401 in 822ms
 ```
@@ -30,6 +32,7 @@ POST /api/generate-posts 401 in 822ms
 The original code in `app/dashboard/newsletters/new/page.tsx` was catching the error and setting it in state, but the error display wasn't obvious enough.
 
 **I just fixed this** - now it will show:
+
 ```
 ❌ Authentication required. Please refresh the page and try again.
 ```
@@ -46,6 +49,7 @@ The original code in `app/dashboard/newsletters/new/page.tsx` was catching the e
 ### Option 2: Check Your Session
 
 If you WERE logged in:
+
 1. Your session may have expired
 2. Refresh the page
 3. If redirected to login, log in again
@@ -120,6 +124,7 @@ if (!user) {
 This is CORRECT security behavior - you shouldn't be able to generate posts without being logged in.
 
 The issue was:
+
 1. You tried to use the API without logging in
 2. The error wasn't displayed clearly in the UI
 3. You thought the AI generation was broken (but it's actually working perfectly!)

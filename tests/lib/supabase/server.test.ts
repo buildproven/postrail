@@ -31,9 +31,9 @@ describe('lib/supabase/server', () => {
 
     // Mock cookie store
     mockCookieStore = {
-      getAll: vi.fn().mockReturnValue([
-        { name: 'session', value: 'token-123' },
-      ]),
+      getAll: vi
+        .fn()
+        .mockReturnValue([{ name: 'session', value: 'token-123' }]),
       set: vi.fn(),
     }
     mockCookies.mockResolvedValue(mockCookieStore)
@@ -86,11 +86,9 @@ describe('lib/supabase/server', () => {
       ]
       cookieConfig.cookies.setAll(cookiesToSet)
 
-      expect(mockCookieStore.set).toHaveBeenCalledWith(
-        'session',
-        'new-token',
-        { maxAge: 3600 }
-      )
+      expect(mockCookieStore.set).toHaveBeenCalledWith('session', 'new-token', {
+        maxAge: 3600,
+      })
     })
 
     it('should handle setAll errors gracefully (Server Component scenario)', async () => {

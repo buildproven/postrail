@@ -10,7 +10,9 @@ import { render, screen, waitFor } from '@testing-library/react'
 vi.mock('@tiptap/react', () => ({
   useEditor: vi.fn(),
   EditorContent: ({ editor }: any) => (
-    <div data-testid="editor-content">{editor ? 'Editor loaded' : 'Loading...'}</div>
+    <div data-testid="editor-content">
+      {editor ? 'Editor loaded' : 'Loading...'}
+    </div>
   ),
 }))
 
@@ -59,7 +61,9 @@ describe('NewsletterEditor - Real Tests', () => {
     it('should show loading skeleton when editor is not ready', () => {
       mockUseEditor.mockReturnValue(null)
 
-      const { container } = render(<NewsletterEditor content="" onChange={mockOnChange} />)
+      const { container } = render(
+        <NewsletterEditor content="" onChange={mockOnChange} />
+      )
 
       const skeleton = container.querySelector('.animate-pulse')
       expect(skeleton).toBeInTheDocument()
@@ -93,7 +97,9 @@ describe('NewsletterEditor - Real Tests', () => {
 
   describe('Editor initialization', () => {
     it('should initialize editor with StarterKit', () => {
-      render(<NewsletterEditor content="Initial content" onChange={mockOnChange} />)
+      render(
+        <NewsletterEditor content="Initial content" onChange={mockOnChange} />
+      )
 
       expect(mockUseEditor).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -109,13 +115,17 @@ describe('NewsletterEditor - Real Tests', () => {
       render(<NewsletterEditor content="" onChange={mockOnChange} />)
 
       const call = mockUseEditor.mock.calls[0][0]
-      const placeholderExt = call.extensions.find((ext: any) => ext.name === 'placeholder')
+      const placeholderExt = call.extensions.find(
+        (ext: any) => ext.name === 'placeholder'
+      )
 
       expect(placeholderExt).toBeDefined()
     })
 
     it('should initialize with provided content', () => {
-      render(<NewsletterEditor content="Initial content" onChange={mockOnChange} />)
+      render(
+        <NewsletterEditor content="Initial content" onChange={mockOnChange} />
+      )
 
       const config = mockUseEditor.mock.calls[0][0]
       expect(config.content).toBe('Initial content')
@@ -150,7 +160,9 @@ describe('NewsletterEditor - Real Tests', () => {
     })
 
     it('should update editor content when prop changes', () => {
-      const { rerender } = render(<NewsletterEditor content="Initial" onChange={mockOnChange} />)
+      const { rerender } = render(
+        <NewsletterEditor content="Initial" onChange={mockOnChange} />
+      )
 
       mockEditor.getText.mockReturnValue('Initial')
       rerender(<NewsletterEditor content="Updated" onChange={mockOnChange} />)
@@ -159,7 +171,9 @@ describe('NewsletterEditor - Real Tests', () => {
     })
 
     it('should not update editor if content matches current text', () => {
-      const { rerender } = render(<NewsletterEditor content="Same" onChange={mockOnChange} />)
+      const { rerender } = render(
+        <NewsletterEditor content="Same" onChange={mockOnChange} />
+      )
 
       mockEditor.getText.mockReturnValue('Same')
       mockEditor.commands.setContent.mockClear()
@@ -172,7 +186,9 @@ describe('NewsletterEditor - Real Tests', () => {
 
   describe('Disabled state', () => {
     it('should update editor editable state when disabled changes', () => {
-      const { rerender } = render(<NewsletterEditor content="" onChange={mockOnChange} />)
+      const { rerender } = render(
+        <NewsletterEditor content="" onChange={mockOnChange} />
+      )
 
       rerender(<NewsletterEditor content="" onChange={mockOnChange} disabled />)
 
@@ -180,10 +196,14 @@ describe('NewsletterEditor - Real Tests', () => {
     })
 
     it('should enable editor when disabled becomes false', () => {
-      const { rerender } = render(<NewsletterEditor content="" onChange={mockOnChange} disabled />)
+      const { rerender } = render(
+        <NewsletterEditor content="" onChange={mockOnChange} disabled />
+      )
 
       mockEditor.setEditable.mockClear()
-      rerender(<NewsletterEditor content="" onChange={mockOnChange} disabled={false} />)
+      rerender(
+        <NewsletterEditor content="" onChange={mockOnChange} disabled={false} />
+      )
 
       expect(mockEditor.setEditable).toHaveBeenCalledWith(true)
     })

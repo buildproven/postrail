@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { TwitterSetupGuide } from '@/components/twitter-setup-guide'
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
@@ -16,7 +22,9 @@ interface PlatformConnection {
 }
 
 export default function PlatformsPage() {
-  const [connections, setConnections] = useState<Record<string, PlatformConnection>>({
+  const [connections, setConnections] = useState<
+    Record<string, PlatformConnection>
+  >({
     twitter: { platform: 'twitter', connected: false },
     linkedin: { platform: 'linkedin', connected: false },
     threads: { platform: 'threads', connected: false },
@@ -58,7 +66,11 @@ export default function PlatformsPage() {
   }
 
   const handleDisconnect = async (platform: string) => {
-    if (!confirm(`Are you sure you want to disconnect ${platform}? You'll need to reconnect to post.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to disconnect ${platform}? You'll need to reconnect to post.`
+      )
+    ) {
       return
     }
 
@@ -163,7 +175,7 @@ export default function PlatformsPage() {
 
       {/* Platform Cards */}
       <div className="grid md:grid-cols-2 gap-6">
-        {platforms.map((platform) => {
+        {platforms.map(platform => {
           const connection = connections[platform.id]
           const isConnected = connection?.connected
 
@@ -217,8 +229,9 @@ export default function PlatformsPage() {
                   <div className="space-y-3">
                     <Alert>
                       <AlertDescription className="text-sm">
-                        <strong>BYOK (Bring Your Own Keys):</strong> You&apos;ll use your own Twitter
-                        API credentials for 500 posts/month on the free tier.
+                        <strong>BYOK (Bring Your Own Keys):</strong> You&apos;ll
+                        use your own Twitter API credentials for 500 posts/month
+                        on the free tier.
                       </AlertDescription>
                     </Alert>
                     <Button
@@ -242,29 +255,31 @@ export default function PlatformsPage() {
       {/* Info Section */}
       <Card className="bg-blue-50 border-blue-200">
         <CardHeader>
-          <CardTitle className="text-blue-900">Platform Integration Roadmap</CardTitle>
+          <CardTitle className="text-blue-900">
+            Platform Integration Roadmap
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm text-blue-800">
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
-                <strong>Twitter (Available Now):</strong> BYOK integration - use your own API keys
-                for 500 posts/month on free tier
+                <strong>Twitter (Available Now):</strong> BYOK integration - use
+                your own API keys for 500 posts/month on free tier
               </div>
             </div>
             <div className="flex items-start gap-2">
               <XCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
               <div>
-                <strong>LinkedIn (Coming Soon):</strong> OAuth integration for seamless posting to
-                your professional network
+                <strong>LinkedIn (Coming Soon):</strong> OAuth integration for
+                seamless posting to your professional network
               </div>
             </div>
             <div className="flex items-start gap-2">
               <XCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
               <div>
-                <strong>Threads & Facebook (Coming Soon):</strong> Meta platform integration for
-                community engagement
+                <strong>Threads & Facebook (Coming Soon):</strong> Meta platform
+                integration for community engagement
               </div>
             </div>
           </div>
