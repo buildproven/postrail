@@ -14,10 +14,21 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }))
 
+// Create a factory to hold the mock instance
+let mockTwitterClientInstance: any = null
+
 // Mock Twitter API
 vi.mock('twitter-api-v2', () => {
-  const MockTwitterApi = vi.fn()
-  MockTwitterApi.prototype = {}
+  // Create a mock constructor function
+  function MockTwitterApi(this: any) {
+    // Return the mock instance
+    if (mockTwitterClientInstance) {
+      return mockTwitterClientInstance
+    }
+    // Fallback: return empty object with minimal structure
+    return { v2: { tweet: vi.fn() } }
+  }
+
   return {
     TwitterApi: MockTwitterApi,
   }
@@ -135,8 +146,7 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
       })
 
       // Mock Twitter client
-      const mockTwitterClient = createMockTwitterClient()
-      vi.mocked(TwitterApi).mockImplementation(() => mockTwitterClient as any)
+      mockTwitterClientInstance = createMockTwitterClient()
 
       // Mock update
       mockSupabase.from('social_posts').update.mockReturnThis()
@@ -352,8 +362,7 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
       })
 
       // Mock Twitter client
-      const mockTwitterClient = createMockTwitterClient()
-      vi.mocked(TwitterApi).mockImplementation(() => mockTwitterClient as any)
+      mockTwitterClientInstance = createMockTwitterClient()
 
       // Mock update
       const updateSpy = vi.fn().mockReturnThis()
@@ -376,7 +385,7 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
       expect(data.tweetId).toBeTruthy()
-      expect(mockTwitterClient.v2.tweet).toHaveBeenCalledWith('Test tweet content')
+      expect(mockTwitterClientInstance.v2.tweet).toHaveBeenCalledWith('Test tweet content')
       expect(updateSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           status: 'published',
@@ -416,8 +425,7 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
         error: null,
       })
 
-      const mockTwitterClient = createMockTwitterClient()
-      vi.mocked(TwitterApi).mockImplementation(() => mockTwitterClient as any)
+      mockTwitterClientInstance = createMockTwitterClient()
 
       mockSupabase.from('social_posts').update.mockReturnThis()
       mockSupabase.from('social_posts').eq.mockResolvedValue({ data: null, error: null })
@@ -532,8 +540,8 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
         error: null,
       })
 
-      const mockTwitterClient = createMockTwitterClient()
-      mockTwitterClient.v2.tweet.mockRejectedValue(new Error('Twitter error'))
+      mockTwitterClientInstance = createMockTwitterClient()
+      mockTwitterClientInstance.v2.tweet.mockRejectedValue(new Error('Twitter error'))
 
       vi.mocked(TwitterApi).mockImplementation(() => mockTwitterClient as any)
 
