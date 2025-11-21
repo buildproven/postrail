@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
+import { checkPermission } from '@/lib/rbac'
 
 export async function GET() {
   try {
@@ -38,9 +39,11 @@ export async function GET() {
     // Get user's current rate limit status (user's own data only)
     const userStatus = await redisRateLimiter.getUserStatus(user.id)
 
-    // SECURITY: System statistics only for admins (blocked for now)
-    // TODO: Implement proper admin role checking
-    // const systemStats = rateLimiter.getStats()
+    // SECURITY: System statistics only for admins
+    const canViewSystemStats = await checkPermission(user.id, 'viewSystemStats')
+    const systemStats = canViewSystemStats
+      ? await redisRateLimiter.getStats()
+      : null
 
     const headers: Record<string, string> = {}
     if (userStatus.degraded) {
@@ -49,29 +52,32 @@ export async function GET() {
         '299 - "Rate limiting service degraded - per-instance limits only"'
     }
 
-    return NextResponse.json(
-      {
-        user: {
-          id: user.id,
-          requestsRemaining: userStatus.requestsRemaining,
-          resetTime: new Date(userStatus.resetTime).toISOString(),
-          isLimited: userStatus.isLimited,
-          degraded: userStatus.degraded,
-        },
-        limits: {
-          requestsPerMinute: 3,
-          requestsPerHour: 10,
-          description: 'AI generation requests',
-        },
-        // system: {  // REMOVED: Sensitive system data
-        //   activeUsers: systemStats.activeUsers,
-        //   pendingRequests: systemStats.pendingRequests,
-        //   cachedResults: systemStats.cachedResults,
-        //   timestamp: new Date(systemStats.timestamp).toISOString(),
-        // },
+    const response: Record<string, unknown> = {
+      user: {
+        id: user.id,
+        requestsRemaining: userStatus.requestsRemaining,
+        resetTime: new Date(userStatus.resetTime).toISOString(),
+        isLimited: userStatus.isLimited,
+        degraded: userStatus.degraded,
       },
-      { headers }
-    )
+      limits: {
+        requestsPerMinute: 3,
+        requestsPerHour: 10,
+        description: 'AI generation requests',
+      },
+    }
+
+    // Include system statistics for admins only
+    if (systemStats) {
+      response.system = {
+        activeUsers: systemStats.activeUsers,
+        pendingRequests: systemStats.pendingRequests,
+        cachedResults: systemStats.cachedResults,
+        timestamp: new Date(systemStats.timestamp).toISOString(),
+      }
+    }
+
+    return NextResponse.json(response, { headers })
   } catch (error) {
     console.error('Rate limit status error:', error)
     return NextResponse.json(
