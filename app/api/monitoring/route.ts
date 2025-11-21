@@ -25,7 +25,10 @@ export async function GET(request: NextRequest) {
     // Check admin role (RBAC)
     if (!user.app_metadata?.role || user.app_metadata.role !== 'admin') {
       return NextResponse.json(
-        { error: 'Admin access required. Contact administrator for monitoring access.' },
+        {
+          error:
+            'Admin access required. Contact administrator for monitoring access.',
+        },
         { status: 403 }
       )
     }
@@ -40,7 +43,10 @@ export async function GET(request: NextRequest) {
     const monitoringEnabled = process.env.ENABLE_MONITORING_ENDPOINT === 'true'
     if (!monitoringEnabled) {
       return NextResponse.json(
-        { error: 'Monitoring endpoint disabled. Set ENABLE_MONITORING_ENDPOINT=true to enable admin monitoring.' },
+        {
+          error:
+            'Monitoring endpoint disabled. Set ENABLE_MONITORING_ENDPOINT=true to enable admin monitoring.',
+        },
         { status: 403 }
       )
     }
@@ -51,8 +57,8 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       user: {
         id: user.id,
-        isAdmin: true
-      }
+        isAdmin: true,
+      },
     }
 
     const health = await observability.getHealthStatus()
@@ -69,7 +75,7 @@ export async function GET(request: NextRequest) {
         event,
         requestId,
         since: sinceTimestamp,
-        limit
+        limit,
       })
     }
 
@@ -77,7 +83,7 @@ export async function GET(request: NextRequest) {
       // Get metrics summary
       response.metrics = observability.getMetrics({
         since: sinceTimestamp,
-        window: 60 * 60 * 1000 // 1 hour window
+        window: 60 * 60 * 1000, // 1 hour window
       })
     }
 
@@ -88,20 +94,24 @@ export async function GET(request: NextRequest) {
 
     if (section === 'all' || section === 'security') {
       // Security-specific events and metrics
-      const securityEvents = observability.getLogs({
-        since: sinceTimestamp,
-        limit: 100
-      }).filter(log =>
-        log.event && [
-          'ai_generation_rate_limited',
-          'scrape_ssrf_blocked',
-          'scrape_rate_limited',
-          'twitter_post_duplicate'
-        ].includes(log.event)
-      )
+      const securityEvents = observability
+        .getLogs({
+          since: sinceTimestamp,
+          limit: 100,
+        })
+        .filter(
+          log =>
+            log.event &&
+            [
+              'ai_generation_rate_limited',
+              'scrape_ssrf_blocked',
+              'scrape_rate_limited',
+              'twitter_post_duplicate',
+            ].includes(log.event)
+        )
 
       const securityMetrics = observability.getMetrics({
-        since: sinceTimestamp
+        since: sinceTimestamp,
       })
 
       response.security = {
@@ -110,9 +120,9 @@ export async function GET(request: NextRequest) {
           aiRateLimited: securityMetrics.counts.ai_generation_rate_limited || 0,
           ssrfBlocked: securityMetrics.counts.scrape_ssrf_blocked || 0,
           scrapeRateLimited: securityMetrics.counts.scrape_rate_limited || 0,
-          twitterDuplicates: securityMetrics.counts.twitter_post_duplicate || 0
+          twitterDuplicates: securityMetrics.counts.twitter_post_duplicate || 0,
         },
-        summary: `${securityEvents.length} security events in the last hour`
+        summary: `${securityEvents.length} security events in the last hour`,
       }
     }
 
@@ -128,7 +138,7 @@ export async function GET(request: NextRequest) {
           type: 'high_error_rate',
           message: `Error rate is ${(errorRate * 100).toFixed(1)}%`,
           threshold: '10%',
-          current: `${(errorRate * 100).toFixed(1)}%`
+          current: `${(errorRate * 100).toFixed(1)}%`,
         })
       }
 
@@ -140,7 +150,7 @@ export async function GET(request: NextRequest) {
           type: 'slow_response_time',
           message: `Average response time is ${avgResponseTime}ms`,
           threshold: '3000ms',
-          current: `${avgResponseTime}ms`
+          current: `${avgResponseTime}ms`,
         })
       }
 
@@ -153,17 +163,17 @@ export async function GET(request: NextRequest) {
           type: 'high_memory_usage',
           message: `Log memory usage is ${(logUsage * 100).toFixed(1)}%`,
           threshold: '80%',
-          current: `${(logUsage * 100).toFixed(1)}%`
+          current: `${(logUsage * 100).toFixed(1)}%`,
         })
       }
 
       // Security alert - multiple rate limit hits
-      const recentRateLimits = observability.getLogs({
-        since: Date.now() - 10 * 60 * 1000, // Last 10 minutes
-        limit: 1000
-      }).filter(log =>
-        log.event && log.event.includes('rate_limited')
-      )
+      const recentRateLimits = observability
+        .getLogs({
+          since: Date.now() - 10 * 60 * 1000, // Last 10 minutes
+          limit: 1000,
+        })
+        .filter(log => log.event && log.event.includes('rate_limited'))
 
       if (recentRateLimits.length > 20) {
         alerts.push({
@@ -171,13 +181,13 @@ export async function GET(request: NextRequest) {
           type: 'potential_abuse',
           message: `${recentRateLimits.length} rate limit hits in 10 minutes`,
           threshold: '20 hits/10min',
-          current: `${recentRateLimits.length} hits/10min`
+          current: `${recentRateLimits.length} hits/10min`,
         })
       }
 
       response.alerts = {
         count: alerts.length,
-        items: alerts
+        items: alerts,
       }
     }
 
@@ -198,7 +208,8 @@ export async function GET(request: NextRequest) {
           recommendations.push({
             area: 'AI Generation',
             issue: `${(aiFailureRate * 100).toFixed(1)}% failure rate`,
-            recommendation: 'Review Anthropic API limits, add retry logic, or implement circuit breaker'
+            recommendation:
+              'Review Anthropic API limits, add retry logic, or implement circuit breaker',
           })
         }
       }
@@ -211,13 +222,14 @@ export async function GET(request: NextRequest) {
         recommendations.push({
           area: 'SSRF Protection',
           issue: `High SSRF block rate: ${ssrfBlocked} blocked vs ${scrapeSuccess} successful`,
-          recommendation: 'Review blocked domains and consider user education about acceptable URLs'
+          recommendation:
+            'Review blocked domains and consider user education about acceptable URLs',
         })
       }
 
       response.optimization = {
         recommendations,
-        summary: `${recommendations.length} optimization opportunities identified`
+        summary: `${recommendations.length} optimization opportunities identified`,
       }
     }
 
@@ -225,7 +237,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     observability.error('Monitoring endpoint error', {
       error: error as Error,
-      source: 'monitoring-api'
+      source: 'monitoring-api',
     })
 
     return NextResponse.json(

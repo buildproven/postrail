@@ -28,13 +28,16 @@ interface PendingRequest {
 class RateLimiter {
   private userLimits = new Map<string, RateLimitRecord>()
   private pendingRequests = new Map<string, PendingRequest>()
-  private completedRequests = new Map<string, { result: any; timestamp: number }>()
+  private completedRequests = new Map<
+    string,
+    { result: any; timestamp: number }
+  >()
 
   // Rate limiting configuration
-  private readonly AI_REQUESTS_PER_MINUTE = 3  // Max 3 AI generation requests per minute per user
-  private readonly AI_REQUESTS_PER_HOUR = 10   // Max 10 AI generation requests per hour per user
-  private readonly DEDUP_CACHE_TTL = 5 * 60 * 1000  // 5 minutes cache for deduplication
-  private readonly CLEANUP_INTERVAL = 60 * 1000     // Cleanup every minute
+  private readonly AI_REQUESTS_PER_MINUTE = 3 // Max 3 AI generation requests per minute per user
+  private readonly AI_REQUESTS_PER_HOUR = 10 // Max 10 AI generation requests per hour per user
+  private readonly DEDUP_CACHE_TTL = 5 * 60 * 1000 // 5 minutes cache for deduplication
+  private readonly CLEANUP_INTERVAL = 60 * 1000 // Cleanup every minute
 
   constructor() {
     // Periodic cleanup of expired records
@@ -44,7 +47,9 @@ class RateLimiter {
   /**
    * Check if user can make AI generation request
    */
-  async checkRateLimit(userId: string): Promise<{ allowed: boolean; retryAfter?: number; reason?: string }> {
+  async checkRateLimit(
+    userId: string
+  ): Promise<{ allowed: boolean; retryAfter?: number; reason?: string }> {
     const now = Date.now()
     const userKey = `ai_generation:${userId}`
 
@@ -55,7 +60,7 @@ class RateLimiter {
       record = {
         count: 1,
         resetTime: now + 60 * 1000, // 1 minute window
-        lastRequest: now
+        lastRequest: now,
       }
       this.userLimits.set(userKey, record)
       return { allowed: true }
@@ -76,17 +81,20 @@ class RateLimiter {
       return {
         allowed: false,
         retryAfter,
-        reason: `Rate limit exceeded: ${this.AI_REQUESTS_PER_MINUTE} requests per minute. Try again in ${retryAfter}s.`
+        reason: `Rate limit exceeded: ${this.AI_REQUESTS_PER_MINUTE} requests per minute. Try again in ${retryAfter}s.`,
       }
     }
 
     // Check hourly limit (simplified - just check last hour of requests)
     const hourAgo = now - 60 * 60 * 1000
-    if (record.lastRequest > hourAgo && record.count >= this.AI_REQUESTS_PER_HOUR) {
+    if (
+      record.lastRequest > hourAgo &&
+      record.count >= this.AI_REQUESTS_PER_HOUR
+    ) {
       return {
         allowed: false,
         retryAfter: 3600, // 1 hour
-        reason: `Daily limit reached: ${this.AI_REQUESTS_PER_HOUR} requests per hour. Try again later.`
+        reason: `Daily limit reached: ${this.AI_REQUESTS_PER_HOUR} requests per hour. Try again later.`,
       }
     }
 
@@ -116,8 +124,11 @@ class RateLimiter {
     userId: string,
     title: string,
     content: string
-  ): Promise<{ isDuplicate: boolean; requestId?: string; existingResult?: any }> {
-
+  ): Promise<{
+    isDuplicate: boolean
+    requestId?: string
+    existingResult?: any
+  }> {
     const contentHash = this.generateContentHash(title, content, userId)
     const requestId = `${userId}:${contentHash}`
 
@@ -130,7 +141,7 @@ class RateLimiter {
         return {
           isDuplicate: true,
           requestId,
-          existingResult: existingResult.result
+          existingResult: existingResult.result,
         }
       } else {
         // Expired, remove
@@ -148,12 +159,12 @@ class RateLimiter {
         const originalResolve = pendingRequest.resolve
         const originalReject = pendingRequest.reject
 
-        pendingRequest.resolve = (result) => {
+        pendingRequest.resolve = result => {
           originalResolve(result)
           resolve({ isDuplicate: true, requestId, existingResult: result })
         }
 
-        pendingRequest.reject = (error) => {
+        pendingRequest.reject = error => {
           originalReject(error)
           reject(error)
         }
@@ -167,7 +178,11 @@ class RateLimiter {
   /**
    * Register a pending request
    */
-  registerPendingRequest(requestId: string, userId: string, contentHash: string): {
+  registerPendingRequest(
+    requestId: string,
+    userId: string,
+    contentHash: string
+  ): {
     promise: Promise<any>
     resolve: (value: any) => void
     reject: (error: any) => void
@@ -186,7 +201,7 @@ class RateLimiter {
       contentHash,
       timestamp: Date.now(),
       resolve: resolve!,
-      reject: reject!
+      reject: reject!,
     }
 
     this.pendingRequests.set(requestId, pendingRequest)
@@ -206,7 +221,7 @@ class RateLimiter {
       // Cache the result for deduplication
       this.completedRequests.set(requestId, {
         result,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       })
     }
   }
@@ -238,7 +253,7 @@ class RateLimiter {
       return {
         requestsRemaining: this.AI_REQUESTS_PER_MINUTE,
         resetTime: now + 60 * 1000,
-        isLimited: false
+        isLimited: false,
       }
     }
 
@@ -246,7 +261,7 @@ class RateLimiter {
       return {
         requestsRemaining: this.AI_REQUESTS_PER_MINUTE,
         resetTime: now + 60 * 1000,
-        isLimited: false
+        isLimited: false,
       }
     }
 
@@ -254,7 +269,7 @@ class RateLimiter {
     return {
       requestsRemaining: remaining,
       resetTime: record.resetTime,
-      isLimited: remaining === 0
+      isLimited: remaining === 0,
     }
   }
 
@@ -266,7 +281,8 @@ class RateLimiter {
 
     // Cleanup expired rate limit records
     for (const [key, record] of this.userLimits.entries()) {
-      if (now >= record.resetTime + 60 * 1000) { // Keep for extra minute
+      if (now >= record.resetTime + 60 * 1000) {
+        // Keep for extra minute
         this.userLimits.delete(key)
       }
     }
@@ -295,7 +311,7 @@ class RateLimiter {
       activeUsers: this.userLimits.size,
       pendingRequests: this.pendingRequests.size,
       cachedResults: this.completedRequests.size,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
   }
 }
@@ -304,5 +320,9 @@ class RateLimiter {
 export const rateLimiter = new RateLimiter()
 
 // Export types for use in API routes
-export type RateLimitResult = Awaited<ReturnType<typeof rateLimiter.checkRateLimit>>
-export type DeduplicationResult = Awaited<ReturnType<typeof rateLimiter.handleDeduplication>>
+export type RateLimitResult = Awaited<
+  ReturnType<typeof rateLimiter.checkRateLimit>
+>
+export type DeduplicationResult = Awaited<
+  ReturnType<typeof rateLimiter.handleDeduplication>
+>

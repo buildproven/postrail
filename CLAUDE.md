@@ -88,7 +88,7 @@ if (!rateLimitResult.allowed) {
 }
 
 // Request tracing and observability
-return withObservability.trace('operation_name', async (requestId) => {
+return withObservability.trace('operation_name', async requestId => {
   // API implementation with automatic logging and metrics
 })
 ```
@@ -288,6 +288,7 @@ Uses `@mozilla/readability` (same as Firefox Reader Mode) for intelligent conten
 #### 1. Rate Limiting (`lib/rate-limiter.ts`)
 
 **Purpose**: Prevent API abuse and ensure fair resource usage
+
 ```typescript
 // Per-user limits: 3/min, 10/hour for AI generation
 const rateLimitResult = await rateLimiter.checkRateLimit(user.id)
@@ -297,6 +298,7 @@ if (!rateLimitResult.allowed) {
 ```
 
 **Features**:
+
 - Content-based deduplication (same input = cached result)
 - Automatic cleanup of expired rate limit records
 - Request queuing and batching for efficiency
@@ -305,6 +307,7 @@ if (!rateLimitResult.allowed) {
 #### 2. SSRF Protection (`lib/ssrf-protection.ts`)
 
 **Purpose**: Prevent Server-Side Request Forgery attacks
+
 ```typescript
 // Comprehensive URL validation before fetching
 const validation = await ssrfProtection.validateUrl(newsletterUrl)
@@ -314,6 +317,7 @@ if (!validation.safe) {
 ```
 
 **Protection Layers**:
+
 1. Parse URL and validate protocol (HTTP/HTTPS only)
 2. DNS resolution to IP addresses before fetching
 3. Block private IP ranges (RFC 1918, cloud metadata endpoints)
@@ -324,6 +328,7 @@ if (!validation.safe) {
 #### 3. Idempotency Protection
 
 **Purpose**: Prevent duplicate operations and ensure data consistency
+
 ```typescript
 // Check if post already exists and published
 if (existingPost?.status === 'published' && existingPost.platform_post_id) {
@@ -332,6 +337,7 @@ if (existingPost?.status === 'published' && existingPost.platform_post_id) {
 ```
 
 **Implementation**:
+
 - Database unique constraints (`newsletter_id, platform, post_type`)
 - Optimistic locking for concurrent operation safety
 - Status-based replay protection
@@ -340,15 +346,17 @@ if (existingPost?.status === 'published' && existingPost.platform_post_id) {
 #### 4. Observability (`lib/observability.ts`)
 
 **Purpose**: Comprehensive monitoring and incident response
+
 ```typescript
 // Structured logging with request tracing
 const withObservability = new ObservabilityManager()
-export default withObservability.trace('operation_name', async (requestId) => {
+export default withObservability.trace('operation_name', async requestId => {
   // Operation implementation with automatic logging
 })
 ```
 
 **Features**:
+
 - Request correlation IDs for distributed tracing
 - Structured event logging (security, performance, errors)
 - Real-time metrics collection
@@ -358,6 +366,7 @@ export default withObservability.trace('operation_name', async (requestId) => {
 #### 5. Environment Validation (`lib/env-validator.ts`)
 
 **Purpose**: Fail-fast configuration validation
+
 ```typescript
 // Startup validation with clear error messages
 const validation = validateEnvironment()
@@ -368,6 +377,7 @@ if (!validation.valid) {
 ```
 
 **Validation Rules**:
+
 - Required environment variables presence
 - Format validation (URLs, API keys, encryption keys)
 - AES-256 key validation (64 hex chars)
@@ -376,6 +386,7 @@ if (!validation.valid) {
 ### Monitoring Endpoints
 
 **Health & Status Monitoring**:
+
 - `/api/monitoring?section=health` - Overall system health
 - `/api/monitoring?section=security` - Security events and metrics
 - `/api/monitoring?section=logs&level=warn` - Filtered log access
@@ -384,6 +395,7 @@ if (!validation.valid) {
 - `/api/twitter-status` - Platform posting status
 
 **Authentication & Authorization**:
+
 - All `/api/*` routes check for authenticated user
 - Middleware handles session refresh and route protection
 - No API keys or secrets in client-side code

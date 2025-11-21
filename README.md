@@ -130,16 +130,19 @@ letterflow/
 ## Documentation
 
 ### Architecture & Operations
+
 - [System Architecture](./docs/ARCHITECTURE.md) - Data flow and security design
 - [Operational Runbook](./docs/OPERATIONAL_RUNBOOK.md) - Key rotation and incident response
 
 ### Development Guides
+
 - [Getting Started](./docs/GETTING_STARTED.md)
 - [Supabase Setup](./docs/SETUP_SUPABASE.md)
 - [Testing Guide](./docs/TESTING.md)
 - [Week 2 Progress](./docs/WEEK_2_COMPLETE.md)
 
 ### Security Features
+
 - **Rate Limiting**: 3 requests/minute, 10/hour per user with content deduplication
 - **SSRF Protection**: DNS validation, private IP blocking, port filtering
 - **Observability**: Request tracing, metrics collection, health monitoring

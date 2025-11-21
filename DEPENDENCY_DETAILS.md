@@ -5,11 +5,13 @@
 ### Production Dependencies (27 packages)
 
 #### Core Framework
+
 - **next** (16.0.3) - React framework with SSR and static generation
 - **react** (19.0.0) - JavaScript UI library
 - **react-dom** (19.0.0) - React rendering for DOM
 
 #### Backend/API
+
 - **@anthropic-ai/sdk** (0.69.0) → 0.70.1 available - Claude AI API client
 - **@supabase/supabase-js** (2.81.1) → 2.84.0 available - BaaS platform client
 - **@supabase/ssr** (0.7.0) - Supabase SSR utilities
@@ -17,39 +19,47 @@
 - **@upstash/qstash** (2.8.4) - Message queue service client
 
 #### Authentication
+
 - **next-auth** (5.0.0-beta.30) ⚠️ BETA - Authentication library (see evaluation needed)
 
 #### HTTP/Networking
+
 - **axios** (1.13.2) - HTTP client library
 - **twitter-api-v2** (1.28.0) - Twitter API v2 client
 
 #### Data Processing
+
 - **cheerio** (1.1.2) ❌ UNUSED - jQuery-like DOM manipulation
 - **@mozilla/readability** (0.6.0) - Content extraction (Firefox Reader Mode)
 
 #### Form & Validation
+
 - **react-hook-form** (7.66.0) → 7.66.1 available - Form state management
 - **@hookform/resolvers** (5.2.2) ❌ UNUSED - Form validation schema integration
 - **zod** (4.1.12) - TypeScript schema validation
 
 #### UI Components
+
 - **@radix-ui/react-label** (2.1.8) - Accessible label component
 - **@radix-ui/react-slot** (1.2.4) - Slot composition primitive
 - **@radix-ui/react-tabs** (1.1.13) - Tab component
 - **lucide-react** (0.553.0) → 0.554.0 available - Icon library
 
 #### Styling
+
 - **tailwindcss-animate** (1.0.7) - Tailwind animation utilities
 - **tailwind-merge** (3.4.0) - Tailwind class merger
 - **class-variance-authority** (0.7.1) - Component variant system (like cvA)
 - **clsx** (2.1.1) - Class name utility
 
 #### Rich Text Editor
+
 - **@tiptap/react** (3.10.7) → 3.11.0 available - React wrapper for Tiptap
 - **@tiptap/starter-kit** (3.10.7) → 3.11.0 available - Core editor extensions
 - **@tiptap/extension-placeholder** (3.10.7) → 3.11.0 available - Placeholder text
 
 #### Utilities
+
 - **date-fns** (4.1.0) ❌ UNUSED - Date formatting (reserved for scheduling)
 
 ---
@@ -57,6 +67,7 @@
 ### Development Dependencies (24 packages)
 
 #### Testing
+
 - **vitest** (4.0.9) - Unit test framework (Vite-native)
 - **@vitest/coverage-v8** (4.0.10) - Code coverage for Vitest
 - **@testing-library/react** (16.3.0) - React testing utilities
@@ -66,6 +77,7 @@
 - **playwright** (1.56.1) - Playwright browser automation
 
 #### Linting & Formatting
+
 - **eslint** (9) - JavaScript linter
 - **@eslint/js** (9.39.1) - ESLint base rules
 - **eslint-config-next** (15.1.4) ⚠️ MISMATCH - Next.js ESLint config (should be 16.0.3)
@@ -77,6 +89,7 @@
 - **prettier** (3.3.3) - Code formatter
 
 #### Build & Development
+
 - **typescript** (^5) - TypeScript compiler
 - **@types/node** (^20) - Node.js type definitions
 - **@types/react** (^19) - React type definitions
@@ -86,6 +99,7 @@
 - **@vitejs/plugin-react** (5.1.1) - Vite React plugin
 
 #### Development Tools
+
 - **dotenv** (17.2.3) - Environment variables loader
 - **globals** (15.9.0) - Global variables for different environments
 - **husky** (9.1.4) - Git hooks manager
@@ -94,6 +108,7 @@
 - **msw** (2.12.2) - Mock Service Worker for API mocking
 
 #### Performance Monitoring
+
 - **@lhci/cli** (0.14.0) - Lighthouse CI (performance testing) ⚠️ Contains vulnerabilities
 
 ---
@@ -101,6 +116,7 @@
 ## Vulnerability Details
 
 ### CVE Summary
+
 - **Total:** 8 low-severity vulnerabilities
 - **Critical:** 0
 - **High:** 0
@@ -137,6 +153,7 @@ ADDITIONAL VULNERABILITIES:
 ### Risk Assessment per CVE
 
 **CVE-1: Cookie OOB Characters (GHSA-pxg6-pf52-xh8x)**
+
 - Severity: Low
 - CVSS: 0.0 (minimal real-world impact)
 - Attack Vector: Network (requires sending malformed cookie)
@@ -145,6 +162,7 @@ ADDITIONAL VULNERABILITIES:
 - **Recommendation:** Low priority, monitor for updates
 
 **CVE-2: Tmp Symlink (GHSA-52f5-9888-hmc6)**
+
 - Severity: Low
 - CVSS: 2.5 (local exploitation only)
 - Attack Vector: Local (requires shell/file system access)
@@ -153,7 +171,9 @@ ADDITIONAL VULNERABILITIES:
 - **Recommendation:** Monitor, not urgent for CI/CD environment
 
 ### Production Risk Assessment
+
 Both vulnerabilities are in DEVELOPMENT DEPENDENCIES ONLY:
+
 - No exposure in production bundles
 - Only affect local development machines or CI/CD runners
 - Require sophisticated attack scenarios
@@ -162,6 +182,7 @@ Both vulnerabilities are in DEVELOPMENT DEPENDENCIES ONLY:
 ### Mitigation Options
 
 **Option 1: Accept (Recommended for now)**
+
 ```bash
 # Continue using @lhci/cli@0.14.0
 # Monitor for updates
@@ -169,6 +190,7 @@ Both vulnerabilities are in DEVELOPMENT DEPENDENCIES ONLY:
 ```
 
 **Option 2: Force Fix (Not Recommended)**
+
 ```bash
 # npm audit fix --force
 # Upgrades @lhci/cli to 0.1.0 (breaking change)
@@ -176,6 +198,7 @@ Both vulnerabilities are in DEVELOPMENT DEPENDENCIES ONLY:
 ```
 
 **Option 3: Remove @lhci/cli**
+
 ```bash
 npm uninstall @lhci/cli
 # If not using Lighthouse CI, this is safe
@@ -187,6 +210,7 @@ npm uninstall @lhci/cli
 ## Dependency Update Path
 
 ### Critical Path
+
 ```
 1. eslint-config-next 15.1.4 → 16.0.3
    └─ Reason: Major version mismatch with Next.js
@@ -195,6 +219,7 @@ npm uninstall @lhci/cli
 ```
 
 ### High Priority Path
+
 ```
 2. next-auth 5.0.0-beta.30 → 4.24.13 (decision needed)
    └─ Reason: Beta version risky for production
@@ -203,11 +228,12 @@ npm uninstall @lhci/cli
 ```
 
 ### Medium Priority Path (Optional Updates)
+
 ```
 3. @anthropic-ai/sdk 0.69.0 → 0.70.1
    └─ Risk: Very Low
    └─ Time: 1 minute
-   
+
 4. @supabase/supabase-js 2.81.1 → 2.84.0
    └─ Risk: Very Low
    └─ Time: 1 minute
@@ -222,11 +248,12 @@ npm uninstall @lhci/cli
 ```
 
 ### Cleanup Path
+
 ```
 7. Remove cheerio (unused)
    └─ Risk: None
    └─ Time: 1 minute
-   
+
 8. Remove @hookform/resolvers (unused)
    └─ Risk: None
    └─ Time: 1 minute
@@ -241,8 +268,9 @@ npm uninstall @lhci/cli
 ## Peer Dependency Matrix
 
 ### React/React-DOM
+
 ```
-next 16.0.3 
+next 16.0.3
   ├─ requires: react 16.14+ | 17 | 18 | 19 ✅ (19.0.0)
   └─ requires: react-dom 16.14+ | 17 | 18 | 19 ✅ (19.0.0)
 
@@ -252,6 +280,7 @@ react 19.0.0
 ```
 
 ### TypeScript
+
 ```
 typescript ^5 (currently 5.0.2-5.9.3 available)
   ├─ compatible: @types/react ^19 ✅
@@ -261,6 +290,7 @@ typescript ^5 (currently 5.0.2-5.9.3 available)
 ```
 
 ### Styling Stack
+
 ```
 tailwindcss 3.4.1
   ├─ requires: postcss ^8 ✅ (8)
@@ -274,6 +304,7 @@ tailwindcss 3.4.1
 ## Bundle Size Impact Analysis
 
 ### Production Bundle Contributors
+
 ```
 Framework & Core:
 ├─ Next.js framework: ~500KB
@@ -307,6 +338,7 @@ Total Unused Waste: ~165KB
 ```
 
 ### Development Dependencies (Not in Production Bundle)
+
 ```
 Testing: ~400MB (playwright + vitest + browsers)
 Linting: ~150MB (eslint + typescript + plugins)
@@ -320,18 +352,21 @@ Total node_modules: ~2.5GB
 ## Maintenance Timeline
 
 ### This Week (Priority 1)
+
 - [ ] Update eslint-config-next to 16.0.3
 - [ ] Remove cheerio, @hookform/resolvers, date-fns
 - [ ] Run full test suite
 - [ ] Commit and document changes
 
 ### This Month (Priority 2)
+
 - [ ] Decide next-auth strategy (beta vs v4 stable)
 - [ ] Apply non-breaking minor updates
 - [ ] Review and test any breaking changes
 - [ ] Set up automated dependency update checks
 
 ### This Quarter (Priority 3)
+
 - [ ] Upgrade typescript range if stable releases warrant
 - [ ] Monitor @anthropic-ai/sdk for major updates
 - [ ] Plan for next-auth v5 stable release
@@ -339,6 +374,7 @@ Total node_modules: ~2.5GB
 - [ ] Quarterly security audit sweep
 
 ### Ongoing
+
 - [ ] Monthly `npm audit` review
 - [ ] Watch for critical security updates
 - [ ] Review @lhci/cli for vulnerability fixes
@@ -348,13 +384,13 @@ Total node_modules: ~2.5GB
 
 ## Recommendations Summary
 
-| Priority | Action | Effort | Risk | Benefit |
-|----------|--------|--------|------|---------|
-| P0 | Update eslint-config-next | 5min | Low | High |
-| P0 | Remove unused deps | 5min | None | Medium |
-| P1 | Decide on next-auth | 30min | Medium | High |
-| P1 | Apply minor updates | 5min | Very Low | Low |
-| P2 | Monitor vulnerabilities | 0min | - | High |
-| P3 | Set up update automation | 1hr | Low | Medium |
+| Priority | Action                    | Effort | Risk     | Benefit |
+| -------- | ------------------------- | ------ | -------- | ------- |
+| P0       | Update eslint-config-next | 5min   | Low      | High    |
+| P0       | Remove unused deps        | 5min   | None     | Medium  |
+| P1       | Decide on next-auth       | 30min  | Medium   | High    |
+| P1       | Apply minor updates       | 5min   | Very Low | Low     |
+| P2       | Monitor vulnerabilities   | 0min   | -        | High    |
+| P3       | Set up update automation  | 1hr    | Low      | Medium  |
 
 **Estimated Total Implementation Time: 2-3 hours**

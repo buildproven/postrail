@@ -106,22 +106,22 @@ LetterFlow is a secure newsletter-to-social-media automation platform with compr
 
 ### Core Modules
 
-| Module | Purpose | Key Features |
-|--------|---------|--------------|
-| **Rate Limiter** (`lib/rate-limiter.ts`) | Prevents API abuse | Per-user limits, content deduplication, queue management |
-| **SSRF Protection** (`lib/ssrf-protection.ts`) | Prevents internal network access | DNS validation, port filtering, IP blocking |
-| **Observability** (`lib/observability.ts`) | System monitoring | Structured logging, metrics, health checks |
-| **Environment Validator** (`lib/env-validator.ts`) | Configuration validation | Startup validation, clear error messages |
+| Module                                             | Purpose                          | Key Features                                             |
+| -------------------------------------------------- | -------------------------------- | -------------------------------------------------------- |
+| **Rate Limiter** (`lib/rate-limiter.ts`)           | Prevents API abuse               | Per-user limits, content deduplication, queue management |
+| **SSRF Protection** (`lib/ssrf-protection.ts`)     | Prevents internal network access | DNS validation, port filtering, IP blocking              |
+| **Observability** (`lib/observability.ts`)         | System monitoring                | Structured logging, metrics, health checks               |
+| **Environment Validator** (`lib/env-validator.ts`) | Configuration validation         | Startup validation, clear error messages                 |
 
 ### API Architecture
 
-| Endpoint | Purpose | Security Features |
-|----------|---------|-------------------|
-| `/api/generate-posts` | AI content generation | Rate limiting, deduplication, observability |
-| `/api/scrape` | URL content extraction | SSRF protection, rate limiting |
-| `/api/platforms/twitter/post` | Social media publishing | Idempotency, optimistic locking |
-| `/api/monitoring` | System observability | Health checks, metrics, alerting |
-| `/api/*-status` | Component status | Debugging, monitoring, transparency |
+| Endpoint                      | Purpose                 | Security Features                           |
+| ----------------------------- | ----------------------- | ------------------------------------------- |
+| `/api/generate-posts`         | AI content generation   | Rate limiting, deduplication, observability |
+| `/api/scrape`                 | URL content extraction  | SSRF protection, rate limiting              |
+| `/api/platforms/twitter/post` | Social media publishing | Idempotency, optimistic locking             |
+| `/api/monitoring`             | System observability    | Health checks, metrics, alerting            |
+| `/api/*-status`               | Component status        | Debugging, monitoring, transparency         |
 
 ### Database Schema
 
@@ -143,18 +143,21 @@ platform_connections (id, user_id, platform, oauth_token, oauth_refresh_token,
 ## Technology Stack
 
 ### Frontend
+
 - **Next.js 15** - React framework with App Router
 - **TypeScript** - Type safety and developer experience
 - **Tailwind CSS** - Utility-first styling
 - **shadcn/ui** - Component library with Radix UI primitives
 
 ### Backend
+
 - **Next.js API Routes** - Serverless functions
 - **Supabase** - PostgreSQL database with auth
 - **Anthropic Claude** - AI content generation
 - **Twitter API v2** - Social media publishing
 
 ### Security & Infrastructure
+
 - **Environment Validation** - Startup configuration checks
 - **Rate Limiting** - In-memory with cleanup and persistence
 - **SSRF Protection** - Multi-layer network security
@@ -162,6 +165,7 @@ platform_connections (id, user_id, platform, oauth_token, oauth_refresh_token,
 - **GitHub Actions** - CI/CD with security testing
 
 ### Monitoring & Observability
+
 - **Health Checks** - System status and alerting
 - **Metrics Collection** - Performance and security events
 - **Request Tracing** - End-to-end operation tracking
@@ -170,18 +174,21 @@ platform_connections (id, user_id, platform, oauth_token, oauth_refresh_token,
 ## Deployment Architecture
 
 ### Development
+
 - Local development with hot reloading
 - Environment validation on startup
 - Local testing with security checks
 - Git hooks for code quality
 
 ### CI/CD Pipeline
+
 - Automated testing (unit, smoke, E2E)
 - Security scanning (ESLint, gitleaks)
 - TypeScript compilation validation
 - Deployment to staging/production
 
 ### Production (Vercel)
+
 - Serverless function deployment
 - Environment variable management
 - SSL termination and CDN
@@ -190,6 +197,7 @@ platform_connections (id, user_id, platform, oauth_token, oauth_refresh_token,
 ## Security Considerations
 
 ### Threat Model
+
 - **SSRF Attacks**: Mitigated by comprehensive URL validation
 - **Rate Limit Abuse**: Prevented by multi-layer rate limiting
 - **API Key Compromise**: Minimized by proper secret management
@@ -197,6 +205,7 @@ platform_connections (id, user_id, platform, oauth_token, oauth_refresh_token,
 - **Data Injection**: Mitigated by input validation and prepared statements
 
 ### Security Best Practices
+
 - Principle of least privilege for API access
 - Environment-based configuration management
 - Comprehensive logging for audit trails

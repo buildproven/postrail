@@ -30,9 +30,9 @@ class SSRFProtection {
   private ipLimits = new Map<string, RateLimitRecord>()
 
   // Rate limiting configuration
-  private readonly SCRAPE_REQUESTS_PER_USER_PER_MINUTE = 5    // Per user
-  private readonly SCRAPE_REQUESTS_PER_IP_PER_MINUTE = 10     // Per IP
-  private readonly CLEANUP_INTERVAL = 60 * 1000              // Cleanup every minute
+  private readonly SCRAPE_REQUESTS_PER_USER_PER_MINUTE = 5 // Per user
+  private readonly SCRAPE_REQUESTS_PER_IP_PER_MINUTE = 10 // Per IP
+  private readonly CLEANUP_INTERVAL = 60 * 1000 // Cleanup every minute
 
   // Allowed ports - only standard HTTP/HTTPS
   private readonly ALLOWED_PORTS = [80, 443]
@@ -64,7 +64,7 @@ class SSRFProtection {
     'broadcasthost',
 
     // Add custom blocked domains from env var
-    ...(process.env.SSRF_BLOCKED_DOMAINS?.split(',').map(d => d.trim()) || [])
+    ...(process.env.SSRF_BLOCKED_DOMAINS?.split(',').map(d => d.trim()) || []),
   ]
 
   constructor() {
@@ -85,7 +85,7 @@ class SSRFProtection {
     if (ip === '0.0.0.0') return true
 
     // Additional cloud metadata ranges
-    if (ip.startsWith('100.64.')) return true  // Carrier-grade NAT
+    if (ip.startsWith('100.64.')) return true // Carrier-grade NAT
     if (ip.startsWith('203.0.113.')) return true // Documentation range
     if (ip.startsWith('233.252.0.')) return true // Documentation range
 
@@ -130,7 +130,10 @@ class SSRFProtection {
   /**
    * Rate limiting check for scraping requests
    */
-  async checkRateLimit(userId: string, clientIP: string): Promise<{
+  async checkRateLimit(
+    userId: string,
+    clientIP: string
+  ): Promise<{
     allowed: boolean
     retryAfter?: number
     reason?: string
@@ -150,7 +153,7 @@ class SSRFProtection {
       return {
         allowed: false,
         retryAfter: Math.ceil(userRecord.retryAfter! / 1000),
-        reason: `User rate limit exceeded: ${this.SCRAPE_REQUESTS_PER_USER_PER_MINUTE} requests per minute`
+        reason: `User rate limit exceeded: ${this.SCRAPE_REQUESTS_PER_USER_PER_MINUTE} requests per minute`,
       }
     }
 
@@ -167,7 +170,7 @@ class SSRFProtection {
       return {
         allowed: false,
         retryAfter: Math.ceil(ipRecord.retryAfter! / 1000),
-        reason: `IP rate limit exceeded: ${this.SCRAPE_REQUESTS_PER_IP_PER_MINUTE} requests per minute`
+        reason: `IP rate limit exceeded: ${this.SCRAPE_REQUESTS_PER_IP_PER_MINUTE} requests per minute`,
       }
     }
 
@@ -206,7 +209,7 @@ class SSRFProtection {
     if (record.count >= limit) {
       return {
         allowed: false,
-        retryAfter: record.resetTime - now
+        retryAfter: record.resetTime - now,
       }
     }
 
@@ -227,7 +230,7 @@ class SSRFProtection {
       if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
         return {
           allowed: false,
-          error: 'Only HTTP/HTTPS URLs are allowed'
+          error: 'Only HTTP/HTTPS URLs are allowed',
         }
       }
 
@@ -237,19 +240,22 @@ class SSRFProtection {
       if (this.isDomainBlocked(hostname)) {
         return {
           allowed: false,
-          error: 'Domain is blocked'
+          error: 'Domain is blocked',
         }
       }
 
       // 3. Port validation - only 80/443 allowed
-      const port = parsedUrl.port ? parseInt(parsedUrl.port) :
-                   (parsedUrl.protocol === 'https:' ? 443 : 80)
+      const port = parsedUrl.port
+        ? parseInt(parsedUrl.port)
+        : parsedUrl.protocol === 'https:'
+          ? 443
+          : 80
 
       if (!this.isAllowedPort(port)) {
         return {
           allowed: false,
           error: `Port ${port} is not allowed. Only ports 80 and 443 are permitted.`,
-          port
+          port,
         }
       }
 
@@ -269,7 +275,7 @@ class SSRFProtection {
         } catch {
           return {
             allowed: false,
-            error: 'DNS resolution failed'
+            error: 'DNS resolution failed',
           }
         }
       }
@@ -280,7 +286,7 @@ class SSRFProtection {
           return {
             allowed: false,
             error: `Domain resolves to private/internal IP address: ${ip}`,
-            ip
+            ip,
           }
         }
       }
@@ -289,20 +295,19 @@ class SSRFProtection {
       if (hostname.includes('..') || hostname.includes('%')) {
         return {
           allowed: false,
-          error: 'Suspicious hostname pattern detected'
+          error: 'Suspicious hostname pattern detected',
         }
       }
 
       return {
         allowed: true,
         ip: resolvedIPs[0],
-        port
+        port,
       }
-
-    } catch (error) {
+    } catch {
       return {
         allowed: false,
-        error: 'Invalid URL format'
+        error: 'Invalid URL format',
       }
     }
   }
@@ -327,7 +332,7 @@ class SSRFProtection {
 
     // For Next.js, try to get the real IP from the request object
     // In development/testing, this will be 127.0.0.1
-    const requestUrl = new URL(request.url)
+    const _requestUrl = new URL(request.url)
 
     // Fallback to localhost for development
     return '127.0.0.1'
@@ -338,9 +343,12 @@ class SSRFProtection {
    */
   private isValidIP(ip: string): boolean {
     // Basic IPv4 validation
-    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+    // eslint-disable-next-line security/detect-unsafe-regex
+    const ipv4Regex =
+      /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
 
     // Basic IPv6 validation (simplified)
+    // eslint-disable-next-line security/detect-unsafe-regex
     const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/
 
     if (!ip || ip.length === 0) return false
@@ -357,14 +365,16 @@ class SSRFProtection {
 
     // Cleanup expired user limits
     for (const [key, record] of this.userLimits.entries()) {
-      if (now >= record.resetTime + 60 * 1000) { // Keep for extra minute
+      if (now >= record.resetTime + 60 * 1000) {
+        // Keep for extra minute
         this.userLimits.delete(key)
       }
     }
 
     // Cleanup expired IP limits
     for (const [key, record] of this.ipLimits.entries()) {
-      if (now >= record.resetTime + 60 * 1000) { // Keep for extra minute
+      if (now >= record.resetTime + 60 * 1000) {
+        // Keep for extra minute
         this.ipLimits.delete(key)
       }
     }
@@ -381,9 +391,9 @@ class SSRFProtection {
       blockedDomains: this.DOMAIN_BLOCKLIST.length,
       rateLimits: {
         userRequestsPerMinute: this.SCRAPE_REQUESTS_PER_USER_PER_MINUTE,
-        ipRequestsPerMinute: this.SCRAPE_REQUESTS_PER_IP_PER_MINUTE
+        ipRequestsPerMinute: this.SCRAPE_REQUESTS_PER_IP_PER_MINUTE,
       },
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
   }
 }

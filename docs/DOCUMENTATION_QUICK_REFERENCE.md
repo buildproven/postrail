@@ -5,13 +5,13 @@
 
 ## Critical Issues (Address First)
 
-| # | Issue | File | Fix Time | Blocker? |
-|---|-------|------|----------|----------|
-| 1 | Missing `.env.local.example` | Project root | 30 min | ✅ YES |
-| 2 | CLAUDE.md says 3 platforms, actually 4 | CLAUDE.md | 15 min | ⚠️ Misleading |
-| 3 | Zero JSDoc on functions | All `.ts`/`.tsx` | 4-6 hrs | No |
-| 4 | No component API docs | Multiple | 2-3 hrs | No |
-| 5 | No database schema doc | Missing file | 1.5 hrs | No |
+| #   | Issue                                  | File             | Fix Time | Blocker?      |
+| --- | -------------------------------------- | ---------------- | -------- | ------------- |
+| 1   | Missing `.env.local.example`           | Project root     | 30 min   | ✅ YES        |
+| 2   | CLAUDE.md says 3 platforms, actually 4 | CLAUDE.md        | 15 min   | ⚠️ Misleading |
+| 3   | Zero JSDoc on functions                | All `.ts`/`.tsx` | 4-6 hrs  | No            |
+| 4   | No component API docs                  | Multiple         | 2-3 hrs  | No            |
+| 5   | No database schema doc                 | Missing file     | 1.5 hrs  | No            |
 
 ## High Priority Issues
 
@@ -72,12 +72,12 @@ Referenced but missing files: 1 (.env.local.example)
 
 ## Files to Update
 
-| File | Changes | Time |
-|------|---------|------|
-| CLAUDE.md | Fix platform count (3→4), Twitter references | 15 min |
-| next.config.ts | Add explanatory comments | 20 min |
-| Components | Add JSDoc to all props | 2-3 hrs |
-| API Routes | Add @throws documentation | 1-2 hrs |
+| File           | Changes                                      | Time    |
+| -------------- | -------------------------------------------- | ------- |
+| CLAUDE.md      | Fix platform count (3→4), Twitter references | 15 min  |
+| next.config.ts | Add explanatory comments                     | 20 min  |
+| Components     | Add JSDoc to all props                       | 2-3 hrs |
+| API Routes     | Add @throws documentation                    | 1-2 hrs |
 
 ---
 
@@ -101,13 +101,13 @@ Referenced but missing files: 1 (.env.local.example)
 
 ## Estimated Total Effort
 
-| Scope | Hours | Critical? |
-|-------|-------|-----------|
-| Critical Only | 4-6 | ✅ YES |
-| High Priority | 12-15 | ⚠️ Important |
-| Medium Priority | 8-10 | Good to have |
-| Low Priority | 5-7 | Polish |
-| **TOTAL** | **30-40** | |
+| Scope           | Hours     | Critical?    |
+| --------------- | --------- | ------------ |
+| Critical Only   | 4-6       | ✅ YES       |
+| High Priority   | 12-15     | ⚠️ Important |
+| Medium Priority | 8-10      | Good to have |
+| Low Priority    | 5-7       | Polish       |
+| **TOTAL**       | **30-40** |              |
 
 ---
 
@@ -121,15 +121,15 @@ Referenced but missing files: 1 (.env.local.example)
 
 ## Developer Onboarding Friction Points
 
-| Step | Status | Blocker |
-|------|--------|---------|
-| Clone repo | ✅ Works | No |
-| Find `.env.local.example` | ❌ Missing | YES |
-| Setup environment | ⚠️ Manual | No |
-| Run `npm install` | ✅ Works | No |
-| Run `npm run dev` | ✅ Works | No |
-| Add first component | ⚠️ No reference | No |
-| Add first API route | ✅ Examples exist | No |
+| Step                      | Status            | Blocker |
+| ------------------------- | ----------------- | ------- |
+| Clone repo                | ✅ Works          | No      |
+| Find `.env.local.example` | ❌ Missing        | YES     |
+| Setup environment         | ⚠️ Manual         | No      |
+| Run `npm install`         | ✅ Works          | No      |
+| Run `npm run dev`         | ✅ Works          | No      |
+| Add first component       | ⚠️ No reference   | No      |
+| Add first API route       | ✅ Examples exist | No      |
 
 **Main Pain Point**: Missing environment variables file blocks step 2
 
@@ -138,12 +138,14 @@ Referenced but missing files: 1 (.env.local.example)
 ## Document Locations
 
 ### Top-Level Documentation
+
 - `/home/user/letterflow/README.md` - Project overview
 - `/home/user/letterflow/CLAUDE.md` - Developer patterns
 - `/home/user/letterflow/DEBUGGING_GUIDE.md` - Debug guide
 - `/home/user/letterflow/TESTING_SUMMARY.md` - Test summary
 
 ### In `/docs/` Directory
+
 - `ARCHITECTURE.md` - ✅ Excellent
 - `TESTING.md` - ✅ Comprehensive
 - `GETTING_STARTED.md` - ⚠️ References missing files
@@ -153,6 +155,7 @@ Referenced but missing files: 1 (.env.local.example)
 - `QUICK_TEST_GUIDE.md` - ✅ Good
 
 ### Missing Documents
+
 - `DATABASE_SCHEMA.md` - ❌ Not found
 - `COMPONENT_LIBRARY.md` - ❌ Not found
 - `API_ERRORS.md` - ❌ Not found
@@ -179,22 +182,26 @@ Referenced but missing files: 1 (.env.local.example)
 ## Tools & Commands for Improvements
 
 **Check for missing JSDoc**:
+
 ```bash
 npm install --save-dev eslint-plugin-jsdoc
 # Add to ESLint config, then run to identify gaps
 ```
 
 **Format documentation**:
+
 ```bash
 npm run format  # Prettier will format markdown
 ```
 
 **Validate config files**:
+
 ```bash
 npm run lint  # ESLint will check for issues
 ```
 
 **Check test coverage**:
+
 ```bash
 npm run test:coverage  # Generate coverage report
 ```
@@ -202,7 +209,7 @@ npm run test:coverage  # Generate coverage report
 ---
 
 ## Last Updated
+
 - **Date**: November 21, 2025
 - **Auditor**: Documentation & Maintainability Audit
 - **Full Report**: `DOCUMENTATION_AUDIT_2025-11-21.md`
-

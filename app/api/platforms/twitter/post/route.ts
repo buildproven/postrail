@@ -99,7 +99,9 @@ export async function POST(request: NextRequest) {
     // Verify social post belongs to user and is for Twitter - include status for idempotency
     const { data: socialPost, error: postError } = await supabase
       .from('social_posts')
-      .select('id, platform, newsletter_id, status, platform_post_id, published_at, error_message, updated_at, newsletters!inner(user_id)')
+      .select(
+        'id, platform, newsletter_id, status, platform_post_id, published_at, error_message, updated_at, newsletters!inner(user_id)'
+      )
       .eq('id', socialPostId)
       .single()
 
@@ -135,8 +137,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Idempotency protection: Check if post is already published
-    if (postWithNewsletter.status === 'published' && postWithNewsletter.platform_post_id) {
-      console.log(`Post ${socialPostId} already published as tweet ${postWithNewsletter.platform_post_id}`)
+    if (
+      postWithNewsletter.status === 'published' &&
+      postWithNewsletter.platform_post_id
+    ) {
+      console.log(
+        `Post ${socialPostId} already published as tweet ${postWithNewsletter.platform_post_id}`
+      )
       return NextResponse.json({
         success: true,
         tweetId: postWithNewsletter.platform_post_id,
@@ -144,7 +151,7 @@ export async function POST(request: NextRequest) {
         url: `https://twitter.com/i/web/status/${postWithNewsletter.platform_post_id}`,
         fromCache: true,
         message: 'Post was already published successfully',
-        publishedAt: postWithNewsletter.published_at
+        publishedAt: postWithNewsletter.published_at,
       })
     }
 
@@ -153,13 +160,15 @@ export async function POST(request: NextRequest) {
     const lastUpdate = new Date(postWithNewsletter.updated_at)
     const timeSinceUpdate = now.getTime() - lastUpdate.getTime()
 
-    if (postWithNewsletter.status === 'publishing' && timeSinceUpdate < 60000) { // 1 minute
+    if (postWithNewsletter.status === 'publishing' && timeSinceUpdate < 60000) {
+      // 1 minute
       return NextResponse.json(
         {
           error: 'Post is currently being processed',
-          details: 'This post is already being published by another request. Please wait and try again.',
+          details:
+            'This post is already being published by another request. Please wait and try again.',
           status: 'publishing',
-          lastUpdate: postWithNewsletter.updated_at
+          lastUpdate: postWithNewsletter.updated_at,
         },
         { status: 409 } // Conflict
       )
@@ -173,7 +182,7 @@ export async function POST(request: NextRequest) {
       .from('social_posts')
       .update({
         status: 'publishing',
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', socialPostId)
       .eq('updated_at', postWithNewsletter.updated_at) // Ensure no concurrent updates
@@ -183,7 +192,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Post is being processed by another request',
-          details: 'Unable to acquire lock on post. Another request may be processing it.'
+          details:
+            'Unable to acquire lock on post. Another request may be processing it.',
         },
         { status: 409 } // Conflict
       )

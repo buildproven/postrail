@@ -63,7 +63,10 @@ interface Metric {
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy'
   timestamp: number
-  checks: Record<string, { status: 'pass' | 'fail'; details?: string; latency?: number }>
+  checks: Record<
+    string,
+    { status: 'pass' | 'fail'; details?: string; latency?: number }
+  >
   metrics: {
     uptime: number
     requestsPerMinute: number
@@ -78,12 +81,15 @@ class ObservabilityManager {
   private startTime: number = Date.now()
 
   // Configuration
-  private readonly MAX_LOGS = 1000       // Keep last 1000 log entries
-  private readonly MAX_METRICS = 5000    // Keep last 5000 metrics
-  private readonly CLEANUP_INTERVAL = 5 * 60 * 1000  // Cleanup every 5 minutes
+  private readonly MAX_LOGS = 1000 // Keep last 1000 log entries
+  private readonly MAX_METRICS = 5000 // Keep last 5000 metrics
+  private readonly CLEANUP_INTERVAL = 5 * 60 * 1000 // Cleanup every 5 minutes
 
   // Request tracking
-  private activeRequests = new Map<string, { startTime: number; type: string }>()
+  private activeRequests = new Map<
+    string,
+    { startTime: number; type: string }
+  >()
 
   constructor() {
     // Periodic cleanup of old logs and metrics
@@ -103,7 +109,7 @@ class ObservabilityManager {
   startRequest(requestId: string, type: string): void {
     this.activeRequests.set(requestId, {
       startTime: Date.now(),
-      type
+      type,
     })
   }
 
@@ -144,7 +150,7 @@ class ObservabilityManager {
       event: options.event,
       duration: options.duration,
       source: options.source || 'unknown',
-      metadata: options.metadata
+      metadata: options.metadata,
     }
 
     // Format error if provided
@@ -152,7 +158,7 @@ class ObservabilityManager {
       entry.error = {
         name: options.error.name,
         message: options.error.message,
-        stack: options.error.stack
+        stack: options.error.stack,
       }
     }
 
@@ -190,7 +196,7 @@ class ObservabilityManager {
       this.recordMetric(options.event, {
         userId: options.userId,
         duration: options.duration,
-        metadata: options.metadata
+        metadata: options.metadata,
       })
     }
   }
@@ -199,7 +205,10 @@ class ObservabilityManager {
    * Convenience methods for different log levels
    */
   debug(message: string, options: Parameters<typeof this.log>[2] = {}) {
-    this.log('debug', message, { ...options, source: options.source || 'debug' })
+    this.log('debug', message, {
+      ...options,
+      source: options.source || 'debug',
+    })
   }
 
   info(message: string, options: Parameters<typeof this.log>[2] = {}) {
@@ -211,27 +220,36 @@ class ObservabilityManager {
   }
 
   error(message: string, options: Parameters<typeof this.log>[2] = {}) {
-    this.log('error', message, { ...options, source: options.source || 'error' })
+    this.log('error', message, {
+      ...options,
+      source: options.source || 'error',
+    })
   }
 
   fatal(message: string, options: Parameters<typeof this.log>[2] = {}) {
-    this.log('fatal', message, { ...options, source: options.source || 'fatal' })
+    this.log('fatal', message, {
+      ...options,
+      source: options.source || 'fatal',
+    })
   }
 
   /**
    * Record metrics for monitoring
    */
-  private recordMetric(event: EventType, options: {
-    userId?: string
-    duration?: number
-    metadata?: Record<string, any>
-  } = {}): void {
+  private recordMetric(
+    event: EventType,
+    options: {
+      userId?: string
+      duration?: number
+      metadata?: Record<string, any>
+    } = {}
+  ): void {
     const metric: Metric = {
       event,
       timestamp: Date.now(),
       userId: options.userId,
       duration: options.duration,
-      metadata: options.metadata
+      metadata: options.metadata,
     }
 
     this.metrics.push(metric)
@@ -240,14 +258,16 @@ class ObservabilityManager {
   /**
    * Get recent logs
    */
-  getLogs(options: {
-    level?: LogLevel
-    event?: EventType
-    userId?: string
-    requestId?: string
-    limit?: number
-    since?: number
-  } = {}): LogEntry[] {
+  getLogs(
+    options: {
+      level?: LogLevel
+      event?: EventType
+      userId?: string
+      requestId?: string
+      limit?: number
+      since?: number
+    } = {}
+  ): LogEntry[] {
     let filtered = this.logs
 
     // Filter by level
@@ -274,11 +294,16 @@ class ObservabilityManager {
 
     // Filter by time
     if (options.since) {
-      filtered = filtered.filter(log => new Date(log.timestamp).getTime() >= options.since!)
+      filtered = filtered.filter(
+        log => new Date(log.timestamp).getTime() >= options.since!
+      )
     }
 
     // Sort by timestamp (most recent first)
-    filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    filtered.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )
 
     // Apply limit
     if (options.limit) {
@@ -291,17 +316,20 @@ class ObservabilityManager {
   /**
    * Get metrics summary
    */
-  getMetrics(options: {
-    event?: EventType
-    since?: number
-    window?: number // Time window in ms
-  } = {}): {
+  getMetrics(
+    options: {
+      event?: EventType
+      since?: number
+      window?: number // Time window in ms
+    } = {}
+  ): {
     counts: Record<EventType, number>
     averageDurations: Record<EventType, number>
     errorRates: Record<string, number>
     recentEvents: Metric[]
   } {
-    const since = options.since || (Date.now() - (options.window || 60 * 60 * 1000)) // Default: last hour
+    const since =
+      options.since || Date.now() - (options.window || 60 * 60 * 1000) // Default: last hour
     let filtered = this.metrics.filter(metric => metric.timestamp >= since)
 
     // Filter by event type
@@ -310,27 +338,36 @@ class ObservabilityManager {
     }
 
     // Count events
-    const counts = filtered.reduce((acc, metric) => {
-      acc[metric.event] = (acc[metric.event] || 0) + 1
-      return acc
-    }, {} as Record<EventType, number>)
+    const counts = filtered.reduce(
+      (acc, metric) => {
+        acc[metric.event] = (acc[metric.event] || 0) + 1
+        return acc
+      },
+      {} as Record<EventType, number>
+    )
 
     // Calculate average durations
     const durations = filtered
       .filter(metric => metric.duration !== undefined)
-      .reduce((acc, metric) => {
-        if (!acc[metric.event]) {
-          acc[metric.event] = { total: 0, count: 0 }
-        }
-        acc[metric.event].total += metric.duration!
-        acc[metric.event].count++
-        return acc
-      }, {} as Record<EventType, { total: number; count: number }>)
+      .reduce(
+        (acc, metric) => {
+          if (!acc[metric.event]) {
+            acc[metric.event] = { total: 0, count: 0 }
+          }
+          acc[metric.event].total += metric.duration!
+          acc[metric.event].count++
+          return acc
+        },
+        {} as Record<EventType, { total: number; count: number }>
+      )
 
-    const averageDurations = Object.entries(durations).reduce((acc, [event, data]) => {
-      acc[event as EventType] = Math.round(data.total / data.count)
-      return acc
-    }, {} as Record<EventType, number>)
+    const averageDurations = Object.entries(durations).reduce(
+      (acc, [event, data]) => {
+        acc[event as EventType] = Math.round(data.total / data.count)
+        return acc
+      },
+      {} as Record<EventType, number>
+    )
 
     // Calculate error rates
     const errorRates: Record<string, number> = {}
@@ -342,7 +379,11 @@ class ObservabilityManager {
         .reduce((sum, [, count]) => sum + count, 0)
 
       const errorEvents = Object.entries(counts)
-        .filter(([event]) => event.startsWith(group) && (event.includes('failure') || event.includes('error')))
+        .filter(
+          ([event]) =>
+            event.startsWith(group) &&
+            (event.includes('failure') || event.includes('error'))
+        )
         .reduce((sum, [, count]) => sum + count, 0)
 
       if (totalEvents > 0) {
@@ -354,7 +395,7 @@ class ObservabilityManager {
       counts,
       averageDurations,
       errorRates,
-      recentEvents: filtered.slice(-50) // Last 50 events
+      recentEvents: filtered.slice(-50), // Last 50 events
     }
   }
 
@@ -370,43 +411,51 @@ class ObservabilityManager {
     const requestsPerMinute = recentMetrics.length
 
     // Calculate error rate
-    const errors = recentMetrics.filter(m =>
-      m.event.includes('failure') || m.event.includes('error')
+    const errors = recentMetrics.filter(
+      m => m.event.includes('failure') || m.event.includes('error')
     ).length
     const errorRate = requestsPerMinute > 0 ? errors / requestsPerMinute : 0
 
     // Calculate average response time
-    const durationsWithValues = recentMetrics.filter(m => m.duration !== undefined)
-    const averageResponseTime = durationsWithValues.length > 0
-      ? durationsWithValues.reduce((sum, m) => sum + m.duration!, 0) / durationsWithValues.length
-      : 0
+    const durationsWithValues = recentMetrics.filter(
+      m => m.duration !== undefined
+    )
+    const averageResponseTime =
+      durationsWithValues.length > 0
+        ? durationsWithValues.reduce((sum, m) => sum + m.duration!, 0) /
+          durationsWithValues.length
+        : 0
 
     // Health checks
     const checks: HealthStatus['checks'] = {
-      'uptime': {
+      uptime: {
         status: 'pass',
         details: `${Math.round((now - this.startTime) / 1000)}s`,
       },
-      'error_rate': {
+      error_rate: {
         status: errorRate > 0.1 ? 'fail' : 'pass', // Fail if >10% error rate
         details: `${(errorRate * 100).toFixed(1)}%`,
       },
-      'response_time': {
+      response_time: {
         status: averageResponseTime > 5000 ? 'fail' : 'pass', // Fail if >5s average
         details: `${averageResponseTime.toFixed(0)}ms`,
       },
-      'memory_usage': {
+      memory_usage: {
         status: this.logs.length > this.MAX_LOGS * 0.9 ? 'fail' : 'pass',
         details: `${this.logs.length}/${this.MAX_LOGS} logs`,
-      }
+      },
     }
 
     // Determine overall status
-    const failedChecks = Object.values(checks).filter(check => check.status === 'fail').length
+    const failedChecks = Object.values(checks).filter(
+      check => check.status === 'fail'
+    ).length
     const status: HealthStatus['status'] =
-      failedChecks === 0 ? 'healthy' :
-      failedChecks <= 1 ? 'degraded' :
-      'unhealthy'
+      failedChecks === 0
+        ? 'healthy'
+        : failedChecks <= 1
+          ? 'degraded'
+          : 'unhealthy'
 
     return {
       status,
@@ -416,8 +465,8 @@ class ObservabilityManager {
         uptime: now - this.startTime,
         requestsPerMinute,
         errorRate,
-        averageResponseTime: Math.round(averageResponseTime)
-      }
+        averageResponseTime: Math.round(averageResponseTime),
+      },
     }
   }
 
@@ -447,8 +496,8 @@ class ObservabilityManager {
       metadata: {
         logsCount: this.logs.length,
         metricsCount: this.metrics.length,
-        activeRequestsCount: this.activeRequests.size
-      }
+        activeRequestsCount: this.activeRequests.size,
+      },
     })
   }
 
@@ -465,8 +514,8 @@ class ObservabilityManager {
         logs: this.logs.length,
         metrics: this.metrics.length,
         maxLogs: this.MAX_LOGS,
-        maxMetrics: this.MAX_METRICS
-      }
+        maxMetrics: this.MAX_METRICS,
+      },
     }
   }
 }
@@ -497,24 +546,26 @@ export const withObservability = {
       requestId,
       userId: options.userId,
       event: options.event,
-      metadata: options.metadata
+      metadata: options.metadata,
     })
 
     try {
       const result = await fn(requestId)
-      const duration = observability.endRequest(requestId) || Date.now() - startTime
+      const duration =
+        observability.endRequest(requestId) || Date.now() - startTime
 
       observability.info(`Completed ${operation}`, {
         requestId,
         userId: options.userId,
         event: options.event,
         duration,
-        metadata: options.metadata
+        metadata: options.metadata,
       })
 
       return result
     } catch (error) {
-      const duration = observability.endRequest(requestId) || Date.now() - startTime
+      const duration =
+        observability.endRequest(requestId) || Date.now() - startTime
 
       observability.error(`Failed ${operation}`, {
         requestId,
@@ -522,12 +573,12 @@ export const withObservability = {
         event: options.event,
         duration,
         error: error as Error,
-        metadata: options.metadata
+        metadata: options.metadata,
       })
 
       throw error
     }
-  }
+  },
 }
 
 // Export types

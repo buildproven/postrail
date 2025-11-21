@@ -44,7 +44,10 @@ export async function POST(request: NextRequest) {
     const clientIP = ssrfProtection.getClientIP(request)
 
     // Rate limiting: Check if user/IP can make scraping requests
-    const rateLimitResult = await ssrfProtection.checkRateLimit(user.id, clientIP)
+    const rateLimitResult = await ssrfProtection.checkRateLimit(
+      user.id,
+      clientIP
+    )
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         {
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest) {
           status: 429,
           headers: {
             'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
-          }
+          },
         }
       )
     }
@@ -64,12 +67,15 @@ export async function POST(request: NextRequest) {
     // Enhanced SSRF Protection: validate URL with DNS resolution, port filtering, and domain blocking
     const urlValidation = await ssrfProtection.validateUrl(url)
     if (!urlValidation.allowed) {
-      console.log(`SSRF protection blocked URL: ${url}, reason: ${urlValidation.error}, IP: ${urlValidation.ip || 'unknown'}`)
+      console.log(
+        `SSRF protection blocked URL: ${url}, reason: ${urlValidation.error}, IP: ${urlValidation.ip || 'unknown'}`
+      )
       return NextResponse.json(
         {
           error: 'URL validation failed',
           details: urlValidation.error,
-          suggestion: 'Please use a public website URL with standard HTTP/HTTPS ports (80/443)'
+          suggestion:
+            'Please use a public website URL with standard HTTP/HTTPS ports (80/443)',
         },
         { status: 403 }
       )

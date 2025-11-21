@@ -12,7 +12,8 @@ import { ssrfProtection } from '@/lib/ssrf-protection'
 export async function GET(request: NextRequest) {
   try {
     // Check if status endpoints are enabled (defaults disabled in production)
-    const statusEndpointsEnabled = process.env.ENABLE_STATUS_ENDPOINTS === 'true'
+    const statusEndpointsEnabled =
+      process.env.ENABLE_STATUS_ENDPOINTS === 'true'
     if (!statusEndpointsEnabled) {
       return NextResponse.json(
         { error: 'Status endpoints disabled' },
@@ -38,7 +39,10 @@ export async function GET(request: NextRequest) {
     const clientIP = ssrfProtection.getClientIP(request)
 
     // Check current rate limit status (without incrementing)
-    const rateLimitCheck = await ssrfProtection.checkRateLimit(user.id, clientIP)
+    const rateLimitCheck = await ssrfProtection.checkRateLimit(
+      user.id,
+      clientIP
+    )
 
     // SECURITY: System statistics only for admins (blocked for now)
     // TODO: Implement proper admin role checking
@@ -61,7 +65,8 @@ export async function GET(request: NextRequest) {
           'Cloud metadata protection',
           'Redirect prevention',
         ],
-        description: 'Multi-layered SSRF protection with enhanced security controls',
+        description:
+          'Multi-layered SSRF protection with enhanced security controls',
       },
       // client: {  // REMOVED: Potential IP disclosure
       //   ip: clientIP,
