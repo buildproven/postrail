@@ -35,7 +35,10 @@ const ENV_CONFIGS: EnvConfig[] = [
     required: true,
     validator: (value: string) => {
       if (value.length < 100) {
-        return { valid: false, message: 'Appears to be too short for a valid Supabase anon key' }
+        return {
+          valid: false,
+          message: 'Appears to be too short for a valid Supabase anon key',
+        }
       }
       return { valid: true }
     },
@@ -49,11 +52,15 @@ const ENV_CONFIGS: EnvConfig[] = [
         return { valid: false, message: 'Must start with "sk-ant-"' }
       }
       if (value.length < 50) {
-        return { valid: false, message: 'Appears to be too short for a valid Anthropic API key' }
+        return {
+          valid: false,
+          message: 'Appears to be too short for a valid Anthropic API key',
+        }
       }
       return { valid: true }
     },
-    description: 'Anthropic Claude API key (get from https://console.anthropic.com/)',
+    description:
+      'Anthropic Claude API key (get from https://console.anthropic.com/)',
   },
   {
     name: 'ENCRYPTION_KEY',
@@ -63,23 +70,29 @@ const ENV_CONFIGS: EnvConfig[] = [
       if (!/^[0-9a-fA-F]{64}$/.test(value)) {
         return {
           valid: false,
-          message: 'Must be exactly 64 hexadecimal characters (32 bytes) for AES-256. Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+          message:
+            "Must be exactly 64 hexadecimal characters (32 bytes) for AES-256. Generate with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
         }
       }
       return { valid: true }
     },
-    description: 'AES-256 encryption key (64 hex chars). Generate with crypto.randomBytes(32).toString("hex")',
+    description:
+      'AES-256 encryption key (64 hex chars). Generate with crypto.randomBytes(32).toString("hex")',
   },
   {
     name: 'RATE_LIMIT_MODE',
     required: false,
     validator: (value: string) => {
       if (!['memory', 'redis', 'disabled'].includes(value)) {
-        return { valid: false, message: 'Must be one of: memory, redis, disabled' }
+        return {
+          valid: false,
+          message: 'Must be one of: memory, redis, disabled',
+        }
       }
       return { valid: true }
     },
-    description: 'Rate limiting mode: "redis" (distributed), "memory" (per-instance), or "disabled" (development only)',
+    description:
+      'Rate limiting mode: "redis" (distributed), "memory" (per-instance), or "disabled" (development only)',
   },
   {
     name: 'ENABLE_STATUS_ENDPOINTS',
@@ -90,7 +103,8 @@ const ENV_CONFIGS: EnvConfig[] = [
       }
       return { valid: true }
     },
-    description: 'Enable self-service rate limit and SSRF status endpoints (default: false, must be explicitly enabled)',
+    description:
+      'Enable self-service rate limit and SSRF status endpoints (default: false, must be explicitly enabled)',
   },
   {
     name: 'ENABLE_MONITORING_ENDPOINT',
@@ -101,7 +115,8 @@ const ENV_CONFIGS: EnvConfig[] = [
       }
       return { valid: true }
     },
-    description: 'Enable admin monitoring endpoint with system metrics and logs (default: false, admin-only)',
+    description:
+      'Enable admin monitoring endpoint with system metrics and logs (default: false, admin-only)',
   },
 ]
 

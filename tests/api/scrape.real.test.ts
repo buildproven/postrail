@@ -3,7 +3,6 @@
  * Tests actual code execution with mocked dependencies
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from '@/app/api/scrape/route'
 import { NextRequest } from 'next/server'
@@ -160,7 +159,7 @@ describe('/api/scrape - Real Integration Tests', () => {
       const data = await response.json()
 
       expect(response.status).toBe(403)
-      expect(data.error).toContain('private')
+      expect(data.details).toContain('private')
     })
 
     it('should reject private IP ranges (192.168.x.x)', async () => {
@@ -175,7 +174,7 @@ describe('/api/scrape - Real Integration Tests', () => {
       const data = await response.json()
 
       expect(response.status).toBe(403)
-      expect(data.error).toContain('private')
+      expect(data.details).toContain('private')
     })
 
     it('should reject private IP ranges (10.x.x.x)', async () => {
@@ -190,7 +189,7 @@ describe('/api/scrape - Real Integration Tests', () => {
       const data = await response.json()
 
       expect(response.status).toBe(403)
-      expect(data.error).toContain('private')
+      expect(data.details).toContain('private')
     })
 
     it('should allow public IPs', async () => {

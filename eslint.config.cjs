@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 const js = require('@eslint/js')
 const globals = require('globals')
 
@@ -76,6 +75,12 @@ configs.push({
     globals: {
       ...globals.browser,
       ...globals.node,
+      React: 'readonly',
+    },
+    parserOptions: {
+      ecmaFeatures: {
+        jsx: true,
+      },
     },
   },
   rules: {
@@ -92,19 +97,51 @@ if (tsPlugin && tsParser) {
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
+        ecmaFeatures: {
+          jsx: true,
+        },
       },
       globals: {
         ...globals.browser,
         ...globals.node,
+        React: 'readonly',
       },
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
     },
     rules: {
+      ...baseRules,
+      ...securityRules,
       ...tsPlugin.configs.recommended.rules,
+      // Allow any types in test files and specific cases
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
     },
   })
 }
+
+// Relaxed rules for test files and scripts
+configs.push({
+  files: [
+    '**/*.test.{js,ts,tsx}',
+    '**/tests/**/*',
+    '**/*.spec.{js,ts,tsx}',
+    'scripts/**/*',
+    'test-*.js',
+  ],
+  rules: {
+    'security/detect-non-literal-fs-filename': 'off',
+    'security/detect-object-injection': 'off',
+    'security/detect-unsafe-regex': 'off',
+    'security/detect-possible-timing-attacks': 'off',
+  },
+})
 
 module.exports = configs

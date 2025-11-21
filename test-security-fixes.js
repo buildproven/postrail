@@ -23,26 +23,29 @@ class SecurityTestSuite {
       passed: 0,
       failed: 0,
       skipped: 0,
-      details: []
+      details: [],
     }
     this.client = axios.create({
       baseURL: BASE_URL,
       timeout: 30000,
-      headers: AUTH_TOKEN ? {
-        'Authorization': `Bearer ${AUTH_TOKEN}`
-      } : {}
+      headers: AUTH_TOKEN
+        ? {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+          }
+        : {},
     })
   }
 
   log(message, level = 'info') {
     const timestamp = new Date().toISOString()
-    const emoji = {
-      'info': 'ℹ️',
-      'pass': '✅',
-      'fail': '❌',
-      'warn': '⚠️',
-      'skip': '⏭️'
-    }[level] || 'ℹ️'
+    const emoji =
+      {
+        info: 'ℹ️',
+        pass: '✅',
+        fail: '❌',
+        warn: '⚠️',
+        skip: '⏭️',
+      }[level] || 'ℹ️'
 
     console.log(`${timestamp} ${emoji} ${message}`)
   }
@@ -60,7 +63,7 @@ class SecurityTestSuite {
           name,
           status: 'skipped',
           reason: options.skipReason,
-          duration: 0
+          duration: 0,
         })
         return
       }
@@ -73,18 +76,20 @@ class SecurityTestSuite {
       this.results.details.push({
         name,
         status: 'passed',
-        duration: Math.round(duration)
+        duration: Math.round(duration),
       })
-
     } catch (error) {
       const duration = performance.now() - startTime
-      this.log(`Failed: ${name} - ${error.message} (${duration.toFixed(2)}ms)`, 'fail')
+      this.log(
+        `Failed: ${name} - ${error.message} (${duration.toFixed(2)}ms)`,
+        'fail'
+      )
       this.results.failed++
       this.results.details.push({
         name,
         status: 'failed',
         error: error.message,
-        duration: Math.round(duration)
+        duration: Math.round(duration),
       })
     }
   }
@@ -99,7 +104,9 @@ class SecurityTestSuite {
       // and provides meaningful validation
       const response = await this.client.get('/api/rate-limit-status')
       if (response.status !== 401 && response.status !== 200) {
-        throw new Error('Environment validation may be broken - unexpected status')
+        throw new Error(
+          'Environment validation may be broken - unexpected status'
+        )
       }
     })
 
@@ -140,7 +147,7 @@ class SecurityTestSuite {
     await this.test('SSRF protection blocks non-standard ports', async () => {
       try {
         const response = await this.client.post('/api/scrape', {
-          url: 'http://example.com:8080/test'
+          url: 'http://example.com:8080/test',
         })
 
         // Should block port 8080
@@ -155,7 +162,10 @@ class SecurityTestSuite {
         // If we get 403, check the error message mentions ports
         if (error.response?.status === 403) {
           const errorData = error.response.data
-          if (!errorData.details?.includes('port') && !errorData.details?.includes('Port')) {
+          if (
+            !errorData.details?.includes('port') &&
+            !errorData.details?.includes('Port')
+          ) {
             throw new Error('Port blocking active but error message unclear')
           }
         }
@@ -166,7 +176,7 @@ class SecurityTestSuite {
     await this.test('SSRF protection blocks private IPs', async () => {
       try {
         const response = await this.client.post('/api/scrape', {
-          url: 'http://192.168.1.1/test'
+          url: 'http://192.168.1.1/test',
         })
 
         if (response.status === 200) {
@@ -184,7 +194,7 @@ class SecurityTestSuite {
     await this.test('SSRF protection blocks cloud metadata', async () => {
       try {
         const response = await this.client.post('/api/scrape', {
-          url: 'http://169.254.169.254/latest/meta-data/'
+          url: 'http://169.254.169.254/latest/meta-data/',
         })
 
         if (response.status === 200) {
@@ -199,36 +209,45 @@ class SecurityTestSuite {
     })
 
     // Test 9: Rate Limiting - Multiple Rapid Requests
-    await this.test('Rate limiting prevents abuse', async () => {
-      const requests = []
+    await this.test(
+      'Rate limiting prevents abuse',
+      async () => {
+        const requests = []
 
-      // Try to make 10 rapid requests to generate-posts
-      for (let i = 0; i < 10; i++) {
-        requests.push(
-          this.client.post('/api/generate-posts', {
-            title: `Test ${i}`,
-            content: `Test content ${i}`
-          }).catch(err => err.response || err)
-        )
-      }
+        // Try to make 10 rapid requests to generate-posts
+        for (let i = 0; i < 10; i++) {
+          requests.push(
+            this.client
+              .post('/api/generate-posts', {
+                title: `Test ${i}`,
+                content: `Test content ${i}`,
+              })
+              .catch(err => err.response || err)
+          )
+        }
 
-      const responses = await Promise.all(requests)
-      const rateLimited = responses.filter(r => r.status === 429)
+        const responses = await Promise.all(requests)
+        const rateLimited = responses.filter(r => r.status === 429)
 
-      // Should have some rate limited responses if rate limiting is working
-      // (Unless all fail due to auth, which is also acceptable)
-      const authFailures = responses.filter(r => r.status === 401)
+        // Should have some rate limited responses if rate limiting is working
+        // (Unless all fail due to auth, which is also acceptable)
+        const authFailures = responses.filter(r => r.status === 401)
 
-      if (authFailures.length === responses.length) {
-        // All failed due to auth - can't test rate limiting without auth
-        this.log('All requests failed due to auth - rate limiting not testable', 'warn')
-        return
-      }
+        if (authFailures.length === responses.length) {
+          // All failed due to auth - can't test rate limiting without auth
+          this.log(
+            'All requests failed due to auth - rate limiting not testable',
+            'warn'
+          )
+          return
+        }
 
-      if (rateLimited.length === 0) {
-        this.log('No rate limited responses - may not be working', 'warn')
-      }
-    }, { skipReason: 'Requires authentication to test properly' })
+        if (rateLimited.length === 0) {
+          this.log('No rate limited responses - may not be working', 'warn')
+        }
+      },
+      { skipReason: 'Requires authentication to test properly' }
+    )
 
     // Test 10: Database Constraints
     await this.test('Database migration files exist', async () => {
@@ -238,7 +257,7 @@ class SecurityTestSuite {
       const migrationFiles = [
         'docs/DATABASE_MIGRATION_unique_constraint.sql',
         'docs/DATABASE_MIGRATION_twitter.sql',
-        'docs/DATABASE_MIGRATION_scheduled_time.sql'
+        'docs/DATABASE_MIGRATION_scheduled_time.sql',
       ]
 
       for (const file of migrationFiles) {
@@ -260,15 +279,15 @@ class SecurityTestSuite {
 
       return new Promise((resolve, reject) => {
         const tsc = spawn('npx', ['tsc', '--noEmit'], {
-          stdio: 'pipe'
+          stdio: 'pipe',
         })
 
         let stderr = ''
-        tsc.stderr.on('data', (data) => {
+        tsc.stderr.on('data', data => {
           stderr += data.toString()
         })
 
-        tsc.on('close', (code) => {
+        tsc.on('close', code => {
           if (code !== 0) {
             reject(new Error(`TypeScript compilation failed:\n${stderr}`))
           } else {
@@ -284,26 +303,36 @@ class SecurityTestSuite {
 
       return new Promise((resolve, reject) => {
         // Run ESLint focusing on security patterns
-        const eslint = spawn('npx', ['eslint', '.', '--ext', '.ts,.tsx,.js,.jsx', '--max-warnings=0'], {
-          stdio: 'pipe'
-        })
+        const eslint = spawn(
+          'npx',
+          ['eslint', '.', '--ext', '.ts,.tsx,.js,.jsx', '--max-warnings=0'],
+          {
+            stdio: 'pipe',
+          }
+        )
 
         let stdout = ''
         let stderr = ''
 
-        eslint.stdout.on('data', (data) => {
+        eslint.stdout.on('data', data => {
           stdout += data.toString()
         })
 
-        eslint.stderr.on('data', (data) => {
+        eslint.stderr.on('data', data => {
           stderr += data.toString()
         })
 
-        eslint.on('close', (code) => {
+        eslint.on('close', code => {
           if (code !== 0) {
             // Check if errors are just missing React imports (acceptable)
-            if (stderr.includes("'React' is not defined") && !stderr.includes('security/')) {
-              this.log('ESLint has React import warnings but no security issues', 'warn')
+            if (
+              stderr.includes("'React' is not defined") &&
+              !stderr.includes('security/')
+            ) {
+              this.log(
+                'ESLint has React import warnings but no security issues',
+                'warn'
+              )
               resolve()
             } else {
               reject(new Error(`ESLint failed:\n${stdout}\n${stderr}`))
@@ -322,7 +351,7 @@ class SecurityTestSuite {
         'lib/rate-limiter.ts',
         'lib/ssrf-protection.ts',
         'lib/observability.ts',
-        'lib/env-validator.ts'
+        'lib/env-validator.ts',
       ]
 
       for (const file of securityFiles) {
@@ -338,7 +367,7 @@ class SecurityTestSuite {
       const endpoints = [
         '/api/generate-posts',
         '/api/scrape',
-        '/api/platforms/twitter/post'
+        '/api/platforms/twitter/post',
       ]
 
       for (const endpoint of endpoints) {
@@ -349,7 +378,9 @@ class SecurityTestSuite {
           if (response.status === 500) {
             const text = JSON.stringify(response.data).toLowerCase()
             if (text.includes('stack') || text.includes('trace')) {
-              throw new Error(`Endpoint ${endpoint} leaks stack trace information`)
+              throw new Error(
+                `Endpoint ${endpoint} leaks stack trace information`
+              )
             }
           }
         } catch (error) {
@@ -357,7 +388,9 @@ class SecurityTestSuite {
           if (error.response?.status === 500) {
             const text = JSON.stringify(error.response.data).toLowerCase()
             if (text.includes('stack') || text.includes('trace')) {
-              throw new Error(`Endpoint ${endpoint} leaks stack trace information`)
+              throw new Error(
+                `Endpoint ${endpoint} leaks stack trace information`
+              )
             }
           }
         }
@@ -391,10 +424,18 @@ class SecurityTestSuite {
         })
     }
 
-    const total = this.results.passed + this.results.failed + this.results.skipped
-    const successRate = total > 0 ? Math.round((this.results.passed / (total - this.results.skipped)) * 100) : 0
+    const total =
+      this.results.passed + this.results.failed + this.results.skipped
+    const successRate =
+      total > 0
+        ? Math.round(
+            (this.results.passed / (total - this.results.skipped)) * 100
+          )
+        : 0
 
-    this.log(`🎯 Success Rate: ${successRate}% (${this.results.passed}/${total - this.results.skipped} executed tests)`)
+    this.log(
+      `🎯 Success Rate: ${successRate}% (${this.results.passed}/${total - this.results.skipped} executed tests)`
+    )
 
     if (this.results.failed === 0) {
       this.log('🎉 All security fixes validated successfully!', 'pass')

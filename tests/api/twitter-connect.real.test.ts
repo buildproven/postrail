@@ -3,7 +3,6 @@
  * Tests actual code execution with mocked dependencies
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST, GET, DELETE } from '@/app/api/platforms/twitter/connect/route'
 import { NextRequest } from 'next/server'

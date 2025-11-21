@@ -3,7 +3,6 @@
  * Tests actual code execution with mocked dependencies
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from '@/app/api/platforms/twitter/post/route'
 import { NextRequest } from 'next/server'
@@ -63,7 +62,9 @@ function createTwitterPostMockSupabase(
     if (table === 'social_posts') {
       return {
         select: vi.fn().mockReturnThis(),
+        update: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
           data:
             overrides.postData !== undefined
@@ -76,13 +77,6 @@ function createTwitterPostMockSupabase(
                 },
           error: overrides.postError || null,
         }),
-        update: vi.fn(() => ({
-          eq: vi
-            .fn()
-            .mockResolvedValue(
-              overrides.updateResult || { data: null, error: null }
-            ),
-        })),
       }
     }
     if (table === 'platform_connections') {

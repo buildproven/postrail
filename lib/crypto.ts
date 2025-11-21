@@ -10,8 +10,20 @@ const IV_LENGTH = 16
 const SALT_LENGTH = 64
 const KEY_LENGTH = 32
 
-// Get encryption key from environment variable
-// MUST be 32 bytes (64 hex characters) for AES-256
+/**
+ * Get encryption key from environment variable with validation
+ *
+ * CRITICAL: Key must be 32 bytes (64 hex characters) for AES-256-GCM.
+ * Generate with: `node -e "console.log(crypto.randomBytes(32).toString('hex'))"`
+ *
+ * @returns {Buffer} 32-byte encryption key for AES-256-GCM
+ * @throws {Error} If ENCRYPTION_KEY is missing or invalid length
+ *
+ * @example
+ * // In .env.local:
+ * // ENCRYPTION_KEY=abc123...def (64 hex chars)
+ * const key = getEncryptionKey()
+ */
 function getEncryptionKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY
 
@@ -29,8 +41,24 @@ function getEncryptionKey(): Buffer {
 }
 
 /**
- * Encrypt sensitive data (API keys, tokens)
- * Returns base64-encoded string with format: salt:iv:encrypted:authTag
+ * Encrypt sensitive data (API keys, tokens) using AES-256-GCM
+ *
+ * Security features:
+ * - Authenticated encryption (GCM mode prevents tampering)
+ * - Random IV per encryption (prevents pattern analysis)
+ * - Key derivation with PBKDF2 (100,000 iterations)
+ * - Random salt per encryption (prevents rainbow tables)
+ *
+ * Output format: `salt:iv:ciphertext:authTag` (all hex-encoded)
+ *
+ * @param {string} text - Plaintext to encrypt (e.g., API key, access token)
+ * @returns {string} Encrypted string in format `salt:iv:encrypted:authTag`
+ * @throws {Error} If ENCRYPTION_KEY is missing or invalid
+ *
+ * @example
+ * const encrypted = encrypt('sk-ant-api03-abc123...')
+ * // Returns: "7f3a8c...9e1b:2d4f6a...8c9e:1b2d4f...6a8c:9e1b2d..."
+ * // Store this in database, not the plaintext API key
  */
 export function encrypt(text: string): string {
   const key = getEncryptionKey()
@@ -56,8 +84,27 @@ export function encrypt(text: string): string {
 }
 
 /**
- * Decrypt sensitive data
- * Expects format: salt:iv:encrypted:authTag
+ * Decrypt sensitive data using AES-256-GCM
+ *
+ * Validates authentication tag to prevent tampering.
+ * Throws if ciphertext has been modified.
+ *
+ * @param {string} encryptedData - Encrypted string in format `salt:iv:encrypted:authTag`
+ * @returns {string} Decrypted plaintext (original API key, token, etc.)
+ * @throws {Error} If format invalid, ENCRYPTION_KEY wrong, or data tampered with
+ *
+ * @example
+ * const encrypted = '7f3a8c...9e1b:2d4f6a...8c9e:1b2d4f...6a8c:9e1b2d...'
+ * const apiKey = decrypt(encrypted)
+ * // Returns: "sk-ant-api03-abc123..."
+ *
+ * @example
+ * // Tampering detection
+ * try {
+ *   decrypt('tampered:data:here')
+ * } catch (err) {
+ *   console.error('Data was tampered with or wrong key')
+ * }
  */
 export function decrypt(encryptedData: string): string {
   const key = getEncryptionKey()
@@ -89,8 +136,25 @@ export function decrypt(encryptedData: string): string {
 }
 
 /**
- * Generate a random encryption key (for initial setup)
- * Use this once and store in .env.local as ENCRYPTION_KEY
+ * Generate a random 32-byte encryption key for AES-256-GCM
+ *
+ * **SECURITY**: Use this ONCE during initial setup, then:
+ * 1. Store in .env.local as `ENCRYPTION_KEY=<generated_key>`
+ * 2. Add to production environment variables
+ * 3. NEVER commit to version control
+ * 4. Keep backup in secure password manager
+ *
+ * @returns {string} 64-character hex string (32 bytes for AES-256)
+ *
+ * @example
+ * // Run once during setup:
+ * const key = generateEncryptionKey()
+ * console.log(`ENCRYPTION_KEY=${key}`)
+ * // Copy to .env.local
+ *
+ * @example
+ * // Or use Node.js directly:
+ * // node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
  */
 export function generateEncryptionKey(): string {
   return crypto.randomBytes(32).toString('hex')
@@ -98,7 +162,30 @@ export function generateEncryptionKey(): string {
 
 /**
  * Hash data for quick comparison (non-reversible)
- * Used for oauth_token field to allow quick lookups
+ *
+ * Use cases:
+ * - OAuth token fingerprints for quick database lookups
+ * - Duplicate detection without storing plaintext
+ * - Non-sensitive identifiers
+ *
+ * **NOT for passwords** - use bcrypt/argon2 for password hashing.
+ *
+ * @param {string} text - Data to hash (e.g., OAuth token)
+ * @returns {string} 64-character SHA-256 hex hash
+ *
+ * @example
+ * // Store encrypted token + hash for fast lookup:
+ * const encrypted = encrypt(oauthToken)
+ * const hashed = hash(oauthToken)
+ * await db.insert({
+ *   oauth_token: encrypted,  // Full token (encrypted)
+ *   oauth_token_hash: hashed // For lookups (hashed)
+ * })
+ *
+ * @example
+ * // Fast lookup without decrypting:
+ * const tokenHash = hash(incomingToken)
+ * const record = await db.findOne({ oauth_token_hash: tokenHash })
  */
 export function hash(text: string): string {
   return crypto.createHash('sha256').update(text).digest('hex')

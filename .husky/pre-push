@@ -5,7 +5,7 @@ echo "🔍 Running pre-push validation checks..."
 
 # Run ESLint
 echo "📝 Running ESLint..."
-npm run lint || {
+npx eslint . --ext .js,.jsx,.ts,.tsx || {
   echo "❌ ESLint failed! Fix errors before pushing."
   exit 1
 }

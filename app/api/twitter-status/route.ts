@@ -5,7 +5,7 @@
  * and debugging idempotency protection.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET() {
@@ -32,7 +32,8 @@ export async function GET() {
     // Get recent Twitter posts for this user
     const { data: recentPosts } = await supabase
       .from('social_posts')
-      .select(`
+      .select(
+        `
         id,
         platform,
         status,
@@ -42,26 +43,32 @@ export async function GET() {
         updated_at,
         created_at,
         newsletters!inner(user_id)
-      `)
+      `
+      )
       .eq('platform', 'twitter')
       .eq('newsletters.user_id', user.id)
       .order('updated_at', { ascending: false })
       .limit(10)
 
     // Count posts by status
-    const statusCounts = recentPosts?.reduce((acc, post) => {
-      acc[post.status] = (acc[post.status] || 0) + 1
-      return acc
-    }, {} as Record<string, number>) || {}
+    const statusCounts =
+      recentPosts?.reduce(
+        (acc, post) => {
+          acc[post.status] = (acc[post.status] || 0) + 1
+          return acc
+        },
+        {} as Record<string, number>
+      ) || {}
 
     // Check for posts in 'publishing' status that might be stuck
-    const stuckPosts = recentPosts?.filter(post => {
-      if (post.status !== 'publishing') return false
-      const now = new Date()
-      const updated = new Date(post.updated_at)
-      const timeSinceUpdate = now.getTime() - updated.getTime()
-      return timeSinceUpdate > 5 * 60 * 1000 // 5 minutes
-    }) || []
+    const stuckPosts =
+      recentPosts?.filter(post => {
+        if (post.status !== 'publishing') return false
+        const now = new Date()
+        const updated = new Date(post.updated_at)
+        const timeSinceUpdate = now.getTime() - updated.getTime()
+        return timeSinceUpdate > 5 * 60 * 1000 // 5 minutes
+      }) || []
 
     return NextResponse.json({
       user: {
@@ -80,14 +87,14 @@ export async function GET() {
           updated_at: post.updated_at,
           url: post.platform_post_id
             ? `https://twitter.com/i/web/status/${post.platform_post_id}`
-            : null
+            : null,
         })),
         statusCounts,
         stuckPosts: stuckPosts.map(post => ({
           id: post.id,
           status: post.status,
           timeSinceUpdate: Date.now() - new Date(post.updated_at).getTime(),
-          updated_at: post.updated_at
+          updated_at: post.updated_at,
         })),
       },
       idempotency: {
@@ -97,20 +104,24 @@ export async function GET() {
           'Status-based replay protection',
           'Optimistic locking with updated_at',
           'Publishing status timeout (1 minute)',
-          'Platform post ID tracking'
+          'Platform post ID tracking',
         ],
         statusFlow: [
           'draft → publishing → published (success)',
           'draft → publishing → failed (error)',
-          'published → return cached result (idempotent)'
-        ]
+          'published → return cached result (idempotent)',
+        ],
       },
       troubleshooting: {
-        stuckPosts: stuckPosts.length > 0 ? 'Some posts appear stuck in publishing status' : 'No stuck posts detected',
-        recommendation: stuckPosts.length > 0
-          ? 'Posts stuck in publishing status for >5 minutes may need manual intervention'
-          : 'All posts appear to be in normal status'
-      }
+        stuckPosts:
+          stuckPosts.length > 0
+            ? 'Some posts appear stuck in publishing status'
+            : 'No stuck posts detected',
+        recommendation:
+          stuckPosts.length > 0
+            ? 'Posts stuck in publishing status for >5 minutes may need manual intervention'
+            : 'All posts appear to be in normal status',
+      },
     })
   } catch (error) {
     console.error('Twitter status error:', error)

@@ -17,23 +17,27 @@ const mockSupabase = {
     })),
   },
   from: vi.fn(() => ({
-    insert: vi.fn(() => ({
-      select: vi.fn(() => ({
-        single: vi.fn(() => ({
-          data: {
-            id: 'newsletter-id',
-            user_id: 'test-user-id',
-            title: 'Test Newsletter',
-            content: 'Test content',
-            status: 'draft',
-          },
-          error: null,
-        })),
-      })),
-    })),
-    delete: vi.fn(() => ({
-      eq: vi.fn(() => Promise.resolve({ error: null })),
-    })),
+    select: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    upsert: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue({
+      data: {
+        id: 'newsletter-id',
+        user_id: 'test-user-id',
+        title: 'Test Newsletter',
+        content: 'Test content',
+        status: 'draft',
+      },
+      error: null,
+    }),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: null,
+      error: null,
+    }),
   })),
 }
 
@@ -45,13 +49,20 @@ vi.mock('@/lib/supabase/server', () => ({
 const mockMessagesCreate = vi.fn()
 
 vi.mock('@anthropic-ai/sdk', () => {
+  class MockAPIError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = 'APIError'
+    }
+  }
+
   return {
     default: class MockAnthropic {
       messages = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         create: (...args: any[]) => mockMessagesCreate(...args),
       }
     },
+    APIError: MockAPIError,
   }
 })
 
@@ -142,7 +153,6 @@ describe('/api/generate-posts - Real API Tests', () => {
       mockSupabase.from.mockReturnValue({
         insert: insertMock,
         delete: vi.fn(() => ({ eq: vi.fn() })),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
 
       const request = new NextRequest('http://localhost/api/generate-posts', {
@@ -227,7 +237,6 @@ describe('/api/generate-posts - Real API Tests', () => {
           })),
         })),
         delete: deleteMock,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
 
       const request = new NextRequest('http://localhost/api/generate-posts', {
@@ -255,7 +264,6 @@ describe('/api/generate-posts - Real API Tests', () => {
             })),
           })),
         })),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
 
       const request = new NextRequest('http://localhost/api/generate-posts', {

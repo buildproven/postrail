@@ -7,7 +7,6 @@
  * Scheduled times will be set later during the scheduling phase.
  */
 
-/* eslint-disable @typescript-eslint/no-require-imports */
 const { createClient } = require('@supabase/supabase-js')
 const fs = require('fs')
 const path = require('path')

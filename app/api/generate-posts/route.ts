@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import Anthropic, { APIError as AnthropicAPIError } from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { observability, withObservability } from '@/lib/observability'
@@ -36,6 +36,25 @@ interface GeneratedPost {
   characterCount: number
 }
 
+/**
+ * Generates a social media post using Claude AI for a specific platform and timing
+ *
+ * @param {string} newsletterTitle - Title of the newsletter being promoted
+ * @param {string} newsletterContent - Full content of the newsletter (truncated to 2000 chars for API)
+ * @param {string} platform - Target platform ('linkedin', 'threads', 'facebook', 'twitter')
+ * @param {string} postType - Timing strategy ('pre_cta' for before newsletter, 'post_cta' for after)
+ * @returns {Promise<string>} Generated post text optimized for the platform
+ * @throws {Error} When Anthropic API call fails or returns unexpected format
+ *
+ * @example
+ * const post = await generatePost(
+ *   "10 Marketing Tips",
+ *   "Full newsletter content...",
+ *   "linkedin",
+ *   "pre_cta"
+ * )
+ * // Returns: "🚀 Tomorrow's newsletter reveals 10 marketing secrets..."
+ */
 async function generatePost(
   newsletterTitle: string,
   newsletterContent: string,
@@ -147,286 +166,328 @@ Generate a ${postType} post for ${platform}.`
   }
 }
 
+/**
+ * POST /api/generate-posts - Generate AI-powered social media posts for a newsletter
+ *
+ * Creates 6-8 platform-optimized social posts (pre/post CTA variants) using Claude AI.
+ * Implements comprehensive security controls:
+ * - Rate limiting: 3/min, 10/hour per user
+ * - Content deduplication: Cached results for identical content
+ * - Request tracing: Full observability with correlation IDs
+ * - Transaction safety: Rollback newsletter creation if post generation fails
+ *
+ * @param {NextRequest} request - Next.js request with JSON body {title, content}
+ * @returns {Promise<NextResponse>} JSON response with newsletter ID and generated posts
+ * @throws {NextResponse} 401 - User not authenticated
+ * @throws {NextResponse} 400 - Missing required content field
+ * @throws {NextResponse} 429 - Rate limit exceeded (includes retry-after header)
+ * @throws {NextResponse} 500 - API key missing, post generation failed, or database error
+ *
+ * @example
+ * POST /api/generate-posts
+ * {
+ *   "title": "10 Marketing Tips",
+ *   "content": "Full newsletter content..."
+ * }
+ *
+ * Response:
+ * {
+ *   "newsletterId": "uuid",
+ *   "postsGenerated": 8,
+ *   "posts": [{platform: "linkedin", postType: "pre_cta", content: "..."}, ...]
+ * }
+ */
 export async function POST(request: NextRequest) {
-  return withObservability.trace(
-    'ai_generation',
-    async (requestId: string) => {
-      try {
-        // Runtime validation: fail fast if API key missing
-        if (!process.env.ANTHROPIC_API_KEY) {
-          return NextResponse.json(
-            {
-              error:
-                'Server configuration error: ANTHROPIC_API_KEY not set. Contact administrator.',
+  return withObservability.trace('ai_generation', async (requestId: string) => {
+    try {
+      // Runtime validation: fail fast if API key missing
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return NextResponse.json(
+          {
+            error:
+              'Server configuration error: ANTHROPIC_API_KEY not set. Contact administrator.',
+          },
+          { status: 500 }
+        )
+      }
+
+      const supabase = await createClient()
+
+      // Check authentication
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+
+      const { title, content } = await request.json()
+
+      if (!content) {
+        return NextResponse.json(
+          { error: 'Newsletter content is required' },
+          { status: 400 }
+        )
+      }
+
+      // Generate content hash for rate limiting + deduplication
+      const contentHash = redisRateLimiter.generateContentHash(
+        title || 'Untitled Newsletter',
+        content,
+        user.id
+      )
+
+      // Rate limiting with integrated deduplication
+      const rateLimitResult = await redisRateLimiter.checkRateLimit(
+        user.id,
+        contentHash
+      )
+
+      if (!rateLimitResult.allowed) {
+        // Handle cached results (from deduplication)
+        if (rateLimitResult.reason === 'cached_result') {
+          observability.info('AI generation returned from cache', {
+            requestId,
+            userId: user.id,
+            event: 'ai_generation_success',
+            metadata: {
+              fromCache: true,
+              contentHash,
             },
+          })
+
+          return NextResponse.json({
+            fromCache: true,
+            message: 'Posts already generated for this content',
+          })
+        }
+
+        // Handle rate limiting
+        observability.warn('AI generation rate limited', {
+          requestId,
+          userId: user.id,
+          event: 'ai_generation_rate_limited',
+          metadata: {
+            reason: rateLimitResult.reason,
+            retryAfter: rateLimitResult.retryAfter,
+          },
+        })
+
+        const userStatus = await redisRateLimiter.getUserStatus(user.id)
+        return NextResponse.json(
+          {
+            error: 'Rate limit exceeded',
+            message: rateLimitResult.reason,
+            retryAfter: rateLimitResult.retryAfter,
+            userStatus,
+          },
+          {
+            status: 429,
+            headers: {
+              'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
+              'X-RateLimit-Remaining': userStatus.requestsRemaining.toString(),
+              'X-RateLimit-Reset': userStatus.resetTime.toString(),
+            },
+          }
+        )
+      }
+
+      // Note: Redis rate limiter handles deduplication internally via TTL keys
+      // No need for separate pending request registration
+
+      // Check if newsletter with this content already exists for this user
+      const { data: existingNewsletter } = await supabase
+        .from('newsletters')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('title', title || 'Untitled Newsletter')
+        .eq('status', 'draft')
+        .maybeSingle()
+
+      let newsletter
+      if (existingNewsletter) {
+        // Check if posts already exist for this newsletter
+        const { data: existingPosts, error: postsCheckError } = await supabase
+          .from('social_posts')
+          .select('*')
+          .eq('newsletter_id', existingNewsletter.id)
+
+        if (postsCheckError) {
+          console.error('Error checking existing posts:', postsCheckError)
+          return NextResponse.json(
+            { error: 'Failed to check existing posts' },
             { status: 500 }
           )
         }
 
-        const supabase = await createClient()
-
-        // Check authentication
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-
-        if (!user) {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
-    const { title, content } = await request.json()
-
-    if (!content) {
-      return NextResponse.json(
-        { error: 'Newsletter content is required' },
-        { status: 400 }
-      )
-    }
-
-    // Generate content hash for rate limiting + deduplication
-    const contentHash = redisRateLimiter.generateContentHash(title || 'Untitled Newsletter', content, user.id)
-
-    // Rate limiting with integrated deduplication
-    const rateLimitResult = await redisRateLimiter.checkRateLimit(user.id, contentHash)
-
-    if (!rateLimitResult.allowed) {
-      // Handle cached results (from deduplication)
-      if (rateLimitResult.reason === 'cached_result') {
-        observability.info('AI generation returned from cache', {
-          requestId,
-          userId: user.id,
-          event: 'ai_generation_success',
-          metadata: {
-            fromCache: true,
-            contentHash
-          }
-        })
-
-        return NextResponse.json({
-          fromCache: true,
-          message: 'Posts already generated for this content'
-        })
-      }
-
-      // Handle rate limiting
-      observability.warn('AI generation rate limited', {
-        requestId,
-        userId: user.id,
-        event: 'ai_generation_rate_limited',
-        metadata: {
-          reason: rateLimitResult.reason,
-          retryAfter: rateLimitResult.retryAfter
-        }
-      })
-
-      const userStatus = await redisRateLimiter.getUserStatus(user.id)
-      return NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          message: rateLimitResult.reason,
-          retryAfter: rateLimitResult.retryAfter,
-          userStatus
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
-            'X-RateLimit-Remaining': userStatus.requestsRemaining.toString(),
-            'X-RateLimit-Reset': userStatus.resetTime.toString()
-          }
-        }
-      )
-    }
-
-    // Note: Redis rate limiter handles deduplication internally via TTL keys
-    // No need for separate pending request registration
-
-    // Check if newsletter with this content already exists for this user
-    const { data: existingNewsletter } = await supabase
-      .from('newsletters')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('title', title || 'Untitled Newsletter')
-      .eq('status', 'draft')
-      .maybeSingle()
-
-    let newsletter
-    if (existingNewsletter) {
-      // Check if posts already exist for this newsletter
-      const { data: existingPosts, error: postsCheckError } = await supabase
-        .from('social_posts')
-        .select('*')
-        .eq('newsletter_id', existingNewsletter.id)
-
-      if (postsCheckError) {
-        console.error('Error checking existing posts:', postsCheckError)
-        return NextResponse.json(
-          { error: 'Failed to check existing posts' },
-          { status: 500 }
-        )
-      }
-
-      if (existingPosts && existingPosts.length > 0) {
-        // Posts already exist, return them instead of generating new ones
-        console.log(`Posts already exist for newsletter ${existingNewsletter.id}, returning existing posts`)
-        return NextResponse.json({
-          message: 'Posts already generated for this newsletter',
-          newsletter: { id: existingNewsletter.id },
-          posts: existingPosts,
-          isExisting: true,
-        })
-      }
-
-      // Newsletter exists but no posts, use existing newsletter
-      newsletter = existingNewsletter
-      console.log(`Using existing newsletter ${newsletter.id}, generating posts`)
-    } else {
-      // Create new newsletter record
-      const { data: newNewsletter, error: newsletterError } = await supabase
-        .from('newsletters')
-        .insert({
-          user_id: user.id,
-          title: title || 'Untitled Newsletter',
-          content,
-          status: 'draft',
-        })
-        .select()
-        .single()
-
-      if (newsletterError) {
-        console.error('Newsletter creation error:', newsletterError)
-        return NextResponse.json(
-          { error: 'Failed to create newsletter' },
-          { status: 500 }
-        )
-      }
-      newsletter = newNewsletter
-      console.log(`Created new newsletter ${newsletter.id}`)
-    }
-
-    // Generate all posts in parallel with timeout protection
-    const postPromises = PLATFORMS.flatMap(platform =>
-      POST_TYPES.map(postType =>
-        Promise.race([
-          generatePost(
-            title || 'Untitled Newsletter',
-            content,
-            platform,
-            postType
-          ).then(postContent => ({
-            platform,
-            postType,
-            content: postContent,
-            characterCount: postContent.length,
-          })),
-          new Promise<null>((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout after 30s')), 30000)
-          ),
-        ]).catch(error => {
-          console.error(
-            `Failed to generate ${postType} for ${platform}:`,
-            error
+        if (existingPosts && existingPosts.length > 0) {
+          // Posts already exist, return them instead of generating new ones
+          console.log(
+            `Posts already exist for newsletter ${existingNewsletter.id}, returning existing posts`
           )
-          return null // Return null for failed posts
-        })
-      )
-    )
+          return NextResponse.json({
+            message: 'Posts already generated for this newsletter',
+            newsletter: { id: existingNewsletter.id },
+            posts: existingPosts,
+            isExisting: true,
+          })
+        }
 
-    const results = await Promise.all(postPromises)
-    const posts = results.filter((p): p is GeneratedPost => p !== null)
+        // Newsletter exists but no posts, use existing newsletter
+        newsletter = existingNewsletter
+        console.log(
+          `Using existing newsletter ${newsletter.id}, generating posts`
+        )
+      } else {
+        // Create new newsletter record
+        const { data: newNewsletter, error: newsletterError } = await supabase
+          .from('newsletters')
+          .insert({
+            user_id: user.id,
+            title: title || 'Untitled Newsletter',
+            content,
+            status: 'draft',
+          })
+          .select()
+          .single()
 
-    // Transaction: Save posts and handle rollback on failure
-    if (posts.length === 0) {
-      // No posts generated - delete the newsletter and fail
-      await supabase.from('newsletters').delete().eq('id', newsletter.id)
-      return NextResponse.json(
-        { error: 'All post generation attempts failed. Please try again.' },
-        { status: 500 }
-      )
-    }
-
-    // Save generated posts to database using upsert to handle unique constraint
-    // scheduled_time is null for drafts, will be set during scheduling phase
-    const socialPostsData = posts.map(post => ({
-      newsletter_id: newsletter.id,
-      platform: post.platform,
-      post_type: post.postType,
-      content: post.content,
-      character_count: post.characterCount,
-      scheduled_time: null,
-      status: 'draft',
-    }))
-
-    // Use upsert to handle the unique constraint gracefully
-    // If posts already exist for this (newsletter_id, platform, post_type), update them
-    const { error: postsError } = await supabase
-      .from('social_posts')
-      .upsert(socialPostsData, {
-        onConflict: 'newsletter_id,platform,post_type',
-        ignoreDuplicates: false, // Update existing records instead of ignoring
-      })
-
-    if (postsError) {
-      console.error('Social posts creation error:', postsError)
-      // Only rollback if this is a newly created newsletter (not existing)
-      if (!existingNewsletter) {
-        console.log(`Rolling back newly created newsletter ${newsletter.id}`)
-        await supabase.from('newsletters').delete().eq('id', newsletter.id)
+        if (newsletterError) {
+          console.error('Newsletter creation error:', newsletterError)
+          return NextResponse.json(
+            { error: 'Failed to create newsletter' },
+            { status: 500 }
+          )
+        }
+        newsletter = newNewsletter
+        console.log(`Created new newsletter ${newsletter.id}`)
       }
-      return NextResponse.json(
-        { error: 'Failed to save generated posts' },
-        { status: 500 }
+
+      // Generate all posts in parallel with timeout protection
+      const postPromises = PLATFORMS.flatMap(platform =>
+        POST_TYPES.map(postType =>
+          Promise.race([
+            generatePost(
+              title || 'Untitled Newsletter',
+              content,
+              platform,
+              postType
+            ).then(postContent => ({
+              platform,
+              postType,
+              content: postContent,
+              characterCount: postContent.length,
+            })),
+            new Promise<null>((_, reject) =>
+              setTimeout(() => reject(new Error('Timeout after 30s')), 30000)
+            ),
+          ]).catch(error => {
+            console.error(
+              `Failed to generate ${postType} for ${platform}:`,
+              error
+            )
+            return null // Return null for failed posts
+          })
+        )
       )
-    }
 
-    const finalResult = {
-      newsletterId: newsletter.id,
-      postsGenerated: posts.length,
-      posts,
-    }
+      const results = await Promise.all(postPromises)
+      const posts = results.filter((p): p is GeneratedPost => p !== null)
 
-    // Log successful generation
-    observability.info('AI generation completed successfully', {
-      requestId,
-      userId: user.id,
-      event: 'ai_generation_success',
-      metadata: {
+      // Transaction: Save posts and handle rollback on failure
+      if (posts.length === 0) {
+        // No posts generated - delete the newsletter and fail
+        await supabase.from('newsletters').delete().eq('id', newsletter.id)
+        return NextResponse.json(
+          { error: 'All post generation attempts failed. Please try again.' },
+          { status: 500 }
+        )
+      }
+
+      // Save generated posts to database using upsert to handle unique constraint
+      // scheduled_time is null for drafts, will be set during scheduling phase
+      const socialPostsData = posts.map(post => ({
+        newsletter_id: newsletter.id,
+        platform: post.platform,
+        post_type: post.postType,
+        content: post.content,
+        character_count: post.characterCount,
+        scheduled_time: null,
+        status: 'draft',
+      }))
+
+      // Use upsert to handle the unique constraint gracefully
+      // If posts already exist for this (newsletter_id, platform, post_type), update them
+      const { error: postsError } = await supabase
+        .from('social_posts')
+        .upsert(socialPostsData, {
+          onConflict: 'newsletter_id,platform,post_type',
+          ignoreDuplicates: false, // Update existing records instead of ignoring
+        })
+
+      if (postsError) {
+        console.error('Social posts creation error:', postsError)
+        // Only rollback if this is a newly created newsletter (not existing)
+        if (!existingNewsletter) {
+          console.log(`Rolling back newly created newsletter ${newsletter.id}`)
+          await supabase.from('newsletters').delete().eq('id', newsletter.id)
+        }
+        return NextResponse.json(
+          { error: 'Failed to save generated posts' },
+          { status: 500 }
+        )
+      }
+
+      const finalResult = {
         newsletterId: newsletter.id,
         postsGenerated: posts.length,
-        platforms: posts.map(p => p.platform),
-        fromCache: false
+        posts,
       }
-    })
 
-    // Store successful result for deduplication
-    await redisRateLimiter.storeDedupResult(user.id, contentHash, finalResult)
+      // Log successful generation
+      observability.info('AI generation completed successfully', {
+        requestId,
+        userId: user.id,
+        event: 'ai_generation_success',
+        metadata: {
+          newsletterId: newsletter.id,
+          postsGenerated: posts.length,
+          platforms: posts.map(p => p.platform),
+          fromCache: false,
+        },
+      })
 
-    return NextResponse.json(finalResult)
-  } catch (error) {
-    observability.error('AI generation failed', {
-      requestId,
-      userId: undefined, // user may not be defined if error occurs early
-      event: 'ai_generation_failure',
-      error: error as Error,
-      metadata: {
-        errorType: error instanceof Anthropic.APIError ? 'anthropic_api_error' : 'unknown_error'
+      // Store successful result for deduplication
+      await redisRateLimiter.storeDedupResult(user.id, contentHash, finalResult)
+
+      return NextResponse.json(finalResult)
+    } catch (error) {
+      observability.error('AI generation failed', {
+        requestId,
+        userId: undefined, // user may not be defined if error occurs early
+        event: 'ai_generation_failure',
+        error: error as Error,
+        metadata: {
+          errorType:
+            error instanceof AnthropicAPIError
+              ? 'anthropic_api_error'
+              : 'unknown_error',
+        },
+      })
+
+      // Note: Redis rate limiter doesn't store failed results for deduplication
+
+      if (error instanceof AnthropicAPIError) {
+        return NextResponse.json(
+          { error: `AI generation failed: ${error.message}` },
+          { status: 500 }
+        )
       }
-    })
 
-    // Note: Redis rate limiter doesn't store failed results for deduplication
-
-    if (error instanceof Anthropic.APIError) {
       return NextResponse.json(
-        { error: `AI generation failed: ${error.message}` },
+        { error: 'Failed to generate posts' },
         { status: 500 }
       )
     }
-
-    return NextResponse.json(
-      { error: 'Failed to generate posts' },
-      { status: 500 }
-    )
-  }
-  }
-  )
+  })
 }

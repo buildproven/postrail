@@ -8,34 +8,39 @@ This runbook provides procedures for operating LetterFlow securely in production
 
 ### Environment Variables Overview
 
-| Key | Type | Rotation Schedule | Impact |
-|-----|------|------------------|--------|
-| `ENCRYPTION_KEY` | AES-256 (64 hex chars) | Quarterly | User credential decryption |
-| `ANTHROPIC_API_KEY` | API Key | As needed | AI content generation |
-| `NEXT_PUBLIC_SUPABASE_URL` | URL | Rarely | Database connection |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | JWT | Rarely | Database authentication |
+| Key                             | Type                   | Rotation Schedule | Impact                     |
+| ------------------------------- | ---------------------- | ----------------- | -------------------------- |
+| `ENCRYPTION_KEY`                | AES-256 (64 hex chars) | Quarterly         | User credential decryption |
+| `ANTHROPIC_API_KEY`             | API Key                | As needed         | AI content generation      |
+| `NEXT_PUBLIC_SUPABASE_URL`      | URL                    | Rarely            | Database connection        |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | JWT                    | Rarely            | Database authentication    |
 
 ### ENCRYPTION_KEY Rotation
 
 **When to Rotate:**
+
 - Quarterly (recommended)
 - After security incident
 - After team member departure with access
 - If key compromise suspected
 
 **Procedure:**
+
 1. **Generate new key:**
+
    ```bash
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
 
 2. **Test key format:**
+
    ```bash
    # Key must be exactly 64 hexadecimal characters
    echo "NEW_KEY_HERE" | grep -E '^[0-9a-fA-F]{64}$' || echo "Invalid format"
    ```
 
 3. **Deploy with gradual rollout:**
+
    ```bash
    # 1. Deploy new key to staging
    # 2. Test all encrypted operations
@@ -54,11 +59,13 @@ This runbook provides procedures for operating LetterFlow securely in production
 ### ANTHROPIC_API_KEY Rotation
 
 **When to Rotate:**
+
 - Monthly (recommended)
 - After rate limit issues
 - If usage anomalies detected
 
 **Procedure:**
+
 1. Generate new API key in Anthropic Console
 2. Test new key in staging:
    ```bash
@@ -76,11 +83,13 @@ This runbook provides procedures for operating LetterFlow securely in production
 #### 1. Rate Limit Abuse Detection
 
 **Symptoms:**
+
 - High rate limit events in monitoring
 - `/api/rate-limit-status` shows multiple users at limits
 - Unusual API usage patterns
 
 **Immediate Response:**
+
 ```bash
 # Check rate limiting status
 curl http://localhost:3000/api/monitoring?section=security
@@ -90,6 +99,7 @@ curl http://localhost:3000/api/monitoring?section=logs&level=warn&since=3600000
 ```
 
 **Mitigation:**
+
 1. Identify abusive users in monitoring logs
 2. Lower rate limits temporarily if needed (edit `lib/rate-limiter.ts`)
 3. Consider IP-based blocking for severe abuse
@@ -98,11 +108,13 @@ curl http://localhost:3000/api/monitoring?section=logs&level=warn&since=3600000
 #### 2. SSRF Attack Attempts
 
 **Symptoms:**
+
 - Multiple SSRF blocked events in logs
 - Suspicious URL patterns in scraping requests
 - Attempts to access internal services
 
 **Investigation:**
+
 ```bash
 # Check SSRF protection status
 curl http://localhost:3000/api/ssrf-status
@@ -112,6 +124,7 @@ curl http://localhost:3000/api/monitoring?section=security
 ```
 
 **Response:**
+
 1. Review blocked URLs and attack patterns
 2. Update domain blocklist if new patterns detected
 3. Consider additional IP range blocking
@@ -120,11 +133,13 @@ curl http://localhost:3000/api/monitoring?section=security
 #### 3. API Key Compromise
 
 **Symptoms:**
+
 - Unexpected API usage charges
 - Rate limit exhaustion
 - Unusual geographic access patterns
 
 **Immediate Actions:**
+
 1. **Rotate compromised keys immediately**
 2. **Review all recent API calls and generated content**
 3. **Check for unauthorized newsletter/post creation**
@@ -135,11 +150,13 @@ curl http://localhost:3000/api/monitoring?section=security
 #### 4. AI Generation Failures
 
 **Symptoms:**
+
 - High `ai_generation_failure` rate in metrics
 - Users reporting generation timeouts
 - Anthropic API errors
 
 **Diagnosis:**
+
 ```bash
 # Check AI generation metrics
 curl http://localhost:3000/api/monitoring?section=metrics
@@ -149,6 +166,7 @@ curl http://localhost:3000/api/monitoring?section=logs&event=ai_generation_failu
 ```
 
 **Resolution Steps:**
+
 1. Check Anthropic API status and rate limits
 2. Verify `ANTHROPIC_API_KEY` is valid
 3. Review generation timeouts (currently 30s)
@@ -158,11 +176,13 @@ curl http://localhost:3000/api/monitoring?section=logs&event=ai_generation_failu
 #### 5. Database Connection Issues
 
 **Symptoms:**
+
 - Supabase connection errors
 - Authentication failures
 - Data persistence failures
 
 **Immediate Actions:**
+
 1. Check Supabase dashboard for service status
 2. Verify `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 3. Test database connectivity:
@@ -181,6 +201,7 @@ curl http://localhost:3000/api/monitoring?section=logs&event=ai_generation_failu
 #### Twitter API Errors
 
 **Error: Rate Limit Exceeded**
+
 ```json
 {
   "error": "Rate limit exceeded",
@@ -189,12 +210,14 @@ curl http://localhost:3000/api/monitoring?section=logs&event=ai_generation_failu
 ```
 
 **Resolution:**
+
 1. Check `app/api/twitter-status` for stuck posts
 2. Wait for Twitter rate limit reset (15 minutes)
 3. Retry failed posts manually
 4. Consider implementing exponential backoff
 
 **Error: Authentication Failed**
+
 ```json
 {
   "error": "Authentication failed",
@@ -203,6 +226,7 @@ curl http://localhost:3000/api/monitoring?section=logs&event=ai_generation_failu
 ```
 
 **Resolution:**
+
 1. User must reconnect Twitter account
 2. Check encrypted credential storage
 3. Verify `ENCRYPTION_KEY` hasn't changed recently
@@ -211,12 +235,14 @@ curl http://localhost:3000/api/monitoring?section=logs&event=ai_generation_failu
 ### Stuck Posts in "Publishing" Status
 
 **Diagnosis:**
+
 ```bash
 # Check for stuck posts
 curl http://localhost:3000/api/twitter-status | jq '.posts.stuckPosts'
 ```
 
 **Resolution:**
+
 1. Identify posts stuck >5 minutes in "publishing" status
 2. Manually update status to "failed" in Supabase
 3. Allow users to retry
@@ -225,12 +251,14 @@ curl http://localhost:3000/api/twitter-status | jq '.posts.stuckPosts'
 ### Rate Limit Recovery
 
 **When Users Hit Limits:**
+
 ```bash
 # Check specific user status
 curl http://localhost:3000/api/rate-limit-status | jq '.user'
 ```
 
 **Options:**
+
 1. Wait for automatic reset (1 hour)
 2. Temporary limit increase for VIP users (manual)
 3. Review if limits are too restrictive
@@ -239,26 +267,29 @@ curl http://localhost:3000/api/rate-limit-status | jq '.user'
 
 ### Health Check Endpoints
 
-| Endpoint | Purpose | Expected Response |
-|----------|---------|-------------------|
-| `/api/monitoring?section=health` | Overall system health | `{"status": "healthy"}` |
-| `/api/rate-limit-status` | Rate limiting status | User limits and system stats |
-| `/api/ssrf-status` | SSRF protection status | Protection features and stats |
-| `/api/twitter-status` | Twitter posting status | Connection and post status |
+| Endpoint                         | Purpose                | Expected Response             |
+| -------------------------------- | ---------------------- | ----------------------------- |
+| `/api/monitoring?section=health` | Overall system health  | `{"status": "healthy"}`       |
+| `/api/rate-limit-status`         | Rate limiting status   | User limits and system stats  |
+| `/api/ssrf-status`               | SSRF protection status | Protection features and stats |
+| `/api/twitter-status`            | Twitter posting status | Connection and post status    |
 
 ### Key Metrics to Monitor
 
 **Error Rates:**
+
 - AI generation failure rate: <10%
 - SSRF blocks: Expected if under attack
 - Rate limit hits: Normal in moderation
 
 **Performance:**
+
 - Average response time: <3000ms
 - AI generation time: <30s
 - Database response time: <1000ms
 
 **Security Events:**
+
 - Rate limit violations per hour
 - SSRF attack attempts
 - Failed authentication attempts
@@ -266,12 +297,14 @@ curl http://localhost:3000/api/rate-limit-status | jq '.user'
 ### Alert Thresholds
 
 **Critical Alerts:**
+
 - Error rate >20%
 - Average response time >10s
 - System health status: "unhealthy"
 - Multiple stuck posts (>10)
 
 **Warning Alerts:**
+
 - Error rate >10%
 - High rate limit usage (>80% of users at limits)
 - Memory usage >90%
@@ -285,6 +318,7 @@ curl http://localhost:3000/api/rate-limit-status | jq '.user'
 
 **Cause:** Missing or invalid environment variables
 **Solution:**
+
 1. Check `.env.local.example` for required variables
 2. Validate format with `lib/env-validator.ts`
 3. Ensure `ENCRYPTION_KEY` is exactly 64 hex characters
@@ -293,15 +327,18 @@ curl http://localhost:3000/api/rate-limit-status | jq '.user'
 
 **Cause:** User hitting rate limits too quickly
 **Investigation:**
+
 ```bash
 curl http://localhost:3000/api/rate-limit-status
 ```
+
 **Solution:** Adjust limits in `lib/rate-limiter.ts` if needed
 
 #### Issue: "SSRF protection blocked URL"
 
 **Cause:** URL fails security validation
 **Common reasons:**
+
 - Non-standard ports (not 80/443)
 - Private IP addresses
 - Blocked domains
@@ -311,10 +348,13 @@ curl http://localhost:3000/api/rate-limit-status
 #### Issue: Twitter posts failing consistently
 
 **Investigation:**
+
 ```bash
 curl http://localhost:3000/api/twitter-status
 ```
+
 **Common causes:**
+
 - Expired OAuth tokens
 - Twitter API changes
 - Content policy violations
@@ -322,12 +362,14 @@ curl http://localhost:3000/api/twitter-status
 ### Performance Optimization
 
 **Slow AI Generation:**
+
 1. Check Anthropic API latency
 2. Consider reducing post count
 3. Implement caching for similar content
 4. Review timeout settings (30s)
 
 **Database Slowness:**
+
 1. Check Supabase dashboard
 2. Review query performance
 3. Consider connection pooling
@@ -336,18 +378,21 @@ curl http://localhost:3000/api/twitter-status
 ## 📋 Maintenance Procedures
 
 ### Weekly Tasks
+
 - [ ] Review monitoring dashboard for trends
 - [ ] Check for stuck posts and resolve
 - [ ] Review error logs for patterns
 - [ ] Validate all health check endpoints
 
 ### Monthly Tasks
+
 - [ ] Rotate `ANTHROPIC_API_KEY`
 - [ ] Review and update rate limits if needed
 - [ ] Audit user account activity
 - [ ] Update dependencies and security patches
 
 ### Quarterly Tasks
+
 - [ ] Rotate `ENCRYPTION_KEY` (requires user re-authentication)
 - [ ] Review and update SSRF protection rules
 - [ ] Audit security configurations
@@ -356,17 +401,20 @@ curl http://localhost:3000/api/twitter-status
 ## 🆘 Emergency Contacts & Resources
 
 ### External Services
+
 - **Anthropic Status:** https://status.anthropic.com/
 - **Supabase Status:** https://status.supabase.com/
 - **Twitter API Status:** https://api.twitterstat.us/
 - **Vercel Status:** https://www.vercel-status.com/
 
 ### Internal Resources
+
 - **Monitoring Dashboard:** `/api/monitoring`
 - **System Health:** `/api/monitoring?section=health`
 - **Security Events:** `/api/monitoring?section=security`
 
 ### Emergency Procedures
+
 1. **Service Down:** Check external service status pages
 2. **Security Incident:** Rotate keys, review logs, document findings
 3. **Data Loss:** Check Supabase backups, review recent changes

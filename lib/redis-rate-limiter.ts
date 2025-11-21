@@ -48,13 +48,15 @@ export class RedisRateLimiter {
     this.config = {
       requestsPerMinute: 3,
       requestsPerHour: 10,
-      windowMinute: 60 * 1000,     // 1 minute
-      windowHour: 60 * 60 * 1000   // 1 hour
+      windowMinute: 60 * 1000, // 1 minute
+      windowHour: 60 * 60 * 1000, // 1 hour
     }
 
     // Check explicit rate limiting mode configuration
     const rateLimitMode = process.env.RATE_LIMIT_MODE?.toLowerCase() || 'auto'
-    const hasRedisConfig = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+    const hasRedisConfig = !!(
+      process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    )
     const isProduction = process.env.NODE_ENV === 'production'
 
     // Determine enabled state based on mode and configuration
@@ -65,14 +67,20 @@ export class RedisRateLimiter {
         break
       case 'memory':
         this.enabled = false
-        console.warn('⚠️ Rate limiting forced to MEMORY mode (per-instance only)')
+        console.warn(
+          '⚠️ Rate limiting forced to MEMORY mode (per-instance only)'
+        )
         if (isProduction) {
-          console.error('🔴 PRODUCTION WARNING: Memory-only rate limiting is not recommended for production')
+          console.error(
+            '🔴 PRODUCTION WARNING: Memory-only rate limiting is not recommended for production'
+          )
         }
         break
       case 'redis':
         if (!hasRedisConfig) {
-          throw new Error('RATE_LIMIT_MODE=redis requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN')
+          throw new Error(
+            'RATE_LIMIT_MODE=redis requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN'
+          )
         }
         this.enabled = true
         break
@@ -80,11 +88,17 @@ export class RedisRateLimiter {
       default:
         this.enabled = hasRedisConfig
         if (this.enabled) {
-          console.log('🔄 Auto-detected Redis configuration, enabling distributed rate limiting')
+          console.log(
+            '🔄 Auto-detected Redis configuration, enabling distributed rate limiting'
+          )
         } else {
-          console.warn('⚠️ No Redis configuration found, falling back to memory-only rate limiting')
+          console.warn(
+            '⚠️ No Redis configuration found, falling back to memory-only rate limiting'
+          )
           if (isProduction) {
-            console.error('🔴 PRODUCTION WARNING: Set RATE_LIMIT_MODE=redis and configure Upstash for production')
+            console.error(
+              '🔴 PRODUCTION WARNING: Set RATE_LIMIT_MODE=redis and configure Upstash for production'
+            )
           }
         }
         break
@@ -103,7 +117,9 @@ export class RedisRateLimiter {
         this.enabled = false
         console.log('🔄 Falling back to memory-only rate limiting')
         if (isProduction) {
-          console.error('🔴 PRODUCTION ERROR: Redis rate limiting failed, service may be degraded')
+          console.error(
+            '🔴 PRODUCTION ERROR: Redis rate limiting failed, service may be degraded'
+          )
         }
       }
     }
@@ -112,7 +128,10 @@ export class RedisRateLimiter {
   /**
    * Check rate limit for a user (distributed or in-memory)
    */
-  async checkRateLimit(userId: string, contentHash?: string): Promise<RateLimitResult> {
+  async checkRateLimit(
+    userId: string,
+    contentHash?: string
+  ): Promise<RateLimitResult> {
     if (this.enabled && this.redis) {
       return this.checkRateLimitRedis(userId, contentHash)
     } else {
@@ -123,7 +142,10 @@ export class RedisRateLimiter {
   /**
    * Redis-based rate limiting with TTL keys
    */
-  private async checkRateLimitRedis(userId: string, contentHash?: string): Promise<RateLimitResult> {
+  private async checkRateLimitRedis(
+    userId: string,
+    contentHash?: string
+  ): Promise<RateLimitResult> {
     const now = Date.now()
     const minuteKey = `rate_limit:${userId}:minute:${Math.floor(now / this.config.windowMinute)}`
     const hourKey = `rate_limit:${userId}:hour:${Math.floor(now / this.config.windowHour)}`
@@ -149,31 +171,36 @@ export class RedisRateLimiter {
         return {
           allowed: true,
           requestsRemaining: this.config.requestsPerMinute - minuteCount,
-          resetTime: Math.floor(now / this.config.windowMinute + 1) * this.config.windowMinute,
-          reason: 'cached_result'
+          resetTime:
+            Math.floor(now / this.config.windowMinute + 1) *
+            this.config.windowMinute,
+          reason: 'cached_result',
         }
       }
 
       // Check limits
       if (minuteCount >= this.config.requestsPerMinute) {
-        const nextWindow = Math.floor(now / this.config.windowMinute + 1) * this.config.windowMinute
+        const nextWindow =
+          Math.floor(now / this.config.windowMinute + 1) *
+          this.config.windowMinute
         return {
           allowed: false,
           retryAfter: Math.ceil((nextWindow - now) / 1000),
           reason: 'rate_limit_minute',
           requestsRemaining: 0,
-          resetTime: nextWindow
+          resetTime: nextWindow,
         }
       }
 
       if (hourCount >= this.config.requestsPerHour) {
-        const nextWindow = Math.floor(now / this.config.windowHour + 1) * this.config.windowHour
+        const nextWindow =
+          Math.floor(now / this.config.windowHour + 1) * this.config.windowHour
         return {
           allowed: false,
           retryAfter: Math.ceil((nextWindow - now) / 1000),
           reason: 'rate_limit_hour',
           requestsRemaining: 0,
-          resetTime: nextWindow
+          resetTime: nextWindow,
         }
       }
 
@@ -189,18 +216,22 @@ export class RedisRateLimiter {
       return {
         allowed: true,
         requestsRemaining: this.config.requestsPerMinute - minuteCount - 1,
-        resetTime: Math.floor(now / this.config.windowMinute + 1) * this.config.windowMinute
+        resetTime:
+          Math.floor(now / this.config.windowMinute + 1) *
+          this.config.windowMinute,
       }
-
     } catch (error) {
-      console.error('🔴 CRITICAL: Redis rate limit check failed - service degraded:', error)
+      console.error(
+        '🔴 CRITICAL: Redis rate limit check failed - service degraded:',
+        error
+      )
       // Return degraded service instead of completely failing open
       return {
         allowed: false, // More conservative - deny when uncertain
         retryAfter: 60,
         reason: 'rate_limit_service_degraded',
         requestsRemaining: 0,
-        resetTime: now + 60000 // 1 minute retry
+        resetTime: now + 60000, // 1 minute retry
       }
     }
   }
@@ -208,13 +239,17 @@ export class RedisRateLimiter {
   /**
    * Memory-based fallback (same interface, different storage)
    */
-  private async checkRateLimitMemory(userId: string, contentHash?: string): Promise<RateLimitResult> {
+  private async checkRateLimitMemory(
+    userId: string,
+    contentHash?: string
+  ): Promise<RateLimitResult> {
     const now = Date.now()
     const minuteKey = `${userId}:minute:${Math.floor(now / this.config.windowMinute)}`
     const hourKey = `${userId}:hour:${Math.floor(now / this.config.windowHour)}`
 
     // Clean expired keys periodically (much less frequently than before)
-    if (Math.random() < 0.01) { // 1% chance to trigger cleanup
+    if (Math.random() < 0.01) {
+      // 1% chance to trigger cleanup
       this.cleanupMemoryStore()
     }
 
@@ -225,39 +260,45 @@ export class RedisRateLimiter {
     if (contentHash) {
       const dedupKey = `dedup:${userId}:${contentHash}`
       const cached = this.memoryStore.get(dedupKey)
-      if (cached && now - cached.timestamp < 10 * 60 * 1000) { // 10 minute cache
+      if (cached && now - cached.timestamp < 10 * 60 * 1000) {
+        // 10 minute cache
         return {
           allowed: true,
           requestsRemaining: this.config.requestsPerMinute - minuteCount,
-          resetTime: Math.floor(now / this.config.windowMinute + 1) * this.config.windowMinute,
+          resetTime:
+            Math.floor(now / this.config.windowMinute + 1) *
+            this.config.windowMinute,
           reason: 'cached_result',
-          degraded: true // Memory-only mode indicates degraded service
+          degraded: true, // Memory-only mode indicates degraded service
         }
       }
     }
 
     // Check limits
     if (minuteCount >= this.config.requestsPerMinute) {
-      const nextWindow = Math.floor(now / this.config.windowMinute + 1) * this.config.windowMinute
+      const nextWindow =
+        Math.floor(now / this.config.windowMinute + 1) *
+        this.config.windowMinute
       return {
         allowed: false,
         retryAfter: Math.ceil((nextWindow - now) / 1000),
         reason: 'rate_limit_minute',
         requestsRemaining: 0,
         resetTime: nextWindow,
-        degraded: true // Memory-only mode indicates degraded service
+        degraded: true, // Memory-only mode indicates degraded service
       }
     }
 
     if (hourCount >= this.config.requestsPerHour) {
-      const nextWindow = Math.floor(now / this.config.windowHour + 1) * this.config.windowHour
+      const nextWindow =
+        Math.floor(now / this.config.windowHour + 1) * this.config.windowHour
       return {
         allowed: false,
         retryAfter: Math.ceil((nextWindow - now) / 1000),
         reason: 'rate_limit_hour',
         requestsRemaining: 0,
         resetTime: nextWindow,
-        degraded: true // Memory-only mode indicates degraded service
+        degraded: true, // Memory-only mode indicates degraded service
       }
     }
 
@@ -268,15 +309,21 @@ export class RedisRateLimiter {
     return {
       allowed: true,
       requestsRemaining: this.config.requestsPerMinute - minuteCount - 1,
-      resetTime: Math.floor(now / this.config.windowMinute + 1) * this.config.windowMinute,
-      degraded: true // Memory-only mode indicates degraded service
+      resetTime:
+        Math.floor(now / this.config.windowMinute + 1) *
+        this.config.windowMinute,
+      degraded: true, // Memory-only mode indicates degraded service
     }
   }
 
   /**
    * Store deduplication result (Redis or memory)
    */
-  async storeDedupResult(userId: string, contentHash: string, result: any): Promise<void> {
+  async storeDedupResult(
+    userId: string,
+    contentHash: string,
+    result: any
+  ): Promise<void> {
     const dedupKey = `dedup:${userId}:${contentHash}`
 
     if (this.enabled && this.redis) {
@@ -303,7 +350,12 @@ export class RedisRateLimiter {
   /**
    * Get user status (for API responses)
    */
-  async getUserStatus(userId: string): Promise<{ requestsRemaining: number; resetTime: number; isLimited: boolean; degraded?: boolean }> {
+  async getUserStatus(userId: string): Promise<{
+    requestsRemaining: number
+    resetTime: number
+    isLimited: boolean
+    degraded?: boolean
+  }> {
     const now = Date.now()
     const minuteKey = `rate_limit:${userId}:minute:${Math.floor(now / this.config.windowMinute)}`
 
@@ -311,7 +363,7 @@ export class RedisRateLimiter {
 
     if (this.enabled && this.redis) {
       try {
-        minuteCount = await this.redis.get(minuteKey) || 0
+        minuteCount = (await this.redis.get(minuteKey)) || 0
       } catch (error) {
         console.warn('Failed to get user status from Redis:', error)
       }
@@ -320,14 +372,18 @@ export class RedisRateLimiter {
       minuteCount = this.memoryStore.get(memoryKey) || 0
     }
 
-    const requestsRemaining = Math.max(0, this.config.requestsPerMinute - minuteCount)
-    const resetTime = Math.floor(now / this.config.windowMinute + 1) * this.config.windowMinute
+    const requestsRemaining = Math.max(
+      0,
+      this.config.requestsPerMinute - minuteCount
+    )
+    const resetTime =
+      Math.floor(now / this.config.windowMinute + 1) * this.config.windowMinute
 
     return {
       requestsRemaining,
       resetTime,
       isLimited: requestsRemaining === 0,
-      degraded: !this.enabled // Indicate if running on degraded in-memory fallback
+      degraded: !this.enabled, // Indicate if running on degraded in-memory fallback
     }
   }
 
@@ -335,16 +391,16 @@ export class RedisRateLimiter {
    * Get system statistics (for admin monitoring)
    */
   async getStats(): Promise<{
-    backend: 'redis' | 'memory';
-    activeUsers: number;
-    memoryKeys?: number;
-    redisHealth?: boolean;
-    timestamp: number;
+    backend: 'redis' | 'memory'
+    activeUsers: number
+    memoryKeys?: number
+    redisHealth?: boolean
+    timestamp: number
   }> {
     const stats = {
-      backend: this.enabled ? 'redis' as const : 'memory' as const,
+      backend: this.enabled ? ('redis' as const) : ('memory' as const),
       activeUsers: 0,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
 
     if (this.enabled && this.redis) {
@@ -354,19 +410,19 @@ export class RedisRateLimiter {
         return {
           ...stats,
           redisHealth: true,
-          activeUsers: 0 // Would need Redis SCAN to count, expensive
+          activeUsers: 0, // Would need Redis SCAN to count, expensive
         }
       } catch (error) {
         console.warn('Redis health check failed:', error)
         return {
           ...stats,
-          redisHealth: false
+          redisHealth: false,
         }
       }
     } else {
       return {
         ...stats,
-        memoryKeys: this.memoryStore.size
+        memoryKeys: this.memoryStore.size,
       }
     }
   }
@@ -380,14 +436,28 @@ export class RedisRateLimiter {
 
     for (const [key, value] of this.memoryStore.entries()) {
       // Remove keys older than 1 hour
-      if (key.includes(':dedup:') && value.timestamp && now - value.timestamp > 60 * 60 * 1000) {
+      if (
+        key.includes(':dedup:') &&
+        value.timestamp &&
+        now - value.timestamp > 60 * 60 * 1000
+      ) {
         expiredKeys.push(key)
       }
       // Remove rate limit keys from previous time windows
       else if (key.includes(':minute:') || key.includes(':hour:')) {
         const [, , , window] = key.split(':')
-        const windowTime = parseInt(window) * (key.includes(':minute:') ? this.config.windowMinute : this.config.windowHour)
-        if (now > windowTime + (key.includes(':minute:') ? this.config.windowMinute : this.config.windowHour)) {
+        const windowTime =
+          parseInt(window) *
+          (key.includes(':minute:')
+            ? this.config.windowMinute
+            : this.config.windowHour)
+        if (
+          now >
+          windowTime +
+            (key.includes(':minute:')
+              ? this.config.windowMinute
+              : this.config.windowHour)
+        ) {
           expiredKeys.push(key)
         }
       }
@@ -404,8 +474,12 @@ export class RedisRateLimiter {
   /**
    * Health check for monitoring
    */
-  async healthCheck(): Promise<{ healthy: boolean; backend: string; details: any }> {
-    const details: any = { timestamp: new Date().toISOString() }
+  async healthCheck(): Promise<{
+    healthy: boolean
+    backend: string
+    details: any
+  }> {
+    const _details: any = { timestamp: new Date().toISOString() }
 
     if (this.enabled && this.redis) {
       try {
@@ -416,20 +490,23 @@ export class RedisRateLimiter {
         return {
           healthy: latency < 1000, // Consider unhealthy if >1s latency
           backend: 'redis',
-          details: { latency, redisConfigured: true }
+          details: { latency, redisConfigured: true },
         }
       } catch (error) {
         return {
           healthy: false,
           backend: 'redis',
-          details: { error: error instanceof Error ? error.message : 'Unknown error', redisConfigured: true }
+          details: {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            redisConfigured: true,
+          },
         }
       }
     } else {
       return {
         healthy: true,
         backend: 'memory',
-        details: { memoryKeys: this.memoryStore.size, redisConfigured: false }
+        details: { memoryKeys: this.memoryStore.size, redisConfigured: false },
       }
     }
   }

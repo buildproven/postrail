@@ -88,7 +88,7 @@ if (!rateLimitResult.allowed) {
 }
 
 // Request tracing and observability
-return withObservability.trace('operation_name', async (requestId) => {
+return withObservability.trace('operation_name', async requestId => {
   // API implementation with automatic logging and metrics
 })
 ```
@@ -105,7 +105,7 @@ return withObservability.trace('operation_name', async (requestId) => {
 **AI Generation** (`/api/generate-posts`):
 
 - Rate limiting: 3/min, 10/hour per user with content deduplication
-- Parallel post generation (3 platforms × 2 post types = 6 posts)
+- Parallel post generation (4 platforms × 2 post types = 8 posts)
 - Timeout protection (30s per post)
 - Transaction-safe: rollback newsletter creation if posts fail to save
 - Fail-fast validation: check `ANTHROPIC_API_KEY` at module load and runtime
@@ -127,7 +127,7 @@ return withObservability.trace('operation_name', async (requestId) => {
 
 **Relationships**:
 
-- One newsletter → Many social_posts (6 posts per newsletter: 3 platforms × 2 types)
+- One newsletter → Many social_posts (8 posts per newsletter: 4 platforms × 2 types)
 
 ### Component Patterns
 
@@ -265,12 +265,14 @@ npm run test:flow         # Full flow integration test
 - **LinkedIn**: Professional, ROI-focused, sparse emojis (1-2), 3-5 hashtags
 - **Threads**: Conversational, casual, liberal emojis (2-3), question hooks
 - **Facebook**: Story-driven, community-focused, moderate emojis (1-2)
+- **Twitter**: Punchy, concise, attention-grabbing hooks, strategic emoji use
 
 **Character Limits**:
 
 - LinkedIn: 3000 (target 70% = 2100)
 - Threads: 500 (target 70% = 350)
 - Facebook: 63206 (target 70% = 44244)
+- Twitter: 280 (strict limit)
 
 ### URL Scraping with Mozilla Readability
 
@@ -288,6 +290,7 @@ Uses `@mozilla/readability` (same as Firefox Reader Mode) for intelligent conten
 #### 1. Rate Limiting (`lib/rate-limiter.ts`)
 
 **Purpose**: Prevent API abuse and ensure fair resource usage
+
 ```typescript
 // Per-user limits: 3/min, 10/hour for AI generation
 const rateLimitResult = await rateLimiter.checkRateLimit(user.id)
@@ -297,6 +300,7 @@ if (!rateLimitResult.allowed) {
 ```
 
 **Features**:
+
 - Content-based deduplication (same input = cached result)
 - Automatic cleanup of expired rate limit records
 - Request queuing and batching for efficiency
@@ -305,6 +309,7 @@ if (!rateLimitResult.allowed) {
 #### 2. SSRF Protection (`lib/ssrf-protection.ts`)
 
 **Purpose**: Prevent Server-Side Request Forgery attacks
+
 ```typescript
 // Comprehensive URL validation before fetching
 const validation = await ssrfProtection.validateUrl(newsletterUrl)
@@ -314,6 +319,7 @@ if (!validation.safe) {
 ```
 
 **Protection Layers**:
+
 1. Parse URL and validate protocol (HTTP/HTTPS only)
 2. DNS resolution to IP addresses before fetching
 3. Block private IP ranges (RFC 1918, cloud metadata endpoints)
@@ -324,6 +330,7 @@ if (!validation.safe) {
 #### 3. Idempotency Protection
 
 **Purpose**: Prevent duplicate operations and ensure data consistency
+
 ```typescript
 // Check if post already exists and published
 if (existingPost?.status === 'published' && existingPost.platform_post_id) {
@@ -332,6 +339,7 @@ if (existingPost?.status === 'published' && existingPost.platform_post_id) {
 ```
 
 **Implementation**:
+
 - Database unique constraints (`newsletter_id, platform, post_type`)
 - Optimistic locking for concurrent operation safety
 - Status-based replay protection
@@ -340,15 +348,17 @@ if (existingPost?.status === 'published' && existingPost.platform_post_id) {
 #### 4. Observability (`lib/observability.ts`)
 
 **Purpose**: Comprehensive monitoring and incident response
+
 ```typescript
 // Structured logging with request tracing
 const withObservability = new ObservabilityManager()
-export default withObservability.trace('operation_name', async (requestId) => {
+export default withObservability.trace('operation_name', async requestId => {
   // Operation implementation with automatic logging
 })
 ```
 
 **Features**:
+
 - Request correlation IDs for distributed tracing
 - Structured event logging (security, performance, errors)
 - Real-time metrics collection
@@ -358,6 +368,7 @@ export default withObservability.trace('operation_name', async (requestId) => {
 #### 5. Environment Validation (`lib/env-validator.ts`)
 
 **Purpose**: Fail-fast configuration validation
+
 ```typescript
 // Startup validation with clear error messages
 const validation = validateEnvironment()
@@ -368,6 +379,7 @@ if (!validation.valid) {
 ```
 
 **Validation Rules**:
+
 - Required environment variables presence
 - Format validation (URLs, API keys, encryption keys)
 - AES-256 key validation (64 hex chars)
@@ -376,6 +388,7 @@ if (!validation.valid) {
 ### Monitoring Endpoints
 
 **Health & Status Monitoring**:
+
 - `/api/monitoring?section=health` - Overall system health
 - `/api/monitoring?section=security` - Security events and metrics
 - `/api/monitoring?section=logs&level=warn` - Filtered log access
@@ -384,6 +397,7 @@ if (!validation.valid) {
 - `/api/twitter-status` - Platform posting status
 
 **Authentication & Authorization**:
+
 - All `/api/*` routes check for authenticated user
 - Middleware handles session refresh and route protection
 - No API keys or secrets in client-side code
@@ -481,17 +495,25 @@ tests/
 
 ## Development Roadmap Context
 
-**Current Phase**: Week 2 - AI Generation (partially complete)
+**Current Phase**: AI Generation & Platform Integration
 
-- ✅ Newsletter input module
-- ✅ Claude AI integration
-- ✅ Post generation for 3 platforms
-- ⏳ Platform OAuth + posting
-- ⏳ Scheduling system
+- ✅ Newsletter input module (URL scraping with SSRF protection)
+- ✅ Claude AI integration (Anthropic API)
+- ✅ Post generation for 4 platforms (LinkedIn, Threads, Facebook, Twitter)
+- ✅ Twitter posting implementation (BYOK - Bring Your Own Keys)
+- ⏳ LinkedIn, Threads, Facebook OAuth + posting APIs
+- ⏳ Scheduling system (Upstash Redis + QStash)
 - ⏳ Analytics dashboard
+
+**Implemented Features**:
+
+- **Twitter Integration**: Full post generation and posting API with credential encryption
+- **Security Infrastructure**: Rate limiting, SSRF protection, idempotency, observability
+- **Testing Coverage**: 393+ tests across unit, integration, E2E, and contract testing
 
 **Future Phases**:
 
-- Week 3-4: LinkedIn, Threads, Facebook OAuth + posting APIs
-- Week 5: Upstash Redis queue + QStash scheduling
-- Week 6: Analytics dashboard + PWA setup
+- OAuth implementation for LinkedIn, Threads, and Facebook
+- Queue-based scheduling system with Upstash Redis + QStash
+- Analytics dashboard with engagement metrics
+- PWA setup for mobile experience

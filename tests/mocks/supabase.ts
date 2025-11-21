@@ -2,7 +2,6 @@
  * Mock Supabase client for testing
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { vi } from 'vitest'
 
 export const createMockSupabaseClient = () => {
@@ -25,6 +24,7 @@ export const createMockSupabaseClient = () => {
       delete: vi.fn().mockReturnThis(),
       upsert: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
         data: null,
         error: null,
