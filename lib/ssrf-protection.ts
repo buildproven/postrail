@@ -23,16 +23,19 @@ interface SSRFValidationResult {
 interface RateLimitRecord {
   count: number
   resetTime: number
+  locked: boolean // Mutex flag for atomic operations
 }
 
 class SSRFProtection {
   private userLimits = new Map<string, RateLimitRecord>()
   private ipLimits = new Map<string, RateLimitRecord>()
+  private cleanupIntervalHandle: ReturnType<typeof setInterval> | null = null
 
   // Rate limiting configuration
   private readonly SCRAPE_REQUESTS_PER_USER_PER_MINUTE = 5 // Per user
   private readonly SCRAPE_REQUESTS_PER_IP_PER_MINUTE = 10 // Per IP
   private readonly CLEANUP_INTERVAL = 60 * 1000 // Cleanup every minute
+  private readonly LOCK_TIMEOUT = 1000 // 1 second max lock duration
 
   // Allowed ports - only standard HTTP/HTTPS
   private readonly ALLOWED_PORTS = [80, 443]
@@ -69,11 +72,40 @@ class SSRFProtection {
 
   constructor() {
     // Periodic cleanup of expired rate limit records
-    setInterval(() => this.cleanup(), this.CLEANUP_INTERVAL)
+    // Store handle to prevent memory leaks on module reload
+    this.cleanupIntervalHandle = setInterval(
+      () => this.cleanup(),
+      this.CLEANUP_INTERVAL
+    )
+  }
+
+  /**
+   * Cleanup resources on shutdown/module unload
+   * Prevents memory leaks from accumulating interval handles
+   */
+  destroy() {
+    if (this.cleanupIntervalHandle) {
+      clearInterval(this.cleanupIntervalHandle)
+      this.cleanupIntervalHandle = null
+    }
   }
 
   /**
    * Enhanced private IP detection with cloud provider metadata endpoints
+   *
+   * Detects private IP ranges including:
+   * - IPv4: localhost, RFC1918 (10.x, 192.168.x, 172.16-31.x), link-local (169.254.x)
+   * - IPv6: localhost (::1), unique local (fc00:/fd00:), link-local (fe80:)
+   * - Cloud metadata: AWS/GCP/Azure metadata endpoints
+   * - Special ranges: carrier-grade NAT, documentation ranges
+   *
+   * @param {string} ip - IP address to validate (IPv4 or IPv6 format)
+   * @returns {boolean} True if IP is private/internal, false if public
+   *
+   * @example
+   * isPrivateIP('192.168.1.1') // true
+   * isPrivateIP('169.254.169.254') // true (AWS metadata)
+   * isPrivateIP('8.8.8.8') // false (public DNS)
    */
   private isPrivateIP(ip: string): boolean {
     // IPv4 private ranges
@@ -103,6 +135,18 @@ class SSRFProtection {
 
   /**
    * Validate port number against allowed list
+   *
+   * Only allows standard HTTP/HTTPS ports to prevent:
+   * - Internal service scanning (Redis: 6379, Postgres: 5432, etc.)
+   * - Bypass via non-standard ports
+   *
+   * @param {number} port - Port number to validate
+   * @returns {boolean} True if port is 80 or 443, false otherwise
+   *
+   * @example
+   * isAllowedPort(443) // true
+   * isAllowedPort(8080) // false
+   * isAllowedPort(6379) // false (Redis port blocked)
    */
   private isAllowedPort(port: number): boolean {
     return this.ALLOWED_PORTS.includes(port)
@@ -110,6 +154,22 @@ class SSRFProtection {
 
   /**
    * Check if domain is in blocklist
+   *
+   * Blocks known internal/metadata domains including:
+   * - Cloud provider metadata (AWS, GCP, Azure, Kubernetes)
+   * - Docker internal networking
+   * - localhost variants
+   * - Custom blocked domains from SSRF_BLOCKED_DOMAINS env var
+   *
+   * Supports both exact match and subdomain matching.
+   *
+   * @param {string} hostname - Hostname to validate
+   * @returns {boolean} True if domain is blocked, false if allowed
+   *
+   * @example
+   * isDomainBlocked('metadata.google.internal') // true
+   * isDomainBlocked('sub.metadata.google.internal') // true (subdomain match)
+   * isDomainBlocked('example.com') // false
    */
   private isDomainBlocked(hostname: string): boolean {
     const lowercaseHostname = hostname.toLowerCase()
@@ -129,6 +189,22 @@ class SSRFProtection {
 
   /**
    * Rate limiting check for scraping requests
+   *
+   * Implements dual rate limiting:
+   * - Per user: 5 requests/minute (prevent individual abuse)
+   * - Per IP: 10 requests/minute (prevent distributed abuse)
+   *
+   * Uses sliding window with automatic cleanup of expired records.
+   *
+   * @param {string} userId - Authenticated user ID from Supabase
+   * @param {string} clientIP - Client IP address (from request headers or fallback)
+   * @returns {Promise<{allowed: boolean, retryAfter?: number, reason?: string}>} Rate limit decision
+   *
+   * @example
+   * const result = await checkRateLimit('user123', '203.0.113.42')
+   * if (!result.allowed) {
+   *   console.log(`Rate limited: ${result.reason}, retry after ${result.retryAfter}s`)
+   * }
    */
   async checkRateLimit(
     userId: string,
@@ -142,7 +218,7 @@ class SSRFProtection {
 
     // Check user rate limit
     const userKey = `scrape_user:${userId}`
-    const userRecord = this.checkAndUpdateRateLimit(
+    const userRecord = await this.checkAndUpdateRateLimit(
       userKey,
       this.userLimits,
       this.SCRAPE_REQUESTS_PER_USER_PER_MINUTE,
@@ -159,7 +235,7 @@ class SSRFProtection {
 
     // Check IP rate limit
     const ipKey = `scrape_ip:${clientIP}`
-    const ipRecord = this.checkAndUpdateRateLimit(
+    const ipRecord = await this.checkAndUpdateRateLimit(
       ipKey,
       this.ipLimits,
       this.SCRAPE_REQUESTS_PER_IP_PER_MINUTE,
@@ -178,49 +254,135 @@ class SSRFProtection {
   }
 
   /**
-   * Helper method for rate limit checking and updating
+   * Acquire mutex lock with timeout protection
+   * Prevents race conditions in concurrent rate limit checks
    */
-  private checkAndUpdateRateLimit(
+  private async acquireLock(
+    key: string,
+    limitMap: Map<string, RateLimitRecord>
+  ): Promise<boolean> {
+    const startTime = Date.now()
+
+    while (true) {
+      const record = limitMap.get(key)
+
+      // If no record exists, we can proceed
+      if (!record) {
+        return true
+      }
+
+      // If record exists and is not locked, acquire lock
+      if (!record.locked) {
+        record.locked = true
+        limitMap.set(key, record)
+        return true
+      }
+
+      // Check for lock timeout (stale lock recovery)
+      if (Date.now() - startTime > this.LOCK_TIMEOUT) {
+        // Force release stale lock
+        record.locked = false
+        limitMap.set(key, record)
+        return true
+      }
+
+      // Wait briefly before retry (busy-wait with small delay)
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
+  }
+
+  /**
+   * Release mutex lock
+   */
+  private releaseLock(
+    key: string,
+    limitMap: Map<string, RateLimitRecord>
+  ): void {
+    const record = limitMap.get(key)
+    if (record) {
+      record.locked = false
+      limitMap.set(key, record)
+    }
+  }
+
+  /**
+   * Helper method for rate limit checking and updating
+   * SECURITY FIX: Now uses mutex locking for atomic check-and-increment
+   * Prevents race condition where concurrent requests bypass rate limit
+   */
+  private async checkAndUpdateRateLimit(
     key: string,
     limitMap: Map<string, RateLimitRecord>,
     limit: number,
     now: number
-  ): { allowed: boolean; retryAfter?: number } {
-    let record = limitMap.get(key)
+  ): Promise<{ allowed: boolean; retryAfter?: number }> {
+    // Acquire lock for atomic operation
+    await this.acquireLock(key, limitMap)
 
-    if (!record) {
-      // First request - allow
-      limitMap.set(key, {
-        count: 1,
-        resetTime: now + 60 * 1000, // 1 minute window
-      })
-      return { allowed: true }
-    }
+    try {
+      let record = limitMap.get(key)
 
-    // Check if window has reset
-    if (now >= record.resetTime) {
-      record.count = 1
-      record.resetTime = now + 60 * 1000
+      if (!record) {
+        // First request - allow
+        limitMap.set(key, {
+          count: 1,
+          resetTime: now + 60 * 1000, // 1 minute window
+          locked: false,
+        })
+        return { allowed: true }
+      }
+
+      // Check if window has reset
+      if (now >= record.resetTime) {
+        record.count = 1
+        record.resetTime = now + 60 * 1000
+        limitMap.set(key, record)
+        return { allowed: true }
+      }
+
+      // Check if limit exceeded
+      if (record.count >= limit) {
+        return {
+          allowed: false,
+          retryAfter: record.resetTime - now,
+        }
+      }
+
+      // Increment and allow
+      record.count++
       limitMap.set(key, record)
       return { allowed: true }
+    } finally {
+      // Always release lock
+      this.releaseLock(key, limitMap)
     }
-
-    // Check if limit exceeded
-    if (record.count >= limit) {
-      return {
-        allowed: false,
-        retryAfter: record.resetTime - now,
-      }
-    }
-
-    // Increment and allow
-    record.count++
-    limitMap.set(key, record)
-    return { allowed: true }
   }
 
   /**
    * Comprehensive URL validation with enhanced SSRF protection
+   *
+   * Multi-layer validation process:
+   * 1. Protocol validation (HTTP/HTTPS only)
+   * 2. Domain blocklist check
+   * 3. Port validation (only 80/443 allowed)
+   * 4. DNS resolution to IP addresses
+   * 5. Private IP range detection
+   * 6. Suspicious pattern detection (double dots, URL encoding)
+   *
+   * @param {string} url - URL to validate before fetching
+   * @returns {Promise<SSRFValidationResult>} Validation result with allowed status and details
+   * @throws Never throws - returns validation result with error details
+   *
+   * @example
+   * const validation = await validateUrl('https://example.com/article')
+   * if (!validation.allowed) {
+   *   console.error(`Blocked: ${validation.error}`)
+   * }
+   *
+   * @example
+   * // Blocked: resolves to private IP
+   * await validateUrl('http://metadata.google.internal')
+   * // Returns: {allowed: false, error: 'Domain resolves to private IP...'}
    */
   async validateUrl(url: string): Promise<SSRFValidationResult> {
     try {
@@ -314,37 +476,76 @@ class SSRFProtection {
 
   /**
    * Get client IP from request headers with anti-spoofing protection
+   *
+   * SECURITY FIX: Properly extract client IP from standard headers
+   * Previous version always returned 127.0.0.1, breaking IP-based rate limiting
+   *
+   * Security considerations:
+   * - Only trusts x-forwarded-for when NEXT_TRUST_PROXY=true
+   * - Validates IP format to prevent header injection
+   * - Checks multiple standard headers (x-forwarded-for, x-real-ip, cf-connecting-ip)
+   * - Returns error indicator "unknown" if IP cannot be determined
+   *
+   * @param {Request} request - Next.js request object
+   * @returns {string} Client IP address (validated format or "unknown")
+   *
+   * @example
+   * const ip = getClientIP(request)
+   * if (ip === 'unknown') {
+   *   // Handle missing IP (perhaps use user ID only for rate limiting)
+   * }
+   * // Production with NEXT_TRUST_PROXY=true: '203.0.113.42'
+   * // Development (when running locally): '127.0.0.1'
    */
   getClientIP(request: Request): string {
     const trustProxy = process.env.NEXT_TRUST_PROXY === 'true'
 
     if (trustProxy) {
-      // Only trust x-forwarded-for when explicitly configured
+      // Try multiple standard headers in order of preference
+
+      // 1. Cloudflare: cf-connecting-ip (most reliable when behind Cloudflare)
+      const cfConnectingIp = request.headers.get('cf-connecting-ip')
+      if (cfConnectingIp && this.isValidPublicIP(cfConnectingIp.trim())) {
+        return cfConnectingIp.trim()
+      }
+
+      // 2. X-Real-IP: Set by nginx and other reverse proxies
+      const xRealIp = request.headers.get('x-real-ip')
+      if (xRealIp && this.isValidPublicIP(xRealIp.trim())) {
+        return xRealIp.trim()
+      }
+
+      // 3. X-Forwarded-For: Standard header (take leftmost IP = original client)
       const xForwardedFor = request.headers.get('x-forwarded-for')
       if (xForwardedFor) {
-        // Take the first IP (original client) and validate it
-        const ip = xForwardedFor.split(',')[0].trim()
-        if (this.isValidIP(ip)) {
-          return ip
+        const ips = xForwardedFor.split(',').map(ip => ip.trim())
+        for (const ip of ips) {
+          if (this.isValidPublicIP(ip)) {
+            return ip
+          }
         }
       }
     }
 
-    // For Next.js, try to get the real IP from the request object
-    // In development/testing, this will be 127.0.0.1
-    const _requestUrl = new URL(request.url)
+    // Development mode: allow localhost
+    if (process.env.NODE_ENV === 'development') {
+      return '127.0.0.1'
+    }
 
-    // Fallback to localhost for development
-    return '127.0.0.1'
+    // SECURITY: Don't fallback to private IP in production
+    // Return indicator that IP could not be determined
+    // Caller should handle this case (e.g., use user-only rate limiting)
+    return 'unknown'
   }
 
   /**
    * Validate IP address format to prevent spoofing
+   * Accepts both IPv4 and IPv6, including localhost for development
    */
   private isValidIP(ip: string): boolean {
     // Basic IPv4 validation
-    // eslint-disable-next-line security/detect-unsafe-regex
     const ipv4Regex =
+      // eslint-disable-next-line security/detect-unsafe-regex
       /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
 
     // Basic IPv6 validation (simplified)
@@ -352,9 +553,21 @@ class SSRFProtection {
     const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/
 
     if (!ip || ip.length === 0) return false
-    if (ip === 'localhost' || ip === '127.0.0.1') return false
 
     return ipv4Regex.test(ip) || ipv6Regex.test(ip)
+  }
+
+  /**
+   * Validate that IP is public and suitable for rate limiting
+   * Rejects private IPs to prevent rate limit bypass via header spoofing
+   */
+  private isValidPublicIP(ip: string): boolean {
+    if (!this.isValidIP(ip)) return false
+
+    // Reject private IPs (could be spoofed in headers)
+    if (this.isPrivateIP(ip)) return false
+
+    return true
   }
 
   /**
@@ -382,6 +595,18 @@ class SSRFProtection {
 
   /**
    * Get system statistics for monitoring
+   *
+   * Provides current state of SSRF protection system for:
+   * - Monitoring dashboards
+   * - Security audits
+   * - Capacity planning
+   *
+   * @returns {{activeUserLimits: number, activeIPLimits: number, allowedPorts: number[], blockedDomains: number, rateLimits: object, timestamp: number}} Current system statistics
+   *
+   * @example
+   * const stats = getStats()
+   * console.log(`Active rate limits: ${stats.activeUserLimits} users, ${stats.activeIPLimits} IPs`)
+   * console.log(`Blocking ${stats.blockedDomains} domains on ports ${stats.allowedPorts.join(', ')}`)
    */
   getStats() {
     return {

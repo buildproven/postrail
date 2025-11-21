@@ -127,6 +127,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 
 - **Impact:** Memory exhaustion, service degradation, potential DoS
 - **Recommended Fix:**
+
   ```typescript
   class RateLimiter {
     private cleanupInterval: NodeJS.Timeout | null = null
@@ -143,6 +144,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
     }
   }
   ```
+
 - **OWASP:** A04:2021 - Insecure Design (Resource Management)
 
 ---
@@ -183,6 +185,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
   ```
 - **Impact:** Rate limiting ineffective, SSRF protection partially bypassed if NEXT_TRUST_PROXY=true
 - **Recommended Fix:**
+
   ```typescript
   getClientIP(request: Request): string {
     const trustProxy = process.env.NEXT_TRUST_PROXY === 'true'
@@ -200,6 +203,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
     throw new Error('Unable to determine client IP - proxy misconfiguration')
   }
   ```
+
 - **OWASP:** A10:2021 - Server-Side Request Forgery (SSRF)
 
 ---
@@ -427,6 +431,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 
 - **Impact:** Rate limiting bypass, quota exhaustion
 - **Recommended Fix:**
+
   ```typescript
   // Use full hash or database lookup
   generateContentHash(title: string, content: string, userId: string): string {
@@ -440,6 +445,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
     // Handle deduplication via database unique constraint
   }
   ```
+
 - **OWASP:** A02:2021 - Cryptographic Failures
 
 ---

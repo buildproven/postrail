@@ -414,18 +414,18 @@ npm run test:coverage -- --coverage.enabled=true
 
 ### Week 1 Progress
 
-- Started: ****\_\_\_****
-- Completed Component Tests: ****\_\_\_****
-- Completed API Error Tests: ****\_\_\_****
-- Completed E2E Tests: ****\_\_\_****
+- Started: \***\*\_\_\_\*\***
+- Completed Component Tests: \***\*\_\_\_\*\***
+- Completed API Error Tests: \***\*\_\_\_\*\***
+- Completed E2E Tests: \***\*\_\_\_\*\***
 - Total Tests Added: **\_** / 75
 
 ### Week 2 Progress
 
-- Started: ****\_\_\_****
-- Completed SSRF Tests: ****\_\_\_****
-- Completed Rate Limit Tests: ****\_\_\_****
-- Completed DB Tests: ****\_\_\_****
+- Started: \***\*\_\_\_\*\***
+- Completed SSRF Tests: \***\*\_\_\_\*\***
+- Completed Rate Limit Tests: \***\*\_\_\_\*\***
+- Completed DB Tests: \***\*\_\_\_\*\***
 - Total Tests Added: **\_** / 57
 
 ### Overall Progress

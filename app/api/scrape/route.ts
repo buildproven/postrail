@@ -18,6 +18,39 @@ import { ssrfProtection } from '@/lib/ssrf-protection'
 // Maximum response size (5MB)
 const MAX_RESPONSE_SIZE = 5 * 1024 * 1024
 
+/**
+ * POST /api/scrape - Extract newsletter content from URL with SSRF protection
+ *
+ * Uses Mozilla Readability (Firefox Reader Mode algorithm) for intelligent content extraction.
+ * Implements comprehensive SSRF protection:
+ * - DNS resolution to IP addresses before fetching
+ * - Private IP range blocking (localhost, RFC1918, cloud metadata endpoints)
+ * - Port filtering (only 80/443 allowed)
+ * - Zero redirects to prevent bypass attacks
+ * - Rate limiting per user and per IP
+ * - Response size limits (5MB max)
+ *
+ * @param {NextRequest} request - Next.js request with JSON body {url}
+ * @returns {Promise<NextResponse>} JSON with extracted {title, content, wordCount}
+ * @throws {NextResponse} 401 - User not authenticated
+ * @throws {NextResponse} 400 - Missing URL, invalid URL, or content extraction failed
+ * @throws {NextResponse} 403 - SSRF protection blocked URL (private IP, invalid port, blocked domain)
+ * @throws {NextResponse} 404 - Page not found
+ * @throws {NextResponse} 408 - Request timeout (>10s)
+ * @throws {NextResponse} 429 - Rate limit exceeded (5/min per user, 10/min per IP)
+ * @throws {NextResponse} 500 - Unexpected scraping error
+ *
+ * @example
+ * POST /api/scrape
+ * { "url": "https://example.com/newsletter" }
+ *
+ * Response:
+ * {
+ *   "title": "10 Marketing Tips",
+ *   "content": "Full article text with preserved paragraph structure...",
+ *   "wordCount": 1234
+ * }
+ */
 export async function POST(request: NextRequest) {
   try {
     // Auth check: require authenticated user

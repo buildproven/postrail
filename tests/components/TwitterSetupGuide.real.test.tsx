@@ -3,7 +3,6 @@
  * Tests actual component rendering and interaction
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { TwitterSetupGuide } from '@/components/twitter-setup-guide'

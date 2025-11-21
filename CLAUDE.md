@@ -105,7 +105,7 @@ return withObservability.trace('operation_name', async requestId => {
 **AI Generation** (`/api/generate-posts`):
 
 - Rate limiting: 3/min, 10/hour per user with content deduplication
-- Parallel post generation (3 platforms × 2 post types = 6 posts)
+- Parallel post generation (4 platforms × 2 post types = 8 posts)
 - Timeout protection (30s per post)
 - Transaction-safe: rollback newsletter creation if posts fail to save
 - Fail-fast validation: check `ANTHROPIC_API_KEY` at module load and runtime
@@ -127,7 +127,7 @@ return withObservability.trace('operation_name', async requestId => {
 
 **Relationships**:
 
-- One newsletter → Many social_posts (6 posts per newsletter: 3 platforms × 2 types)
+- One newsletter → Many social_posts (8 posts per newsletter: 4 platforms × 2 types)
 
 ### Component Patterns
 
@@ -265,12 +265,14 @@ npm run test:flow         # Full flow integration test
 - **LinkedIn**: Professional, ROI-focused, sparse emojis (1-2), 3-5 hashtags
 - **Threads**: Conversational, casual, liberal emojis (2-3), question hooks
 - **Facebook**: Story-driven, community-focused, moderate emojis (1-2)
+- **Twitter**: Punchy, concise, attention-grabbing hooks, strategic emoji use
 
 **Character Limits**:
 
 - LinkedIn: 3000 (target 70% = 2100)
 - Threads: 500 (target 70% = 350)
 - Facebook: 63206 (target 70% = 44244)
+- Twitter: 280 (strict limit)
 
 ### URL Scraping with Mozilla Readability
 
@@ -493,17 +495,25 @@ tests/
 
 ## Development Roadmap Context
 
-**Current Phase**: Week 2 - AI Generation (partially complete)
+**Current Phase**: AI Generation & Platform Integration
 
-- ✅ Newsletter input module
-- ✅ Claude AI integration
-- ✅ Post generation for 3 platforms
-- ⏳ Platform OAuth + posting
-- ⏳ Scheduling system
+- ✅ Newsletter input module (URL scraping with SSRF protection)
+- ✅ Claude AI integration (Anthropic API)
+- ✅ Post generation for 4 platforms (LinkedIn, Threads, Facebook, Twitter)
+- ✅ Twitter posting implementation (BYOK - Bring Your Own Keys)
+- ⏳ LinkedIn, Threads, Facebook OAuth + posting APIs
+- ⏳ Scheduling system (Upstash Redis + QStash)
 - ⏳ Analytics dashboard
+
+**Implemented Features**:
+
+- **Twitter Integration**: Full post generation and posting API with credential encryption
+- **Security Infrastructure**: Rate limiting, SSRF protection, idempotency, observability
+- **Testing Coverage**: 393+ tests across unit, integration, E2E, and contract testing
 
 **Future Phases**:
 
-- Week 3-4: LinkedIn, Threads, Facebook OAuth + posting APIs
-- Week 5: Upstash Redis queue + QStash scheduling
-- Week 6: Analytics dashboard + PWA setup
+- OAuth implementation for LinkedIn, Threads, and Facebook
+- Queue-based scheduling system with Upstash Redis + QStash
+- Analytics dashboard with engagement metrics
+- PWA setup for mobile experience

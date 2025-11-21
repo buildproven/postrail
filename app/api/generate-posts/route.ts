@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import Anthropic, { APIError as AnthropicAPIError } from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { observability, withObservability } from '@/lib/observability'
@@ -36,6 +36,25 @@ interface GeneratedPost {
   characterCount: number
 }
 
+/**
+ * Generates a social media post using Claude AI for a specific platform and timing
+ *
+ * @param {string} newsletterTitle - Title of the newsletter being promoted
+ * @param {string} newsletterContent - Full content of the newsletter (truncated to 2000 chars for API)
+ * @param {string} platform - Target platform ('linkedin', 'threads', 'facebook', 'twitter')
+ * @param {string} postType - Timing strategy ('pre_cta' for before newsletter, 'post_cta' for after)
+ * @returns {Promise<string>} Generated post text optimized for the platform
+ * @throws {Error} When Anthropic API call fails or returns unexpected format
+ *
+ * @example
+ * const post = await generatePost(
+ *   "10 Marketing Tips",
+ *   "Full newsletter content...",
+ *   "linkedin",
+ *   "pre_cta"
+ * )
+ * // Returns: "🚀 Tomorrow's newsletter reveals 10 marketing secrets..."
+ */
 async function generatePost(
   newsletterTitle: string,
   newsletterContent: string,
@@ -147,6 +166,37 @@ Generate a ${postType} post for ${platform}.`
   }
 }
 
+/**
+ * POST /api/generate-posts - Generate AI-powered social media posts for a newsletter
+ *
+ * Creates 6-8 platform-optimized social posts (pre/post CTA variants) using Claude AI.
+ * Implements comprehensive security controls:
+ * - Rate limiting: 3/min, 10/hour per user
+ * - Content deduplication: Cached results for identical content
+ * - Request tracing: Full observability with correlation IDs
+ * - Transaction safety: Rollback newsletter creation if post generation fails
+ *
+ * @param {NextRequest} request - Next.js request with JSON body {title, content}
+ * @returns {Promise<NextResponse>} JSON response with newsletter ID and generated posts
+ * @throws {NextResponse} 401 - User not authenticated
+ * @throws {NextResponse} 400 - Missing required content field
+ * @throws {NextResponse} 429 - Rate limit exceeded (includes retry-after header)
+ * @throws {NextResponse} 500 - API key missing, post generation failed, or database error
+ *
+ * @example
+ * POST /api/generate-posts
+ * {
+ *   "title": "10 Marketing Tips",
+ *   "content": "Full newsletter content..."
+ * }
+ *
+ * Response:
+ * {
+ *   "newsletterId": "uuid",
+ *   "postsGenerated": 8,
+ *   "posts": [{platform: "linkedin", postType: "pre_cta", content: "..."}, ...]
+ * }
+ */
 export async function POST(request: NextRequest) {
   return withObservability.trace('ai_generation', async (requestId: string) => {
     try {
@@ -419,7 +469,7 @@ export async function POST(request: NextRequest) {
         error: error as Error,
         metadata: {
           errorType:
-            error instanceof Anthropic.APIError
+            error instanceof AnthropicAPIError
               ? 'anthropic_api_error'
               : 'unknown_error',
         },
@@ -427,7 +477,7 @@ export async function POST(request: NextRequest) {
 
       // Note: Redis rate limiter doesn't store failed results for deduplication
 
-      if (error instanceof Anthropic.APIError) {
+      if (error instanceof AnthropicAPIError) {
         return NextResponse.json(
           { error: `AI generation failed: ${error.message}` },
           { status: 500 }

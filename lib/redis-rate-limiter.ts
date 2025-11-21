@@ -350,9 +350,7 @@ export class RedisRateLimiter {
   /**
    * Get user status (for API responses)
    */
-  async getUserStatus(
-    userId: string
-  ): Promise<{
+  async getUserStatus(userId: string): Promise<{
     requestsRemaining: number
     resetTime: number
     isLimited: boolean

@@ -96,24 +96,103 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify social post belongs to user and is for Twitter - include status for idempotency
-    const { data: socialPost, error: postError } = await supabase
+    // SECURITY FIX: Atomic fetch-and-lock to prevent race condition
+    // Previous version had fetch → check → lock as separate operations
+    // This allowed duplicate posts if requests arrived concurrently
+
+    // Atomically try to acquire lock by updating status to 'publishing'
+    // Only succeeds if current status is 'draft' or 'scheduled' (not 'publishing' or 'published')
+    const { data: lockResult, error: lockError } = await supabase
       .from('social_posts')
+      .update({
+        status: 'publishing',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', socialPostId)
+      .in('status', ['draft', 'scheduled', 'failed']) // Only lock if not already publishing/published
       .select(
         'id, platform, newsletter_id, status, platform_post_id, published_at, error_message, updated_at, newsletters!inner(user_id)'
       )
-      .eq('id', socialPostId)
       .single()
 
-    if (postError || !socialPost) {
+    // If lock failed, check current state to provide helpful error
+    if (lockError || !lockResult) {
+      // Fetch current state to determine why lock failed
+      const { data: currentPost } = await supabase
+        .from('social_posts')
+        .select(
+          'id, platform, status, platform_post_id, published_at, newsletters!inner(user_id)'
+        )
+        .eq('id', socialPostId)
+        .single()
+
+      if (!currentPost) {
+        return NextResponse.json(
+          { error: 'Social post not found' },
+          { status: 404 }
+        )
+      }
+
+      // TypeScript workaround for nested select
+      const currentPostTyped = currentPost as typeof currentPost & {
+        newsletters: { user_id: string }
+        platform_post_id: string | null
+        published_at: string | null
+      }
+
+      // Check authorization
+      if (currentPostTyped.newsletters.user_id !== user.id) {
+        return NextResponse.json(
+          { error: 'Unauthorized to post this content' },
+          { status: 403 }
+        )
+      }
+
+      // Idempotency: Post already published successfully
+      if (
+        currentPost.status === 'published' &&
+        currentPostTyped.platform_post_id
+      ) {
+        console.log(
+          `Post ${socialPostId} already published as tweet ${currentPostTyped.platform_post_id}`
+        )
+        return NextResponse.json({
+          success: true,
+          tweetId: currentPostTyped.platform_post_id,
+          tweetText: content,
+          url: `https://twitter.com/i/web/status/${currentPostTyped.platform_post_id}`,
+          fromCache: true,
+          message: 'Post was already published successfully',
+          publishedAt: currentPostTyped.published_at,
+        })
+      }
+
+      // Post is currently being published by another request
+      if (currentPost.status === 'publishing') {
+        return NextResponse.json(
+          {
+            error: 'Post is currently being processed',
+            details:
+              'This post is already being published by another request. Please wait and try again.',
+            status: 'publishing',
+          },
+          { status: 409 } // Conflict
+        )
+      }
+
+      // Unknown error during lock acquisition
       return NextResponse.json(
-        { error: 'Social post not found' },
-        { status: 404 }
+        {
+          error: 'Failed to lock post for publishing',
+          details: lockError?.message || 'Unknown error',
+        },
+        { status: 500 }
       )
     }
 
+    // Successfully acquired lock - proceed with posting
     // TypeScript workaround for nested select
-    const postWithNewsletter = socialPost as typeof socialPost & {
+    const postWithNewsletter = lockResult as typeof lockResult & {
       newsletters: { user_id: string }
       status: string
       platform_post_id: string | null
@@ -122,82 +201,36 @@ export async function POST(request: NextRequest) {
       updated_at: string
     }
 
+    // Verify authorization
     if (postWithNewsletter.newsletters.user_id !== user.id) {
+      // Release lock
+      await supabase
+        .from('social_posts')
+        .update({ status: 'draft' })
+        .eq('id', socialPostId)
+
       return NextResponse.json(
         { error: 'Unauthorized to post this content' },
         { status: 403 }
       )
     }
 
-    if (socialPost.platform !== 'twitter') {
+    // Verify platform
+    if (postWithNewsletter.platform !== 'twitter') {
+      // Release lock
+      await supabase
+        .from('social_posts')
+        .update({ status: 'draft' })
+        .eq('id', socialPostId)
+
       return NextResponse.json(
         { error: 'This post is not configured for Twitter' },
         { status: 400 }
       )
     }
 
-    // Idempotency protection: Check if post is already published
-    if (
-      postWithNewsletter.status === 'published' &&
-      postWithNewsletter.platform_post_id
-    ) {
-      console.log(
-        `Post ${socialPostId} already published as tweet ${postWithNewsletter.platform_post_id}`
-      )
-      return NextResponse.json({
-        success: true,
-        tweetId: postWithNewsletter.platform_post_id,
-        tweetText: content,
-        url: `https://twitter.com/i/web/status/${postWithNewsletter.platform_post_id}`,
-        fromCache: true,
-        message: 'Post was already published successfully',
-        publishedAt: postWithNewsletter.published_at,
-      })
-    }
-
-    // Check if post is currently being processed (optimistic locking simulation)
-    const now = new Date()
-    const lastUpdate = new Date(postWithNewsletter.updated_at)
-    const timeSinceUpdate = now.getTime() - lastUpdate.getTime()
-
-    if (postWithNewsletter.status === 'publishing' && timeSinceUpdate < 60000) {
-      // 1 minute
-      return NextResponse.json(
-        {
-          error: 'Post is currently being processed',
-          details:
-            'This post is already being published by another request. Please wait and try again.',
-          status: 'publishing',
-          lastUpdate: postWithNewsletter.updated_at,
-        },
-        { status: 409 } // Conflict
-      )
-    }
-
     // Get Twitter client with user's credentials
     const client = await getTwitterClient(user.id)
-
-    // Optimistic locking: Update status to 'publishing' before attempting to post
-    const { error: lockError } = await supabase
-      .from('social_posts')
-      .update({
-        status: 'publishing',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', socialPostId)
-      .eq('updated_at', postWithNewsletter.updated_at) // Ensure no concurrent updates
-
-    if (lockError) {
-      console.error('Failed to acquire lock on social post:', lockError)
-      return NextResponse.json(
-        {
-          error: 'Post is being processed by another request',
-          details:
-            'Unable to acquire lock on post. Another request may be processing it.',
-        },
-        { status: 409 } // Conflict
-      )
-    }
 
     // Post to Twitter
     try {
@@ -213,6 +246,7 @@ export async function POST(request: NextRequest) {
           error_message: null,
         })
         .eq('id', socialPostId)
+        .single()
 
       if (updateError) {
         console.error('Error updating social post:', updateError)
@@ -266,6 +300,7 @@ export async function POST(request: NextRequest) {
           error_message: `${errorMessage}: ${errorDetails}`,
         })
         .eq('id', socialPostId)
+        .single()
 
       return NextResponse.json(
         {

@@ -19,7 +19,6 @@
  * - SUPABASE_TEST_URL (test project)
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeAll } from 'vitest'
 
 const shouldRunContractTests = process.env.ENABLE_CONTRACT_TESTS === 'true'
