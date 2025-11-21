@@ -52,6 +52,29 @@ jobs:
             npm audit signatures || echo "⚠️ Signature verification not available or failed"
           fi
 
+      - name: Unit Tests
+        run: |
+          echo "🧪 Running unit tests..."
+          npm test
+        env:
+          # Required for tests that need environment variables
+          NODE_ENV: test
+
+      - name: Smoke Tests
+        run: |
+          echo "💨 Running smoke tests..."
+          npm run test:smoke
+
+      - name: E2E Tests
+        run: |
+          echo "🌐 Running end-to-end tests..."
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+        env:
+          # E2E tests may need specific configuration
+          NODE_ENV: test
+        continue-on-error: true # Allow E2E to fail without blocking the build
+
       - name: Prettier check
         run: npm run format:check
 

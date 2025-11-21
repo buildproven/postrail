@@ -14,6 +14,9 @@ LetterFlow automatically generates and schedules social media posts to promote y
 - **Character Limit Enforcement**: Never exceed platform limits
 - **Analytics**: Track performance across all platforms
 - **URL Scraping**: Import newsletters directly from beehiiv, Substack, or custom URLs
+- **Enterprise Security**: Rate limiting, SSRF protection, comprehensive monitoring
+- **Production-Ready Observability**: Structured logging, metrics collection, health checks
+- **Idempotent Operations**: Prevent duplicate posts and ensure data consistency
 
 ## Getting Started
 
@@ -59,6 +62,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 - **Auth**: Supabase Auth
 - **AI**: Anthropic Claude API
 - **Queue**: Upstash Redis + QStash
+- **Security**: Multi-layer protection (Rate limiting, SSRF protection, Observability)
 - **Hosting**: Render (free tier) or Railway
 
 ## Project Structure
@@ -68,16 +72,22 @@ letterflow/
 ├── app/                  # Next.js app directory
 │   ├── (auth)/          # Authentication pages
 │   ├── (dashboard)/     # Protected dashboard pages
-│   ├── api/             # API routes
+│   ├── api/             # API routes (with security middleware)
 │   └── layout.tsx       # Root layout
 ├── components/          # React components
 │   ├── ui/             # shadcn/ui components
 │   └── ...             # Custom components
-├── lib/                # Utility functions
+├── lib/                # Utility functions & security modules
 │   ├── supabase/       # Supabase client
+│   ├── rate-limiter.ts # Rate limiting with deduplication
+│   ├── ssrf-protection.ts # Server-side request forgery protection
+│   ├── observability.ts   # Structured logging & monitoring
+│   ├── env-validator.ts   # Environment validation
 │   ├── ai/             # AI post generation
 │   └── platforms/      # Platform API integrations
-├── docs/               # Project documentation
+├── docs/               # Comprehensive documentation
+│   ├── ARCHITECTURE.md     # System architecture & data flow
+│   ├── OPERATIONAL_RUNBOOK.md # Operations & incident response
 │   ├── GETTING_STARTED.md
 │   ├── SETUP_SUPABASE.md
 │   ├── TESTING.md
@@ -119,10 +129,21 @@ letterflow/
 
 ## Documentation
 
+### Architecture & Operations
+- [System Architecture](./docs/ARCHITECTURE.md) - Data flow and security design
+- [Operational Runbook](./docs/OPERATIONAL_RUNBOOK.md) - Key rotation and incident response
+
+### Development Guides
 - [Getting Started](./docs/GETTING_STARTED.md)
 - [Supabase Setup](./docs/SETUP_SUPABASE.md)
 - [Testing Guide](./docs/TESTING.md)
 - [Week 2 Progress](./docs/WEEK_2_COMPLETE.md)
+
+### Security Features
+- **Rate Limiting**: 3 requests/minute, 10/hour per user with content deduplication
+- **SSRF Protection**: DNS validation, private IP blocking, port filtering
+- **Observability**: Request tracing, metrics collection, health monitoring
+- **Idempotency**: Optimistic locking prevents duplicate operations
 
 ## License
 

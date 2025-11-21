@@ -3,84 +3,20 @@ import { Readability } from '@mozilla/readability'
 import { JSDOM } from 'jsdom'
 import axios from 'axios'
 import { createClient } from '@/lib/supabase/server'
+import { ssrfProtection } from '@/lib/ssrf-protection'
 
-// SSRF Protection Strategy:
-// No domain allowlist - users may have newsletters on ANY domain (custom domains, self-hosted, etc.)
-// Instead, we rely on multi-layered SSRF protection:
-// 1. DNS resolution to IP addresses
-// 2. Private IP range blocking (localhost, 192.168.x.x, 10.x.x.x, AWS metadata, etc.)
-// 3. Redirect prevention (maxRedirects: 0)
-// 4. Protocol restriction (HTTP/HTTPS only)
+// Enhanced SSRF Protection Strategy:
+// Uses comprehensive multi-layered protection via ssrfProtection module:
+// 1. DNS resolution to IP addresses with enhanced private range detection
+// 2. Private IP range blocking (localhost, RFC1918, cloud metadata endpoints)
+// 3. Port filtering (only 80/443 allowed)
+// 4. Rate limiting per user and per IP
+// 5. Domain blocklist with cloud provider metadata protection
+// 6. Redirect prevention (maxRedirects: 0)
+// 7. Protocol restriction (HTTP/HTTPS only)
 
 // Maximum response size (5MB)
 const MAX_RESPONSE_SIZE = 5 * 1024 * 1024
-
-function isPrivateIP(ip: string): boolean {
-  // IPv4 private ranges
-  if (ip === '127.0.0.1' || ip === 'localhost') return true
-  if (ip.startsWith('10.')) return true
-  if (ip.startsWith('192.168.')) return true
-  if (ip.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./)) return true
-  if (ip.startsWith('169.254.')) return true // Link-local
-  if (ip === '0.0.0.0') return true
-
-  // IPv6 private ranges
-  if (ip === '::1') return true
-  if (ip.startsWith('fc00:') || ip.startsWith('fd00:')) return true
-  if (ip.startsWith('fe80:')) return true
-
-  return false
-}
-
-async function isAllowedUrl(
-  url: string
-): Promise<{ allowed: boolean; error?: string }> {
-  try {
-    const parsedUrl = new URL(url)
-
-    // Reject non-HTTP(S) protocols
-    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      return { allowed: false, error: 'Only HTTP/HTTPS URLs are allowed' }
-    }
-
-    const hostname = parsedUrl.hostname.toLowerCase()
-
-    // DNS resolution check to prevent private IP bypass
-    // This is our primary SSRF protection - blocks internal network access
-    const dns = await import('dns').then(m => m.promises)
-    try {
-      const addresses = await dns.resolve4(hostname)
-      for (const ip of addresses) {
-        if (isPrivateIP(ip)) {
-          return {
-            allowed: false,
-            error: 'Domain resolves to private IP address',
-          }
-        }
-      }
-    } catch {
-      // If IPv4 fails, try IPv6
-      try {
-        const addresses = await dns.resolve6(hostname)
-        for (const ip of addresses) {
-          if (isPrivateIP(ip)) {
-            return {
-              allowed: false,
-              error: 'Domain resolves to private IP address',
-            }
-          }
-        }
-      } catch {
-        // DNS resolution failed entirely
-        return { allowed: false, error: 'DNS resolution failed' }
-      }
-    }
-
-    return { allowed: true }
-  } catch {
-    return { allowed: false, error: 'Invalid URL format' }
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -104,11 +40,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
 
-    // SSRF Protection: validate URL with DNS resolution
-    const urlCheck = await isAllowedUrl(url)
-    if (!urlCheck.allowed) {
+    // Get client IP for rate limiting
+    const clientIP = ssrfProtection.getClientIP(request)
+
+    // Rate limiting: Check if user/IP can make scraping requests
+    const rateLimitResult = await ssrfProtection.checkRateLimit(user.id, clientIP)
+    if (!rateLimitResult.allowed) {
       return NextResponse.json(
-        { error: urlCheck.error || 'URL not allowed' },
+        {
+          error: 'Rate limit exceeded',
+          message: rateLimitResult.reason,
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
+          }
+        }
+      )
+    }
+
+    // Enhanced SSRF Protection: validate URL with DNS resolution, port filtering, and domain blocking
+    const urlValidation = await ssrfProtection.validateUrl(url)
+    if (!urlValidation.allowed) {
+      console.log(`SSRF protection blocked URL: ${url}, reason: ${urlValidation.error}, IP: ${urlValidation.ip || 'unknown'}`)
+      return NextResponse.json(
+        {
+          error: 'URL validation failed',
+          details: urlValidation.error,
+          suggestion: 'Please use a public website URL with standard HTTP/HTTPS ports (80/443)'
+        },
         { status: 403 }
       )
     }

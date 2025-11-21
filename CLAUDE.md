@@ -78,19 +78,45 @@ if (!user) {
 }
 ```
 
+**Enhanced API Security** (all routes):
+
+```typescript
+// Rate limiting check (AI generation endpoints)
+const rateLimitResult = await rateLimiter.checkRateLimit(user.id)
+if (!rateLimitResult.allowed) {
+  return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+}
+
+// Request tracing and observability
+return withObservability.trace('operation_name', async (requestId) => {
+  // API implementation with automatic logging and metrics
+})
+```
+
 **SSRF Protection** (`/api/scrape`):
 
 - DNS resolution to IP addresses before fetching
 - Private IP range blocking (localhost, 192.168.x.x, AWS metadata, etc.)
+- Port filtering (only 80/443 allowed)
 - Zero redirects (`maxRedirects: 0`) to prevent 302-based bypasses
 - No domain allowlist (users may have newsletters on ANY domain)
+- Comprehensive URL validation with `lib/ssrf-protection.ts`
 
 **AI Generation** (`/api/generate-posts`):
 
+- Rate limiting: 3/min, 10/hour per user with content deduplication
 - Parallel post generation (3 platforms × 2 post types = 6 posts)
 - Timeout protection (30s per post)
 - Transaction-safe: rollback newsletter creation if posts fail to save
 - Fail-fast validation: check `ANTHROPIC_API_KEY` at module load and runtime
+- Request correlation and structured logging
+
+**Platform Posting** (`/api/platforms/*/post`):
+
+- Idempotency protection with optimistic locking
+- Status-based replay prevention
+- Platform credential encryption with `ENCRYPTION_KEY`
+- Comprehensive error handling and retry logic
 
 ### Database Schema
 
@@ -255,21 +281,113 @@ Uses `@mozilla/readability` (same as Firefox Reader Mode) for intelligent conten
 - Preserves paragraph structure
 - Cleans up whitespace while keeping readability
 
-### Security Considerations
+### Security Architecture
 
-**SSRF Protection Implementation**:
+**Multi-Layer Security Implementation**: LetterFlow implements comprehensive security controls across five layers:
 
+#### 1. Rate Limiting (`lib/rate-limiter.ts`)
+
+**Purpose**: Prevent API abuse and ensure fair resource usage
+```typescript
+// Per-user limits: 3/min, 10/hour for AI generation
+const rateLimitResult = await rateLimiter.checkRateLimit(user.id)
+if (!rateLimitResult.allowed) {
+  return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+}
+```
+
+**Features**:
+- Content-based deduplication (same input = cached result)
+- Automatic cleanup of expired rate limit records
+- Request queuing and batching for efficiency
+- Memory-based storage with periodic cleanup
+
+#### 2. SSRF Protection (`lib/ssrf-protection.ts`)
+
+**Purpose**: Prevent Server-Side Request Forgery attacks
+```typescript
+// Comprehensive URL validation before fetching
+const validation = await ssrfProtection.validateUrl(newsletterUrl)
+if (!validation.safe) {
+  return NextResponse.json({ error: validation.reason }, { status: 400 })
+}
+```
+
+**Protection Layers**:
 1. Parse URL and validate protocol (HTTP/HTTPS only)
-2. Resolve hostname to IP via DNS
-3. Block private IP ranges (RFC 1918, link-local, localhost)
-4. Fetch with `maxRedirects: 0` to prevent bypass
-5. Limit response size to 5MB
+2. DNS resolution to IP addresses before fetching
+3. Block private IP ranges (RFC 1918, cloud metadata endpoints)
+4. Port filtering (only 80/443 allowed)
+5. Zero redirects (`maxRedirects: 0`) to prevent bypass
+6. Response size limits (5MB max)
 
-**Authentication**:
+#### 3. Idempotency Protection
 
+**Purpose**: Prevent duplicate operations and ensure data consistency
+```typescript
+// Check if post already exists and published
+if (existingPost?.status === 'published' && existingPost.platform_post_id) {
+  return NextResponse.json({ success: true, fromCache: true })
+}
+```
+
+**Implementation**:
+- Database unique constraints (`newsletter_id, platform, post_type`)
+- Optimistic locking for concurrent operation safety
+- Status-based replay protection
+- Transaction-safe rollback on failures
+
+#### 4. Observability (`lib/observability.ts`)
+
+**Purpose**: Comprehensive monitoring and incident response
+```typescript
+// Structured logging with request tracing
+const withObservability = new ObservabilityManager()
+export default withObservability.trace('operation_name', async (requestId) => {
+  // Operation implementation with automatic logging
+})
+```
+
+**Features**:
+- Request correlation IDs for distributed tracing
+- Structured event logging (security, performance, errors)
+- Real-time metrics collection
+- Health check endpoints for monitoring
+- Security event alerting
+
+#### 5. Environment Validation (`lib/env-validator.ts`)
+
+**Purpose**: Fail-fast configuration validation
+```typescript
+// Startup validation with clear error messages
+const validation = validateEnvironment()
+if (!validation.valid) {
+  console.error('Environment validation failed:', validation.errors)
+  process.exit(1)
+}
+```
+
+**Validation Rules**:
+- Required environment variables presence
+- Format validation (URLs, API keys, encryption keys)
+- AES-256 key validation (64 hex chars)
+- Development vs production environment checks
+
+### Monitoring Endpoints
+
+**Health & Status Monitoring**:
+- `/api/monitoring?section=health` - Overall system health
+- `/api/monitoring?section=security` - Security events and metrics
+- `/api/monitoring?section=logs&level=warn` - Filtered log access
+- `/api/rate-limit-status` - Rate limiting status for users
+- `/api/ssrf-status` - SSRF protection statistics
+- `/api/twitter-status` - Platform posting status
+
+**Authentication & Authorization**:
 - All `/api/*` routes check for authenticated user
 - Middleware handles session refresh and route protection
 - No API keys or secrets in client-side code
+- Platform credentials encrypted with `ENCRYPTION_KEY`
 
 ## Common Development Patterns
 
@@ -331,7 +449,12 @@ app/
 │   └── settings/        # User settings (stub)
 ├── api/                 # API routes
 │   ├── scrape/          # URL scraping with SSRF protection
-│   └── generate-posts/  # AI post generation
+│   ├── generate-posts/  # AI post generation with rate limiting
+│   ├── platforms/*/post # Platform posting with idempotency
+│   ├── monitoring/      # System health and observability
+│   ├── rate-limit-status/ # Rate limiting status endpoint
+│   ├── ssrf-status/     # SSRF protection statistics
+│   └── twitter-status/  # Platform posting status
 └── layout.tsx           # Root layout
 
 lib/
@@ -339,6 +462,10 @@ lib/
 │   ├── client.ts        # Browser client
 │   ├── server.ts        # Server client
 │   └── middleware.ts    # Session refresh & route protection
+├── rate-limiter.ts      # Rate limiting with content deduplication
+├── ssrf-protection.ts   # SSRF attack prevention
+├── observability.ts     # Monitoring, logging, health checks
+├── env-validator.ts     # Environment validation at startup
 └── utils.ts             # Utility functions (cn, etc.)
 
 components/
