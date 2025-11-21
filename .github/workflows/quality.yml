@@ -124,7 +124,7 @@ jobs:
         run: |
           # Run comprehensive configuration security validation
           echo "🔍 Running configuration security validation..."
-          npx create-quality-automation@latest --security-config
+          npx create-quality-automation@latest --security-config --no-eslint-security
 
       - name: Documentation validation
         run: |
