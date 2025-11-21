@@ -37,7 +37,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { apiKey, apiSecret, accessToken, accessTokenSecret }: TwitterCredentials = body
+    const {
+      apiKey,
+      apiSecret,
+      accessToken,
+      accessTokenSecret,
+    }: TwitterCredentials = body
 
     // Validate required fields
     if (!apiKey || !apiSecret || !accessToken || !accessTokenSecret) {
@@ -76,7 +81,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Create hash for quick validation (stored in oauth_token for consistency)
-      const credentialsHash = hash(`${apiKey}:${apiSecret}:${accessToken}:${accessTokenSecret}`)
+      const credentialsHash = hash(
+        `${apiKey}:${apiSecret}:${accessToken}:${accessTokenSecret}`
+      )
 
       // Upsert platform connection
       const { error: dbError } = await supabase
@@ -121,21 +128,29 @@ export async function POST(request: NextRequest) {
       if (twitterError instanceof Error) {
         const errorMessage = twitterError.message.toLowerCase()
 
-        if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
+        if (
+          errorMessage.includes('unauthorized') ||
+          errorMessage.includes('401')
+        ) {
           return NextResponse.json(
             {
               error: 'Invalid Twitter credentials',
-              details: 'The API keys or access tokens you provided are incorrect or do not have the required permissions.',
+              details:
+                'The API keys or access tokens you provided are incorrect or do not have the required permissions.',
             },
             { status: 400 }
           )
         }
 
-        if (errorMessage.includes('forbidden') || errorMessage.includes('403')) {
+        if (
+          errorMessage.includes('forbidden') ||
+          errorMessage.includes('403')
+        ) {
           return NextResponse.json(
             {
               error: 'Insufficient permissions',
-              details: 'Your Twitter app does not have write permissions. Make sure you created the app with "Read and Write" permissions.',
+              details:
+                'Your Twitter app does not have write permissions. Make sure you created the app with "Read and Write" permissions.',
             },
             { status: 400 }
           )
@@ -155,7 +170,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Failed to validate Twitter credentials',
-          details: 'Unable to connect to Twitter. Please check your credentials and try again.',
+          details:
+            'Unable to connect to Twitter. Please check your credentials and try again.',
         },
         { status: 400 }
       )

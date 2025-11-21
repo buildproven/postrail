@@ -8,12 +8,12 @@ import { describe, it, expect } from 'vitest'
 describe('Newsletter Flow Logic', () => {
   it('should define complete workflow stages', () => {
     const workflowStages = [
-      'input',       // User provides newsletter content
-      'scrape',      // Extract from URL (optional)
-      'generate',    // AI creates 6 posts
-      'preview',     // User reviews posts
-      'schedule',    // Set publish times (future)
-      'publish',     // Post to platforms (future)
+      'input', // User provides newsletter content
+      'scrape', // Extract from URL (optional)
+      'generate', // AI creates 6 posts
+      'preview', // User reviews posts
+      'schedule', // Set publish times (future)
+      'publish', // Post to platforms (future)
     ]
 
     expect(workflowStages).toHaveLength(6)
@@ -22,8 +22,8 @@ describe('Newsletter Flow Logic', () => {
   })
 
   it('should generate correct number of posts', () => {
-    const platforms = 3  // LinkedIn, Threads, Facebook
-    const postTypes = 2  // Pre-CTA, Post-CTA
+    const platforms = 3 // LinkedIn, Threads, Facebook
+    const postTypes = 2 // Pre-CTA, Post-CTA
     const totalPosts = platforms * postTypes
 
     expect(totalPosts).toBe(6)
@@ -98,7 +98,8 @@ describe('Character Limit Logic', () => {
   })
 
   it('should calculate percentage correctly', () => {
-    const calculatePercentage = (count: number, limit: number) => (count / limit) * 100
+    const calculatePercentage = (count: number, limit: number) =>
+      (count / limit) * 100
 
     expect(calculatePercentage(2700, 3000)).toBe(90)
     expect(calculatePercentage(450, 500)).toBe(90)
@@ -134,7 +135,7 @@ describe('Post Type Logic', () => {
       timing: '24-8 hours before newsletter',
       goal: 'Create FOMO and urgency',
       strategy: 'Tease content without revealing',
-      cta: 'Sign up so you don\'t miss it',
+      cta: "Sign up so you don't miss it",
     }
 
     expect(preCTACharacteristics.goal).toContain('FOMO')

@@ -16,9 +16,9 @@ describe('Schedule Posts - Graceful Failure', () => {
       },
     }
 
-    const hasAnyConnection = Object.values(
-      userProfile.connectedAccounts
-    ).some(account => account !== null)
+    const hasAnyConnection = Object.values(userProfile.connectedAccounts).some(
+      account => account !== null
+    )
 
     expect(hasAnyConnection).toBe(false)
 
@@ -38,9 +38,9 @@ describe('Schedule Posts - Graceful Failure', () => {
       },
     }
 
-    const hasAnyConnection = Object.values(
-      userProfile.connectedAccounts
-    ).some(account => account !== null)
+    const hasAnyConnection = Object.values(userProfile.connectedAccounts).some(
+      account => account !== null
+    )
 
     expect(hasAnyConnection).toBe(true)
   })
@@ -147,7 +147,8 @@ describe('OAuth Connection Flow', () => {
 
       expect(oauthError.error).toBe('access_denied')
 
-      const userMessage = 'Authorization cancelled. You can try connecting again anytime.'
+      const userMessage =
+        'Authorization cancelled. You can try connecting again anytime.'
       expect(userMessage).toContain('cancelled')
     })
 
@@ -159,7 +160,8 @@ describe('OAuth Connection Flow', () => {
 
       expect(oauthError.error).toBe('invalid_client')
 
-      const adminMessage = 'OAuth credentials invalid. Check LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in .env'
+      const adminMessage =
+        'OAuth credentials invalid. Check LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in .env'
       expect(adminMessage).toContain('CLIENT_ID')
     })
 
@@ -171,7 +173,8 @@ describe('OAuth Connection Flow', () => {
 
       expect(tokenError.error).toBe('invalid_grant')
 
-      const userMessage = 'Your LinkedIn connection expired. Please reconnect your account.'
+      const userMessage =
+        'Your LinkedIn connection expired. Please reconnect your account.'
       expect(userMessage).toContain('expired')
       expect(userMessage).toContain('reconnect')
     })
@@ -276,9 +279,7 @@ describe('Post Scheduling Workflow', () => {
 
     // Should be sorted by time
     const times = queuedPosts.map(p => p.scheduledFor.getTime())
-    const isSorted = times.every(
-      (time, i) => i === 0 || time >= times[i - 1]
-    )
+    const isSorted = times.every((time, i) => i === 0 || time >= times[i - 1])
     expect(isSorted).toBe(true)
   })
 })

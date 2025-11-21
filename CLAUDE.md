@@ -53,11 +53,13 @@ nvm use
 ### Authentication Flow (Supabase)
 
 **Three-Layer Architecture**:
+
 1. **Client-side** (`lib/supabase/client.ts`): Browser components use `createClient()`
 2. **Server-side** (`lib/supabase/server.ts`): Server Components/API routes use async `createClient()`
 3. **Middleware** (`lib/supabase/middleware.ts`): Session refresh via `updateSession()`
 
 **Middleware Protection**:
+
 - Routes starting with `/dashboard/*` require authentication → redirect to `/auth/login` if not authenticated
 - Routes starting with `/auth/*` redirect authenticated users → redirect to `/dashboard`
 - Middleware runs on ALL routes except static files (via `config.matcher`)
@@ -65,21 +67,26 @@ nvm use
 ### API Route Patterns
 
 **Authentication Check** (all API routes):
+
 ```typescript
 const supabase = await createClient()
-const { data: { user } } = await supabase.auth.getUser()
+const {
+  data: { user },
+} = await supabase.auth.getUser()
 if (!user) {
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 }
 ```
 
 **SSRF Protection** (`/api/scrape`):
+
 - DNS resolution to IP addresses before fetching
 - Private IP range blocking (localhost, 192.168.x.x, AWS metadata, etc.)
 - Zero redirects (`maxRedirects: 0`) to prevent 302-based bypasses
 - No domain allowlist (users may have newsletters on ANY domain)
 
 **AI Generation** (`/api/generate-posts`):
+
 - Parallel post generation (3 platforms × 2 post types = 6 posts)
 - Timeout protection (30s per post)
 - Transaction-safe: rollback newsletter creation if posts fail to save
@@ -88,50 +95,124 @@ if (!user) {
 ### Database Schema
 
 **Key Tables**:
+
 - `newsletters`: User's imported newsletters (title, content, status)
 - `social_posts`: Generated posts per platform (platform, post_type, content, scheduled_time, status)
 
 **Relationships**:
+
 - One newsletter → Many social_posts (6 posts per newsletter: 3 platforms × 2 types)
 
 ### Component Patterns
 
 **shadcn/ui Components**:
+
 - Located in `components/ui/` (button, input, card, badge, etc.)
 - Use Radix UI primitives with Tailwind styling
 - Configured via `components.json`
 
 **Custom Components**:
+
 - `newsletter-editor.tsx`: Tiptap rich text editor for newsletter content
 - `post-preview-card.tsx`: Social post preview with character count badges
 
 ## Testing Strategy
 
-**Current State**: Placeholder tests (72 tests, 28 real, 44 placeholders)
+**Current State**: 393+ passing tests with 75%+ coverage across 5 test types
 
-**Real Tests**:
-- SSRF protection validation (12 tests in `tests/api/scrape.test.ts`)
-- PostPreviewCard component (16 tests)
+Based on [TEST_STRATEGY_AUDIT.md](https://github.com/brettstark73/create-quality-automation/blob/claude/fix-eslint-command-01Eg8BZZe58yiZ7RNGsGHkXL/TEST_STRATEGY_AUDIT.md), we implement comprehensive testing that validates both structure AND execution.
 
-**Placeholder Tests** (validate business logic, NOT actual code):
-- API routes: Test logic patterns without importing actual route handlers
-- Components: Test calculations without rendering components
-- Integration: Test business rules without Supabase/Anthropic mocking
+### Test Types
 
-**When Writing New Tests**:
-- Unit tests: Import and test actual components/functions
-- API tests: Mock `@/lib/supabase/server` and external services (axios, Anthropic)
-- Integration tests: Use Playwright for end-to-end flows
-- Always mock external dependencies (Supabase, Anthropic, axios)
+**1. Unit Tests** (`npm test`)
+
+- 393+ tests covering components, API routes, and utilities
+- Mock external dependencies (Supabase, Anthropic, Twitter API)
+- Run on every commit via Husky pre-commit hook
+- Files: `tests/api/*.test.ts`, `tests/components/*.test.tsx`, `tests/lib/*.test.ts`
+
+**2. Command Execution Tests** (`npm run test:execution`)
+
+- **Critical**: Verify npm scripts actually work in isolated environments
+- Catches broken ESLint configs, deprecated CLI flags, build failures
+- Run commands in temporary directories to test in fresh environments
+- Files: `tests/execution/command-execution.test.ts`
+- **Why**: "12,258 tests that missed a deprecated ESLint flag" - structure tests aren't enough
+
+**3. API Contract Tests** (`npm run test:contracts`)
+
+- Verify external API contracts haven't changed (Anthropic, Twitter, Supabase)
+- Make REAL API calls (skipped by default, enable with `ENABLE_CONTRACT_TESTS=true`)
+- Run weekly in CI, not on every commit (costs money, slow)
+- Files: `tests/contracts/api-contracts.test.ts`
+- **Why**: Mocked tests don't catch breaking changes in external SDKs
+
+**4. Smoke Tests** (`npm run test:smoke`)
+
+- Fast pre-deployment checks for configuration validity
+- Verify files exist, environment variables documented, no hardcoded secrets
+- Run before deploying to catch configuration errors
+- Files: `tests/smoke/deployment.test.ts`
+
+**5. E2E Tests** (`npm run test:e2e`)
+
+- Full user flows with Playwright (newsletter import, post generation, etc.)
+- Test in real browser environment
+- Files: `e2e/*.spec.ts`
+
+**6. Flow Tests** (`npm run test:flow`, `npm run test:generation`)
+
+- Integration tests for full newsletter → post generation flow
+- Files: `test-full-flow.js`, `test-generation.js`
+
+### Running Tests
+
+```bash
+# Standard development workflow
+npm test                  # Unit tests only (fast)
+npm run test:watch        # Unit tests in watch mode
+npm run test:coverage     # Unit tests with coverage report
+
+# Pre-deployment checks
+npm run test:smoke        # Fast configuration checks
+npm run test:all          # Unit + Smoke + E2E (comprehensive)
+
+# Specialized tests
+npm run test:execution    # Verify npm scripts work (slow, run weekly)
+npm run test:contracts    # Verify API contracts (costs money, run weekly)
+npm run test:e2e          # Browser-based E2E tests
+npm run test:flow         # Full flow integration test
+```
+
+### Test Philosophy
+
+**Key Insight from Audit**: "Your tests verify that configurations exist, but don't verify they actually work"
+
+- ✅ **DO**: Test actual execution (run `npm run lint`, not just check if script exists)
+- ✅ **DO**: Test in isolated environments (temp directories, fresh npm install)
+- ✅ **DO**: Make real API calls occasionally (weekly contract tests)
+- ❌ **DON'T**: Only test structure (file exists, script defined)
+- ❌ **DON'T**: Only mock external APIs (misses breaking changes)
+- ❌ **DON'T**: Test in current project context (misses environment issues)
+
+### When Writing New Tests
+
+- **Unit tests**: Import and test actual components/functions with mocked dependencies
+- **API tests**: Mock `@/lib/supabase/server` and external services (axios, Anthropic, Twitter)
+- **Integration tests**: Use Playwright for end-to-end flows
+- **Execution tests**: Run commands in isolated temp directories
+- **Contract tests**: Make real API calls, skip by default, guard with env var
 
 ## Environment Variables
 
 **Required for Development** (see `.env.local.example`):
+
 - `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anonymous key
 - `ANTHROPIC_API_KEY`: Claude API key for post generation
 
 **Optional** (for future OAuth implementation):
+
 - `LINKEDIN_CLIENT_ID/SECRET`: LinkedIn OAuth
 - `META_APP_ID/SECRET`: Facebook/Threads OAuth
 - `NEXTAUTH_SECRET/URL`: NextAuth configuration
@@ -142,21 +223,25 @@ if (!user) {
 ### AI Post Generation Strategy
 
 **Pre-CTA Posts** (24-8 hours before newsletter):
+
 - Create FOMO, urgency, curiosity
 - Tease 3-5 key insights without revealing everything
 - Clear CTA: "Sign up so you don't miss it"
 
 **Post-CTA Posts** (48-72 hours after newsletter):
+
 - Reframe as valuable resource (guide/playbook/blueprint)
 - List 3-4 specific outcomes/benefits
 - Engagement trigger: "Comment [WORD] to get access"
 
 **Platform Tones**:
+
 - **LinkedIn**: Professional, ROI-focused, sparse emojis (1-2), 3-5 hashtags
 - **Threads**: Conversational, casual, liberal emojis (2-3), question hooks
 - **Facebook**: Story-driven, community-focused, moderate emojis (1-2)
 
 **Character Limits**:
+
 - LinkedIn: 3000 (target 70% = 2100)
 - Threads: 500 (target 70% = 350)
 - Facebook: 63206 (target 70% = 44244)
@@ -164,6 +249,7 @@ if (!user) {
 ### URL Scraping with Mozilla Readability
 
 Uses `@mozilla/readability` (same as Firefox Reader Mode) for intelligent content extraction:
+
 - Automatically finds article content
 - Removes ads, navigation, footers
 - Preserves paragraph structure
@@ -172,6 +258,7 @@ Uses `@mozilla/readability` (same as Firefox Reader Mode) for intelligent conten
 ### Security Considerations
 
 **SSRF Protection Implementation**:
+
 1. Parse URL and validate protocol (HTTP/HTTPS only)
 2. Resolve hostname to IP via DNS
 3. Block private IP ranges (RFC 1918, link-local, localhost)
@@ -179,6 +266,7 @@ Uses `@mozilla/readability` (same as Firefox Reader Mode) for intelligent conten
 5. Limit response size to 5MB
 
 **Authentication**:
+
 - All `/api/*` routes check for authenticated user
 - Middleware handles session refresh and route protection
 - No API keys or secrets in client-side code
@@ -214,15 +302,17 @@ npx shadcn@latest add [component-name]
 ### Working with Supabase
 
 **Server Components/API Routes**:
+
 ```typescript
 import { createClient } from '@/lib/supabase/server'
-const supabase = await createClient()  // Note: async
+const supabase = await createClient() // Note: async
 ```
 
 **Client Components**:
+
 ```typescript
 import { createClient } from '@/lib/supabase/client'
-const supabase = createClient()  // Note: synchronous
+const supabase = createClient() // Note: synchronous
 ```
 
 ## Project Structure Logic
@@ -265,6 +355,7 @@ tests/
 ## Development Roadmap Context
 
 **Current Phase**: Week 2 - AI Generation (partially complete)
+
 - ✅ Newsletter input module
 - ✅ Claude AI integration
 - ✅ Post generation for 3 platforms
@@ -273,6 +364,7 @@ tests/
 - ⏳ Analytics dashboard
 
 **Future Phases**:
+
 - Week 3-4: LinkedIn, Threads, Facebook OAuth + posting APIs
 - Week 5: Upstash Redis queue + QStash scheduling
 - Week 6: Analytics dashboard + PWA setup

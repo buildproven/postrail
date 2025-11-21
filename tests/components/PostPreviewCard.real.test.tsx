@@ -12,7 +12,8 @@ describe('PostPreviewCard Component', () => {
     id: '1',
     platform: 'linkedin' as const,
     post_type: 'pre_cta' as const,
-    content: 'This is a test LinkedIn post about AI automation and newsletter growth strategies.',
+    content:
+      'This is a test LinkedIn post about AI automation and newsletter growth strategies.',
     character_count: 85,
     status: 'draft' as const,
   }
@@ -38,7 +39,10 @@ describe('PostPreviewCard Component', () => {
     })
 
     it('should show post type label for Post-CTA', () => {
-      const postCtaPost = { ...mockLinkedInPost, post_type: 'post_cta' as const }
+      const postCtaPost = {
+        ...mockLinkedInPost,
+        post_type: 'post_cta' as const,
+      }
       render(<PostPreviewCard post={postCtaPost} />)
 
       expect(screen.getByText('Post-CTA Engagement')).toBeInTheDocument()

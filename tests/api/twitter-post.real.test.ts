@@ -3,10 +3,15 @@
  * Tests actual code execution with mocked dependencies
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from '@/app/api/platforms/twitter/post/route'
 import { NextRequest } from 'next/server'
-import { createMockSupabaseClient, mockSupabaseAuthUser, mockSupabaseAuthError } from '../mocks/supabase'
+import {
+  createMockSupabaseClient,
+  mockSupabaseAuthUser,
+  mockSupabaseAuthError,
+} from '../mocks/supabase'
 import { createMockTwitterClient } from '../mocks/twitter-api'
 
 // Mock Supabase
@@ -40,17 +45,18 @@ vi.mock('@/lib/crypto', () => ({
 }))
 
 import { createClient } from '@/lib/supabase/server'
-import { TwitterApi } from 'twitter-api-v2'
 import { decrypt } from '@/lib/crypto'
 
 // Helper to create properly mocked Supabase with table-specific chains
-function createTwitterPostMockSupabase(overrides: {
-  postData?: any
-  postError?: any
-  connectionData?: any
-  connectionError?: any
-  updateResult?: any
-} = {}) {
+function createTwitterPostMockSupabase(
+  overrides: {
+    postData?: any
+    postError?: any
+    connectionData?: any
+    connectionError?: any
+    updateResult?: any
+  } = {}
+) {
   const mockSupabase = createMockSupabaseClient()
 
   mockSupabase.from = vi.fn((table: string) => {
@@ -59,16 +65,23 @@ function createTwitterPostMockSupabase(overrides: {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
-          data: overrides.postData !== undefined ? overrides.postData : {
-            id: 'post-123',
-            platform: 'twitter',
-            newsletter_id: 'newsletter-123',
-            newsletters: { user_id: 'user-123' },
-          },
+          data:
+            overrides.postData !== undefined
+              ? overrides.postData
+              : {
+                  id: 'post-123',
+                  platform: 'twitter',
+                  newsletter_id: 'newsletter-123',
+                  newsletters: { user_id: 'user-123' },
+                },
           error: overrides.postError || null,
         }),
         update: vi.fn(() => ({
-          eq: vi.fn().mockResolvedValue(overrides.updateResult || { data: null, error: null }),
+          eq: vi
+            .fn()
+            .mockResolvedValue(
+              overrides.updateResult || { data: null, error: null }
+            ),
         })),
       }
     }
@@ -77,15 +90,18 @@ function createTwitterPostMockSupabase(overrides: {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
-          data: overrides.connectionData !== undefined ? overrides.connectionData : {
-            is_active: true,
-            metadata: {
-              apiKey: 'encrypted:key',
-              apiSecret: 'encrypted:secret',
-              accessToken: 'encrypted:token',
-              accessTokenSecret: 'encrypted:token-secret',
-            },
-          },
+          data:
+            overrides.connectionData !== undefined
+              ? overrides.connectionData
+              : {
+                  is_active: true,
+                  metadata: {
+                    apiKey: 'encrypted:key',
+                    apiSecret: 'encrypted:secret',
+                    accessToken: 'encrypted:token',
+                    accessTokenSecret: 'encrypted:token-secret',
+                  },
+                },
           error: overrides.connectionError || null,
         }),
       }
@@ -107,13 +123,16 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
       mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthError())
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({
-          socialPostId: 'post-123',
-          content: 'Test tweet',
-        }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            socialPostId: 'post-123',
+            content: 'Test tweet',
+          }),
+        }
+      )
 
       const response = await POST(request)
       const data = await response.json()
@@ -126,15 +145,20 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
   describe('Validation', () => {
     beforeEach(() => {
       const mockSupabase = createMockSupabaseClient()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
     })
 
     it('should require socialPostId and content', async () => {
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({ content: 'Test' }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({ content: 'Test' }),
+        }
+      )
 
       const response = await POST(request)
       const data = await response.json()
@@ -146,13 +170,16 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
     it('should enforce 280 character limit', async () => {
       const longContent = 'a'.repeat(281)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({
-          socialPostId: 'post-123',
-          content: longContent,
-        }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            socialPostId: 'post-123',
+            content: longContent,
+          }),
+        }
+      )
 
       const response = await POST(request)
       const data = await response.json()
@@ -167,20 +194,25 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
       const exactContent = 'a'.repeat(280)
 
       const mockSupabase = createTwitterPostMockSupabase()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       // Mock Twitter client
       mockTwitterClientInstance = createMockTwitterClient()
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({
-          socialPostId: 'post-123',
-          content: exactContent,
-        }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            socialPostId: 'post-123',
+            content: exactContent,
+          }),
+        }
+      )
 
       const response = await POST(request)
 
@@ -198,17 +230,22 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
           newsletters: { user_id: 'different-user' },
         },
       })
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({
-          socialPostId: 'post-123',
-          content: 'Test tweet',
-        }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            socialPostId: 'post-123',
+            content: 'Test tweet',
+          }),
+        }
+      )
 
       const response = await POST(request)
       const data = await response.json()
@@ -226,17 +263,22 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
           newsletters: { user_id: 'user-123' },
         },
       })
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({
-          socialPostId: 'post-123',
-          content: 'Test tweet',
-        }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            socialPostId: 'post-123',
+            content: 'Test tweet',
+          }),
+        }
+      )
 
       const response = await POST(request)
       const data = await response.json()
@@ -252,17 +294,22 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
         connectionData: null,
         connectionError: { message: 'Not found', code: 'PGRST116' },
       })
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({
-          socialPostId: 'post-123',
-          content: 'Test tweet',
-        }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            socialPostId: 'post-123',
+            content: 'Test tweet',
+          }),
+        }
+      )
 
       const response = await POST(request)
       const data = await response.json()
@@ -278,17 +325,22 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
           metadata: {},
         },
       })
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({
-          socialPostId: 'post-123',
-          content: 'Test tweet',
-        }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            socialPostId: 'post-123',
+            content: 'Test tweet',
+          }),
+        }
+      )
 
       const response = await POST(request)
       const data = await response.json()
@@ -301,20 +353,25 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
   describe('Tweet Publishing', () => {
     it('should publish tweet and update database', async () => {
       const mockSupabase = createTwitterPostMockSupabase()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       // Mock Twitter client
       mockTwitterClientInstance = createMockTwitterClient()
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({
-          socialPostId: 'post-123',
-          content: 'Test tweet content',
-        }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            socialPostId: 'post-123',
+            content: 'Test tweet content',
+          }),
+        }
+      )
 
       const response = await POST(request)
       const data = await response.json()
@@ -322,24 +379,31 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
       expect(data.tweetId).toBeTruthy()
-      expect(mockTwitterClientInstance.v2.tweet).toHaveBeenCalledWith('Test tweet content')
+      expect(mockTwitterClientInstance.v2.tweet).toHaveBeenCalledWith(
+        'Test tweet content'
+      )
     })
 
     it('should decrypt credentials before use', async () => {
       const mockSupabase = createTwitterPostMockSupabase()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       mockTwitterClientInstance = createMockTwitterClient()
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({
-          socialPostId: 'post-123',
-          content: 'Test tweet',
-        }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            socialPostId: 'post-123',
+            content: 'Test tweet',
+          }),
+        }
+      )
 
       const response = await POST(request)
 
@@ -354,7 +418,9 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
   describe('Error Handling', () => {
     it('should handle Twitter rate limit errors', async () => {
       const mockSupabase = createTwitterPostMockSupabase()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       // Mock Twitter client with rate limit error
       const mockTwitterClient = createMockTwitterClient()
@@ -365,13 +431,16 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({
-          socialPostId: 'post-123',
-          content: 'Test tweet',
-        }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            socialPostId: 'post-123',
+            content: 'Test tweet',
+          }),
+        }
+      )
 
       const response = await POST(request)
       const data = await response.json()
@@ -382,21 +451,28 @@ describe('/api/platforms/twitter/post - Real Integration Tests', () => {
 
     it('should update post status to failed on error', async () => {
       const mockSupabase = createTwitterPostMockSupabase()
-      mockSupabase.auth.getUser.mockResolvedValue(mockSupabaseAuthUser('user-123', 'test@example.com'))
+      mockSupabase.auth.getUser.mockResolvedValue(
+        mockSupabaseAuthUser('user-123', 'test@example.com')
+      )
 
       // Mock Twitter client with generic error
       mockTwitterClientInstance = createMockTwitterClient()
-      mockTwitterClientInstance.v2.tweet.mockRejectedValue(new Error('Twitter error'))
+      mockTwitterClientInstance.v2.tweet.mockRejectedValue(
+        new Error('Twitter error')
+      )
 
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const request = new NextRequest('http://localhost:3000/api/platforms/twitter/post', {
-        method: 'POST',
-        body: JSON.stringify({
-          socialPostId: 'post-123',
-          content: 'Test tweet',
-        }),
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/platforms/twitter/post',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            socialPostId: 'post-123',
+            content: 'Test tweet',
+          }),
+        }
+      )
 
       const response = await POST(request)
 

@@ -16,7 +16,9 @@ function getEncryptionKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY
 
   if (!key) {
-    throw new Error('ENCRYPTION_KEY environment variable is required for encrypting credentials')
+    throw new Error(
+      'ENCRYPTION_KEY environment variable is required for encrypting credentials'
+    )
   }
 
   if (key.length !== 64) {

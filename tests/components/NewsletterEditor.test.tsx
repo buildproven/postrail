@@ -19,12 +19,16 @@ describe('NewsletterEditor Logic', () => {
 
   it('should handle empty content', () => {
     const emptyContent = ''
-    const words = emptyContent.trim().split(/\s+/).filter(w => w.length > 0)
+    const words = emptyContent
+      .trim()
+      .split(/\s+/)
+      .filter(w => w.length > 0)
     expect(words.length).toBe(0)
   })
 
   it('should format word count display', () => {
-    const formatWordCount = (count: number) => `${count} word${count === 1 ? '' : 's'}`
+    const formatWordCount = (count: number) =>
+      `${count} word${count === 1 ? '' : 's'}`
 
     expect(formatWordCount(0)).toBe('0 words')
     expect(formatWordCount(1)).toBe('1 word')
@@ -69,7 +73,12 @@ describe('NewsletterEditor Logic', () => {
     const content2 = 'Hello world'
     const content3 = 'This is a longer piece of content'
 
-    expect(content1.trim().split(/\s+/).filter(w => w.length > 0).length).toBe(0)
+    expect(
+      content1
+        .trim()
+        .split(/\s+/)
+        .filter(w => w.length > 0).length
+    ).toBe(0)
     expect(content2.trim().split(/\s+/).length).toBe(2)
     expect(content3.trim().split(/\s+/).length).toBe(7)
   })

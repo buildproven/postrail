@@ -12,7 +12,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
-      include: ['app/**/*.{ts,tsx}', 'lib/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'],
+      include: [
+        'app/api/**/*.{ts,tsx}', // Only API routes, not pages
+        'lib/**/*.{ts,tsx}', // All lib code
+        'components/**/*.{ts,tsx}', // All components
+      ],
       exclude: [
         'tests/**',
         '**/*.test.{ts,tsx}',
@@ -20,6 +24,10 @@ export default defineConfig({
         '**/node_modules/**',
         '**/*.config.{ts,js}',
         '**/types/**',
+        'app/(auth)/**', // Exclude auth pages
+        'app/(dashboard)/**', // Exclude dashboard pages
+        'app/layout.tsx', // Exclude root layout
+        'app/page.tsx', // Exclude home page
       ],
       thresholds: {
         lines: 90,

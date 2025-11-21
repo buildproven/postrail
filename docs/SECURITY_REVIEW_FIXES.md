@@ -11,17 +11,20 @@ This document tracks security and quality issues identified during code review a
 ### 1. SSRF Vulnerability in /api/scrape (CRITICAL)
 
 **Issue**: Unauthenticated URL scraping endpoint allowed attackers to:
+
 - Access internal services (AWS metadata, databases)
 - Use server as proxy for attacks
 - Bypass firewall restrictions
 
 **Original vulnerable code** (app/api/scrape/route.ts):
+
 ```typescript
 // ❌ BAD: substring match allows beehiiv.com.attacker.tld
 return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
 ```
 
 **Attack vectors blocked**:
+
 ```
 ✅ beehiiv.com.attacker.tld → Strict suffix check rejects
 ✅ DNS rebinding to 127.0.0.1 → IP resolution check rejects
@@ -32,14 +35,19 @@ return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
 **Fix implemented** (app/api/scrape/route.ts:6-124):
 
 1. **Authentication requirement**:
+
    ```typescript
-   const { data: { user }, error: authError } = await supabase.auth.getUser()
+   const {
+     data: { user },
+     error: authError,
+   } = await supabase.auth.getUser()
    if (authError || !user) {
      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
    }
    ```
 
 2. **Strict suffix matching**:
+
    ```typescript
    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => {
      return hostname === domain || hostname.endsWith(`.${domain}`)
@@ -47,6 +55,7 @@ return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
    ```
 
 3. **DNS resolution + IP validation**:
+
    ```typescript
    const addresses = await dns.resolve4(hostname)
    for (const ip of addresses) {
@@ -74,6 +83,7 @@ return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
 **Issue**: Links to auth pages returned 404s, leaving users stranded
 
 **Pages created**:
+
 - ✅ `/auth/reset-password` - Password reset request
 - ✅ `/auth/update-password` - New password entry
 - ✅ `/auth/auth-code-error` - Expired magic link handler
@@ -83,6 +93,7 @@ return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
 **Issue**: Navigation links went to non-existent pages (404s)
 
 **Pages created**:
+
 - ✅ `/dashboard/newsletters` - Newsletter list view
 - ✅ `/dashboard/platforms` - Platform connections (stub)
 - ✅ `/dashboard/settings` - User account settings
@@ -95,6 +106,7 @@ return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
 ### 4. Non-Transactional Post Generation
 
 **Issue** (app/api/generate-posts/route.ts):
+
 - Created newsletter record BEFORE AI generation
 - Sequential AI calls could timeout (6 × 10s = 60s serverless limit)
 - Failed posts left orphaned newsletter records
@@ -103,6 +115,7 @@ return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
 **Fix implemented** (app/api/generate-posts/route.ts:163-224):
 
 1. **Parallel AI generation**:
+
    ```typescript
    const postPromises = PLATFORMS.flatMap(platform =>
      POST_TYPES.map(postType =>
@@ -116,14 +129,19 @@ return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
    ```
 
 2. **Transactional rollback**:
+
    ```typescript
    if (posts.length === 0) {
      await supabase.from('newsletters').delete().eq('id', newsletter.id)
-     return NextResponse.json({ error: 'All generation failed' }, { status: 500 })
+     return NextResponse.json(
+       { error: 'All generation failed' },
+       { status: 500 }
+     )
    }
    ```
 
 3. **Proper scheduled_time handling**:
+
    ```typescript
    scheduled_time: null,  // User will set during scheduling
    ```
@@ -141,6 +159,7 @@ return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
 **Issue**: Tests failed on Node 14 with `Unexpected token '??='`
 
 **Fix**:
+
 - ✅ Created `.nvmrc` with `20`
 - ✅ Added `package.json` engines block:
   ```json
@@ -155,6 +174,7 @@ return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
 **Issue**: README referenced non-existent docs files
 
 **Fix**:
+
 - ✅ Updated README.md to reference actual files:
   - `GETTING_STARTED.md` ✓
   - `SETUP_SUPABASE.md` ✓
@@ -170,6 +190,7 @@ return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
 **Current state**: All 72 tests are placeholder logic tests
 
 **What tests DON'T do**:
+
 - ❌ Import or render React components
 - ❌ Import or call API route handlers
 - ❌ Mock Supabase database operations
@@ -177,12 +198,14 @@ return ALLOWED_DOMAINS.some(domain => hostname.includes(domain))
 - ❌ Test actual HTTP requests/responses
 
 **What tests DO**:
+
 - ✅ Validate business logic calculations
 - ✅ Test configuration constants
 - ✅ Verify data structure schemas
 - ✅ Check string manipulation logic
 
 **Example placeholder test**:
+
 ```typescript
 // tests/components/NewsletterEditor.test.tsx:14-18
 it('should calculate word count correctly', () => {
@@ -194,6 +217,7 @@ it('should calculate word count correctly', () => {
 ```
 
 **Documentation updated** (docs/TESTING.md):
+
 - ✅ Clear warning at top: "CRITICAL: No Real Test Coverage"
 - ✅ Honest assessment: "0% real application coverage"
 - ✅ Examples of what REAL tests would look like
@@ -208,6 +232,7 @@ it('should calculate word count correctly', () => {
 ### Manual Verification Required:
 
 **SSRF Protection**:
+
 ```bash
 # ✅ Should ACCEPT
 curl -X POST https://app.com/api/scrape \
@@ -231,11 +256,13 @@ curl -X POST https://app.com/api/scrape \
 ```
 
 **Authentication**:
+
 - [ ] `/api/scrape` returns 401 without auth
 - [ ] `/api/generate-posts` returns 401 without auth
 - [ ] Dashboard pages redirect to `/auth/login`
 
 **Navigation**:
+
 - [ ] All auth pages resolve (no 404s)
 - [ ] All dashboard pages resolve (no 404s)
 
@@ -245,13 +272,13 @@ curl -X POST https://app.com/api/scrape \
 
 ### Current Security Posture:
 
-| Category | Status | Risk Level |
-|----------|--------|------------|
-| SSRF Protection | ✅ Fixed | 🟢 Low |
-| Authentication | ✅ Complete | 🟢 Low |
-| Input Validation | ✅ Improved | 🟢 Low |
-| Error Handling | ✅ Improved | 🟢 Low |
-| Automated Testing | ⚠️ Placeholder | 🟡 Medium |
+| Category          | Status         | Risk Level |
+| ----------------- | -------------- | ---------- |
+| SSRF Protection   | ✅ Fixed       | 🟢 Low     |
+| Authentication    | ✅ Complete    | 🟢 Low     |
+| Input Validation  | ✅ Improved    | 🟢 Low     |
+| Error Handling    | ✅ Improved    | 🟢 Low     |
+| Automated Testing | ⚠️ Placeholder | 🟡 Medium  |
 
 ### Remaining Risks:
 
@@ -275,6 +302,7 @@ curl -X POST https://app.com/api/scrape \
 ## Summary
 
 **Critical issues resolved**: 6/7
+
 - ✅ SSRF vulnerability (critical security fix)
 - ✅ Missing auth pages (user experience fix)
 - ✅ Missing dashboard pages (navigation fix)
@@ -284,6 +312,7 @@ curl -X POST https://app.com/api/scrape \
 - ⚠️ Test suite (acknowledged limitation)
 
 **Current application state**:
+
 - Secure against SSRF attacks
 - Complete authentication flows
 - Working navigation
@@ -292,6 +321,7 @@ curl -X POST https://app.com/api/scrape \
 - Manual testing required
 
 **Next recommended actions**:
+
 1. Manual security testing with checklist above
 2. Consider adding rate limiting to API routes
 3. Build real test suite when time permits

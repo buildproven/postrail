@@ -130,7 +130,8 @@ describe('TwitterSetupGuide - Setup Instructions', () => {
   })
 
   it('should link to Twitter Developer Portal', () => {
-    const developerPortalUrl = 'https://developer.twitter.com/en/portal/dashboard'
+    const developerPortalUrl =
+      'https://developer.twitter.com/en/portal/dashboard'
 
     expect(developerPortalUrl).toContain('developer.twitter.com')
     expect(developerPortalUrl).toMatch(/^https:\/\//)
@@ -226,13 +227,6 @@ describe('TwitterSetupGuide - API Integration', () => {
 
 describe('TwitterSetupGuide - Security', () => {
   it('should clear credentials from state after connection', () => {
-    const credentials = {
-      apiKey: 'test-key',
-      apiSecret: 'test-secret',
-      accessToken: 'test-token',
-      accessTokenSecret: 'test-token-secret',
-    }
-
     // After successful connection, clear credentials
     const clearedCredentials = {
       apiKey: '',
@@ -286,7 +280,8 @@ describe('TwitterSetupGuide - User Experience', () => {
 
   it('should show success message after connection', () => {
     const successMessage = 'Twitter Connected!'
-    const successDescription = 'Your Twitter account is now connected and ready to use.'
+    const successDescription =
+      'Your Twitter account is now connected and ready to use.'
 
     expect(successMessage).toContain('Connected')
     expect(successDescription).toContain('ready to use')
@@ -329,7 +324,9 @@ describe('TwitterSetupGuide - Field Labels', () => {
     }
 
     expect(placeholders.apiKey).toBeTruthy()
-    expect(placeholders.apiSecret.length).toBeGreaterThan(placeholders.apiKey.length)
+    expect(placeholders.apiSecret.length).toBeGreaterThan(
+      placeholders.apiKey.length
+    )
   })
 })
 

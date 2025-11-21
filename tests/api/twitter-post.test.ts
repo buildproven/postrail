@@ -146,7 +146,8 @@ describe('Twitter Post - Error Handling', () => {
   it('should handle authentication errors', () => {
     const errorResponse = {
       error: 'Authentication failed',
-      details: 'Your Twitter connection has expired. Please reconnect your account.',
+      details:
+        'Your Twitter connection has expired. Please reconnect your account.',
     }
 
     expect(errorResponse.error).toContain('Authentication')
@@ -166,7 +167,8 @@ describe('Twitter Post - Error Handling', () => {
   it('should update social_post with error on failure', () => {
     const errorUpdate = {
       status: 'failed',
-      error_message: 'Rate limit exceeded: Please wait 15 minutes and try again.',
+      error_message:
+        'Rate limit exceeded: Please wait 15 minutes and try again.',
     }
 
     expect(errorUpdate.status).toBe('failed')
@@ -219,7 +221,8 @@ describe('Twitter Post - Credential Retrieval', () => {
   it('should handle missing connection error', () => {
     const errorResponse = {
       error: 'Twitter not connected',
-      details: 'Please connect your Twitter account in Settings → Connected Accounts',
+      details:
+        'Please connect your Twitter account in Settings → Connected Accounts',
     }
 
     expect(errorResponse.error).toContain('not connected')
@@ -348,7 +351,8 @@ describe('Twitter Post - Edge Cases', () => {
   })
 
   it('should handle posts with mixed content', () => {
-    const mixedPost = '🚀 Check this out! #tech\n\nRead more: https://example.com\n\n@user1 thoughts?'
+    const mixedPost =
+      '🚀 Check this out! #tech\n\nRead more: https://example.com\n\n@user1 thoughts?'
 
     expect(mixedPost.length).toBeLessThan(280)
     expect(mixedPost).toContain('🚀')

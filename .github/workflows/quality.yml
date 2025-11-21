@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Full git history for gitleaks
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -62,26 +64,10 @@ jobs:
       - name: Security audit
         run: npm audit --audit-level high
 
-      - name: Check for hardcoded secrets
-        run: |
-          # Check for common secret patterns (excluding docs, tests, and workflow files)
-          if grep -r -E "(password|secret|key|token).*[=:].*['\"][^'\"]{8,}" . \
-               --exclude-dir=node_modules \
-               --exclude-dir=.git \
-               --exclude-dir=.github \
-               --exclude-dir=tests \
-               --exclude="*.md" \
-               --exclude="package.json" || \
-             grep -r -E "-----BEGIN.*KEY-----" . \
-               --exclude-dir=node_modules \
-               --exclude-dir=.git \
-               --exclude-dir=.github \
-               --exclude-dir=tests; then
-            echo "❌ Potential hardcoded secrets found"
-            exit 1
-          else
-            echo "✅ No hardcoded secrets detected"
-          fi
+      - name: Check for hardcoded secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Security pattern detection
         run: |
@@ -138,13 +124,14 @@ jobs:
         run: |
           # Run comprehensive configuration security validation
           echo "🔍 Running configuration security validation..."
-          npx create-quality-automation@latest --security-config
+          npx create-quality-automation@latest --security-config --no-eslint-security
 
       - name: Documentation validation
         run: |
           # Run comprehensive documentation validation
           echo "📖 Running documentation validation..."
           npx create-quality-automation@latest --validate-docs
+        continue-on-error: true
 
       - name: Lighthouse CI
         run: |

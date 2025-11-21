@@ -3,12 +3,14 @@
 ## ✅ Current Status
 
 ### What's Working:
+
 1. **URL Scraping** - Mozilla Readability is successfully extracting newsletter content
 2. **AI Generation** - Claude API is generating posts correctly (verified with `test-generation.js`)
 3. **Environment Variables** - `.env.local` is loaded with Anthropic and Supabase keys
 4. **Dev Server** - Running on http://localhost:3002
 
 ### What's NOT Working:
+
 **Generated social posts are not appearing on the preview page**
 
 ---
@@ -38,6 +40,7 @@ Open your browser to http://localhost:3002 and:
 7. Check the response:
 
 **If SUCCESS (Status 200):**
+
 ```json
 {
   "newsletterId": "uuid-here",
@@ -50,12 +53,15 @@ Open your browser to http://localhost:3002 and:
 ```
 
 **If FAILURE (Status 500):**
+
 ```json
 {
   "error": "Server configuration error: ANTHROPIC_API_KEY not set"
 }
 ```
+
 OR
+
 ```json
 {
   "error": "Failed to save generated posts"
@@ -70,6 +76,7 @@ After generation (successful or not), you'll be redirected to:
 **Look for the DEBUG warnings I just added:**
 
 **Yellow Warning Box** = Posts were not saved OR Row Level Security is blocking them:
+
 ```
 ⚠️ No posts found for this newsletter
 Newsletter ID: abc-123-def
@@ -81,6 +88,7 @@ This might mean:
 ```
 
 **Red Error Box** = Database query failed:
+
 ```
 ❌ Error fetching posts:
 { "code": "...", "message": "..." }
@@ -91,6 +99,7 @@ This might mean:
 While on the preview page, check the **Terminal** where `npm run dev` is running.
 
 Look for these DEBUG lines:
+
 ```
 DEBUG - Newsletter ID: abc-123-def
 DEBUG - Posts: null  (or) [ {...}, {...} ]
@@ -99,6 +108,7 @@ DEBUG - Posts count: 0  (or) 6
 ```
 
 This tells you:
+
 - **Posts count: 0** = No posts in database for this newsletter
 - **Posts error: {...}** = RLS policy or query issue
 - **Posts: [{...}, {...}]** = Posts ARE in database (display issue)
@@ -110,6 +120,7 @@ This tells you:
 ### Issue 1: Posts Not Saving (API Route Failure)
 
 **Symptoms:**
+
 - Network tab shows 500 error on `/api/generate-posts`
 - Console logs show "Failed to save generated posts"
 
@@ -128,6 +139,7 @@ AND policyname LIKE '%insert%';
 ```
 
 Expected policy:
+
 ```sql
 create policy "Users can insert posts for their newsletters"
   on public.social_posts for insert
@@ -143,6 +155,7 @@ create policy "Users can insert posts for their newsletters"
 ### Issue 2: Row Level Security Blocking Reads
 
 **Symptoms:**
+
 - Posts ARE being created (check Supabase Table Editor → social_posts)
 - But preview page shows "⚠️ No posts found"
 - DEBUG logs show `Posts: null` or `Posts: []`
@@ -158,6 +171,7 @@ AND policyname LIKE '%select%';
 ```
 
 Expected policy:
+
 ```sql
 create policy "Users can view posts from their newsletters"
   on public.social_posts for select
@@ -172,6 +186,7 @@ create policy "Users can view posts from their newsletters"
 
 **Quick Test:**
 Disable RLS temporarily to confirm:
+
 ```sql
 ALTER TABLE public.social_posts DISABLE ROW LEVEL SECURITY;
 ```
@@ -179,6 +194,7 @@ ALTER TABLE public.social_posts DISABLE ROW LEVEL SECURITY;
 Refresh the preview page. If posts now appear, the issue is the RLS policy.
 
 **Re-enable RLS after testing:**
+
 ```sql
 ALTER TABLE public.social_posts ENABLE ROW LEVEL SECURITY;
 ```
@@ -186,6 +202,7 @@ ALTER TABLE public.social_posts ENABLE ROW LEVEL SECURITY;
 ### Issue 3: Auth UID Mismatch
 
 **Symptoms:**
+
 - Newsletter created with one user_id
 - Preview page tries to fetch with different user_id
 - DEBUG shows `Posts: []` (empty array, not null)
@@ -211,9 +228,11 @@ If `is_owner` is FALSE, you're logged in as a different user.
 ## 🎯 Next Steps (In Order)
 
 1. **Run the test again**:
+
    ```bash
    node test-generation.js
    ```
+
    ✅ Confirms AI is working
 
 2. **Open the app**: http://localhost:3002
@@ -241,11 +260,13 @@ If `is_owner` is FALSE, you're logged in as a different user.
 I've created `test-generation.js` which confirms the AI API works.
 
 **Run it:**
+
 ```bash
 node test-generation.js
 ```
 
 **Expected output:**
+
 ```
 ✅ SUCCESS! Generated post:
 ────────────────────────────────────────────────────────────

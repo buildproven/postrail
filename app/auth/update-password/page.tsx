@@ -41,7 +41,7 @@ export default function UpdatePasswordPage() {
       } else {
         router.push('/auth/login?message=Password updated successfully')
       }
-    } catch (error) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)
@@ -66,7 +66,7 @@ export default function UpdatePasswordPage() {
               type="password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               placeholder="Enter new password"
               className="mt-1"
             />
@@ -79,7 +79,7 @@ export default function UpdatePasswordPage() {
               type="password"
               required
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={e => setConfirmPassword(e.target.value)}
               placeholder="Confirm new password"
               className="mt-1"
             />

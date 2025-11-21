@@ -25,6 +25,7 @@ LetterFlow automatically generates and schedules social media posts to promote y
 - Platform OAuth credentials (LinkedIn, Meta)
 
 **Important**: This project requires Node 20+. If using nvm:
+
 ```bash
 nvm use 20
 ```
@@ -87,26 +88,31 @@ letterflow/
 ## Development Roadmap
 
 ### Phase 1: Foundation (Week 1) ✅
+
 - [x] Project setup
 - [x] Basic authentication
 - [x] Database schema
 
 ### Phase 2: AI Generation (Week 2)
+
 - [ ] Newsletter input module
 - [ ] Claude AI integration
 - [ ] Post generation for 3 platforms
 
 ### Phase 3: Platform Integration (Weeks 3-4)
+
 - [ ] LinkedIn OAuth + posting
 - [ ] Threads OAuth + posting
 - [ ] Facebook OAuth + posting
 
 ### Phase 4: Scheduling (Week 5)
+
 - [ ] Queue system setup
 - [ ] Automated scheduling
 - [ ] Background job processing
 
 ### Phase 5: Analytics & Polish (Week 6)
+
 - [ ] Analytics dashboard
 - [ ] Performance tracking
 - [ ] PWA setup

@@ -169,16 +169,23 @@ export async function POST(request: NextRequest) {
 
         if (errorMsg.includes('rate limit')) {
           errorMessage = 'Rate limit exceeded'
-          errorDetails = 'You have exceeded Twitter API rate limits. Please wait 15 minutes and try again.'
+          errorDetails =
+            'You have exceeded Twitter API rate limits. Please wait 15 minutes and try again.'
         } else if (errorMsg.includes('duplicate')) {
           errorMessage = 'Duplicate content'
-          errorDetails = 'This content was already posted recently. Twitter prevents duplicate posts.'
-        } else if (errorMsg.includes('unauthorized') || errorMsg.includes('401')) {
+          errorDetails =
+            'This content was already posted recently. Twitter prevents duplicate posts.'
+        } else if (
+          errorMsg.includes('unauthorized') ||
+          errorMsg.includes('401')
+        ) {
           errorMessage = 'Authentication failed'
-          errorDetails = 'Your Twitter connection has expired. Please reconnect your account.'
+          errorDetails =
+            'Your Twitter connection has expired. Please reconnect your account.'
         } else if (errorMsg.includes('forbidden') || errorMsg.includes('403')) {
           errorMessage = 'Permission denied'
-          errorDetails = 'Your Twitter app does not have permission to post tweets.'
+          errorDetails =
+            'Your Twitter app does not have permission to post tweets.'
         } else {
           errorDetails = twitterError.message
         }
@@ -209,7 +216,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'Twitter not connected',
-            details: 'Please connect your Twitter account in Settings → Connected Accounts',
+            details:
+              'Please connect your Twitter account in Settings → Connected Accounts',
           },
           { status: 400 }
         )

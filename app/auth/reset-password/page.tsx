@@ -10,7 +10,10 @@ import Link from 'next/link'
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [message, setMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +35,7 @@ export default function ResetPasswordPage() {
         })
         setEmail('')
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'An unexpected error occurred' })
     } finally {
       setLoading(false)
@@ -45,7 +48,7 @@ export default function ResetPasswordPage() {
         <div>
           <h2 className="text-3xl font-bold text-center">Reset Password</h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email and we'll send you a password reset link
+            Enter your email and we&apos;ll send you a password reset link
           </p>
         </div>
 
@@ -57,7 +60,7 @@ export default function ResetPasswordPage() {
               type="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               placeholder="you@example.com"
               className="mt-1"
             />

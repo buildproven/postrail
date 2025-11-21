@@ -7,7 +7,12 @@ import { describe, it, expect } from 'vitest'
 
 describe('Twitter Connect - Credential Validation', () => {
   it('should require all 4 credentials', () => {
-    const requiredFields = ['apiKey', 'apiSecret', 'accessToken', 'accessTokenSecret']
+    const requiredFields = [
+      'apiKey',
+      'apiSecret',
+      'accessToken',
+      'accessTokenSecret',
+    ]
 
     // All fields should be required
     expect(requiredFields.length).toBe(4)
@@ -39,15 +44,38 @@ describe('Twitter Connect - Credential Validation', () => {
 
   it('should reject missing credentials', () => {
     const incompleteCredentials = [
-      { apiKey: '', apiSecret: 'secret', accessToken: 'token', accessTokenSecret: 'secret' },
-      { apiKey: 'key', apiSecret: '', accessToken: 'token', accessTokenSecret: 'secret' },
-      { apiKey: 'key', apiSecret: 'secret', accessToken: '', accessTokenSecret: 'secret' },
-      { apiKey: 'key', apiSecret: 'secret', accessToken: 'token', accessTokenSecret: '' },
+      {
+        apiKey: '',
+        apiSecret: 'secret',
+        accessToken: 'token',
+        accessTokenSecret: 'secret',
+      },
+      {
+        apiKey: 'key',
+        apiSecret: '',
+        accessToken: 'token',
+        accessTokenSecret: 'secret',
+      },
+      {
+        apiKey: 'key',
+        apiSecret: 'secret',
+        accessToken: '',
+        accessTokenSecret: 'secret',
+      },
+      {
+        apiKey: 'key',
+        apiSecret: 'secret',
+        accessToken: 'token',
+        accessTokenSecret: '',
+      },
     ]
 
     incompleteCredentials.forEach(creds => {
       const hasAllFields =
-        !!creds.apiKey && !!creds.apiSecret && !!creds.accessToken && !!creds.accessTokenSecret
+        !!creds.apiKey &&
+        !!creds.apiSecret &&
+        !!creds.accessToken &&
+        !!creds.accessTokenSecret
       expect(hasAllFields).toBe(false)
     })
   })
@@ -68,7 +96,9 @@ describe('Twitter Connect - Credential Validation', () => {
     expect(typicalCredentials.apiKey.length).toBeGreaterThanOrEqual(20)
     expect(typicalCredentials.apiSecret.length).toBeGreaterThanOrEqual(40)
     expect(typicalCredentials.accessToken.length).toBeGreaterThanOrEqual(40)
-    expect(typicalCredentials.accessTokenSecret.length).toBeGreaterThanOrEqual(40)
+    expect(typicalCredentials.accessTokenSecret.length).toBeGreaterThanOrEqual(
+      40
+    )
   })
 })
 
@@ -255,7 +285,7 @@ describe('Twitter Connect - Disconnect Flow', () => {
 
   it('should confirm before disconnecting', () => {
     const confirmMessage =
-      'Are you sure you want to disconnect twitter? You\'ll need to reconnect to post.'
+      "Are you sure you want to disconnect twitter? You'll need to reconnect to post."
 
     expect(confirmMessage).toContain('disconnect')
     expect(confirmMessage).toContain('reconnect')
