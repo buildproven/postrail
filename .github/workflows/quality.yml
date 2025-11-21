@@ -14,7 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0  # Full git history for gitleaks
+          fetch-depth: 0 # Full git history for gitleaks
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
