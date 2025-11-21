@@ -5,14 +5,15 @@
  * Shows user's current limits and system-wide statistics.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 
 export async function GET() {
   try {
     // Check if status endpoints are enabled (defaults disabled in production)
-    const statusEndpointsEnabled = process.env.ENABLE_STATUS_ENDPOINTS === 'true'
+    const statusEndpointsEnabled =
+      process.env.ENABLE_STATUS_ENDPOINTS === 'true'
     if (!statusEndpointsEnabled) {
       return NextResponse.json(
         { error: 'Status endpoints disabled' },
@@ -44,29 +45,33 @@ export async function GET() {
     const headers: Record<string, string> = {}
     if (userStatus.degraded) {
       headers['X-Rate-Limit-Degraded'] = 'true'
-      headers['Warning'] = '299 - "Rate limiting service degraded - per-instance limits only"'
+      headers['Warning'] =
+        '299 - "Rate limiting service degraded - per-instance limits only"'
     }
 
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        requestsRemaining: userStatus.requestsRemaining,
-        resetTime: new Date(userStatus.resetTime).toISOString(),
-        isLimited: userStatus.isLimited,
-        degraded: userStatus.degraded
+    return NextResponse.json(
+      {
+        user: {
+          id: user.id,
+          requestsRemaining: userStatus.requestsRemaining,
+          resetTime: new Date(userStatus.resetTime).toISOString(),
+          isLimited: userStatus.isLimited,
+          degraded: userStatus.degraded,
+        },
+        limits: {
+          requestsPerMinute: 3,
+          requestsPerHour: 10,
+          description: 'AI generation requests',
+        },
+        // system: {  // REMOVED: Sensitive system data
+        //   activeUsers: systemStats.activeUsers,
+        //   pendingRequests: systemStats.pendingRequests,
+        //   cachedResults: systemStats.cachedResults,
+        //   timestamp: new Date(systemStats.timestamp).toISOString(),
+        // },
       },
-      limits: {
-        requestsPerMinute: 3,
-        requestsPerHour: 10,
-        description: 'AI generation requests',
-      },
-      // system: {  // REMOVED: Sensitive system data
-      //   activeUsers: systemStats.activeUsers,
-      //   pendingRequests: systemStats.pendingRequests,
-      //   cachedResults: systemStats.cachedResults,
-      //   timestamp: new Date(systemStats.timestamp).toISOString(),
-      // },
-    }, { headers })
+      { headers }
+    )
   } catch (error) {
     console.error('Rate limit status error:', error)
     return NextResponse.json(
