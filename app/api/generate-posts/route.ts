@@ -10,9 +10,24 @@ if (!process.env.ANTHROPIC_API_KEY) {
   console.error('Set it in .env.local: ANTHROPIC_API_KEY=your-key-here')
 }
 
-// Configurable model name via environment variable
+// Configurable model name via environment variable with stable default
 const ANTHROPIC_MODEL =
-  process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514'
+  process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-latest'
+
+// Validate model name to prevent 500 errors in production
+const SUPPORTED_MODELS = [
+  'claude-3-5-sonnet-latest',
+  'claude-3-5-sonnet-20241022',
+  'claude-3-5-haiku-latest',
+  'claude-3-5-haiku-20241022',
+  'claude-sonnet-4-20250514', // Allow override for specific environments
+]
+
+if (!SUPPORTED_MODELS.includes(ANTHROPIC_MODEL)) {
+  console.warn(
+    `Warning: Model '${ANTHROPIC_MODEL}' may not be supported. Supported models: ${SUPPORTED_MODELS.join(', ')}`
+  )
+}
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || 'missing-key',
@@ -244,9 +259,14 @@ export async function POST(request: NextRequest) {
         contentHash
       )
 
-      if (!rateLimitResult.allowed) {
-        // Handle cached results (from deduplication)
-        if (rateLimitResult.reason === 'cached_result') {
+      // Handle cached results (from deduplication) - can be allowed=true with cached_result reason
+      if (rateLimitResult.reason === 'cached_result') {
+        const cachedResult = await redisRateLimiter.getCachedResult(
+          user.id,
+          contentHash
+        )
+
+        if (cachedResult) {
           observability.info('AI generation returned from cache', {
             requestId,
             userId: user.id,
@@ -254,16 +274,51 @@ export async function POST(request: NextRequest) {
             metadata: {
               fromCache: true,
               contentHash,
+              newsletterId: cachedResult.newsletterId,
             },
           })
 
           return NextResponse.json({
+            ...cachedResult,
             fromCache: true,
             message: 'Posts already generated for this content',
           })
         }
 
-        // Handle rate limiting
+        // CRITICAL: If checkRateLimit indicated cached_result but getCachedResult returns null,
+        // this indicates a race condition or cache expiry. We should NOT proceed with generation
+        // as this violates the deduplication contract and could result in duplicate API calls.
+        observability.warn(
+          'Cache miss after cached_result indication - potential race condition',
+          {
+            requestId,
+            userId: user.id,
+            event: 'ai_generation_cache_race',
+            metadata: {
+              contentHash,
+              rateLimitReason: rateLimitResult.reason,
+            },
+          }
+        )
+
+        return NextResponse.json(
+          {
+            error: 'Content generation in progress',
+            message:
+              'This content is being processed. Please try again in a moment.',
+            retryAfter: 30,
+          },
+          {
+            status: 429,
+            headers: {
+              'Retry-After': '30',
+            },
+          }
+        )
+      }
+
+      // Handle rate limiting
+      if (!rateLimitResult.allowed) {
         observability.warn('AI generation rate limited', {
           requestId,
           userId: user.id,

@@ -382,7 +382,7 @@ export async function POST(request: NextRequest) {
 **Rate Limit Status** (`/api/rate-limit-status`):
 
 - **All Users**: View their own rate limit status
-- **Admins Only**: View system statistics (activeUsers, pendingRequests, cachedResults)
+- **Admins Only**: View system statistics (activeUsers, backend, redisHealth/memoryKeys)
 
 **SSRF Protection Status** (`/api/ssrf-status`):
 
@@ -443,9 +443,9 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" \
   "user": { "id": "...", "requestsRemaining": 10 },
   "limits": { ... },
   "system": {
+    "backend": "redis",
     "activeUsers": 50,
-    "pendingRequests": 5,
-    "cachedResults": 200
+    "redisHealth": true
   }
 }
 ```

@@ -70,10 +70,16 @@ export async function GET() {
     // Include system statistics for admins only
     if (systemStats) {
       response.system = {
+        backend: systemStats.backend,
         activeUsers: systemStats.activeUsers,
-        pendingRequests: systemStats.pendingRequests,
-        cachedResults: systemStats.cachedResults,
         timestamp: new Date(systemStats.timestamp).toISOString(),
+        // Include backend-specific fields only when available
+        ...(systemStats.backend === 'redis' && {
+          redisHealth: systemStats.redisHealth,
+        }),
+        ...(systemStats.backend === 'memory' && {
+          memoryKeys: systemStats.memoryKeys,
+        }),
       }
     }
 

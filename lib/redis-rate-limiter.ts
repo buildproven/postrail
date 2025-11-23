@@ -338,6 +338,32 @@ export class RedisRateLimiter {
   }
 
   /**
+   * Get cached deduplication result (Redis or memory)
+   */
+  async getCachedResult(
+    userId: string,
+    contentHash: string
+  ): Promise<any | null> {
+    const dedupKey = `dedup:${userId}:${contentHash}`
+
+    if (this.enabled && this.redis) {
+      try {
+        const cached = await this.redis.get(dedupKey)
+        return cached && typeof cached === 'string' ? JSON.parse(cached) : null
+      } catch (error) {
+        console.warn('Failed to get cached result from Redis:', error)
+        return null
+      }
+    } else {
+      const cached = this.memoryStore.get(dedupKey)
+      if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000) {
+        return cached.result
+      }
+      return null
+    }
+  }
+
+  /**
    * Generate content hash for deduplication
    */
   generateContentHash(title: string, content: string, userId: string): string {

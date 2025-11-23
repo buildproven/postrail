@@ -86,9 +86,9 @@ describe('RBAC Integration - API Routes', () => {
       })
 
       vi.mocked(redisRateLimiter.getStats).mockResolvedValue({
+        backend: 'redis',
         activeUsers: 50,
-        pendingRequests: 5,
-        cachedResults: 200,
+        redisHealth: true,
         timestamp: Date.now(),
       })
 
@@ -103,9 +103,9 @@ describe('RBAC Integration - API Routes', () => {
       expect(data.user.id).toBe('admin-123')
       expect(data.limits).toBeDefined()
       expect(data.system).toBeDefined() // System stats for admin
+      expect(data.system.backend).toBe('redis')
       expect(data.system.activeUsers).toBe(50)
-      expect(data.system.pendingRequests).toBe(5)
-      expect(data.system.cachedResults).toBe(200)
+      expect(data.system.redisHealth).toBe(true)
     })
 
     it('should return 401 for unauthenticated requests', async () => {

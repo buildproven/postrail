@@ -6,38 +6,39 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { observability } from '@/lib/observability'
+import { requireAdmin } from '@/lib/rbac'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Check admin role (RBAC)
-    if (!user.app_metadata?.role || user.app_metadata.role !== 'admin') {
-      return NextResponse.json(
-        {
-          error:
-            'Admin access required. Contact administrator for monitoring access.',
+    // Check admin role using proper RBAC helpers
+    const adminCheck = await requireAdmin(request)
+    if (!adminCheck.authorized) {
+      // Log unauthorized monitoring access attempts for security monitoring
+      observability.warn('Unauthorized monitoring access attempt', {
+        userId: adminCheck.userId,
+        path: request.nextUrl?.pathname,
+        event: 'monitoring_unauthorized_access',
+        metadata: {
+          errorMessage: adminCheck.error,
         },
-        { status: 403 }
+      })
+
+      return NextResponse.json(
+        { error: adminCheck.error },
+        { status: adminCheck.status }
       )
     }
+
+    const user = { id: adminCheck.userId! }
 
     // Parse query parameters
     const url = new URL(request.url)
     const section = url.searchParams.get('section') || 'all'
     const since = url.searchParams.get('since')
-    const limit = parseInt(url.searchParams.get('limit') || '50')
+    const rawLimit = parseInt(url.searchParams.get('limit') || '50')
+    // Clamp limit to prevent memory exhaustion - max 100 entries for safety
+    const limit = Math.min(Math.max(rawLimit, 1), 100)
 
     // Check if monitoring endpoint is enabled (admin-only functionality)
     const monitoringEnabled = process.env.ENABLE_MONITORING_ENDPOINT === 'true'
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
       const securityEvents = observability
         .getLogs({
           since: sinceTimestamp,
-          limit: 100,
+          limit: Math.min(limit, 50), // Use user's bounded limit, capped at 50 for security events
         })
         .filter(
           log =>
@@ -171,7 +172,7 @@ export async function GET(request: NextRequest) {
       const recentRateLimits = observability
         .getLogs({
           since: Date.now() - 10 * 60 * 1000, // Last 10 minutes
-          limit: 1000,
+          limit: Math.min(limit * 2, 200), // Use bounded limit, allow up to 200 for rate limit analysis
         })
         .filter(log => log.event && log.event.includes('rate_limited'))
 

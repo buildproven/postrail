@@ -28,6 +28,7 @@ export type EventType =
   | 'twitter_post_success'
   | 'twitter_post_failure'
   | 'twitter_post_duplicate'
+  | 'monitoring_unauthorized_access'
   | 'supabase_error'
   | 'anthropic_error'
   | 'twitter_api_error'
