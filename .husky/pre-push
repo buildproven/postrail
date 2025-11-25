@@ -1,41 +1,4 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+echo "🔍 Running smart pre-push validation..."
 
-echo "🔍 Running pre-push validation checks..."
-
-# Run ESLint
-echo "📝 Running ESLint..."
-npx eslint . --ext .js,.jsx,.ts,.tsx || {
-  echo "❌ ESLint failed! Fix errors before pushing."
-  exit 1
-}
-
-# Run Stylelint
-echo "🎨 Running Stylelint..."
-npx stylelint "**/*.{css,scss,sass,less,pcss}" --allow-empty-input || {
-  echo "❌ Stylelint failed! Fix errors before pushing."
-  exit 1
-}
-
-# Run Prettier check
-echo "✨ Checking formatting..."
-npm run format:check || {
-  echo "❌ Formatting check failed! Run 'npm run format' to fix."
-  exit 1
-}
-
-# Run tests
-echo "🧪 Running tests..."
-npm test || {
-  echo "❌ Tests failed! Fix failing tests before pushing."
-  exit 1
-}
-
-# Run smoke tests
-echo "💨 Running smoke tests..."
-npm run test:smoke || {
-  echo "❌ Smoke tests failed! Fix configuration errors before pushing."
-  exit 1
-}
-
-echo "✅ All pre-push checks passed!"
+# Call smart test strategy script
+bash scripts/smart-test-strategy.sh
