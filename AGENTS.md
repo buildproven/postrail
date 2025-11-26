@@ -1,5 +1,12 @@
 # Repository Guidelines
 
+## Pre-Action Checklist
+
+Before suggesting ANY infrastructure, CI/CD, or tooling changes:
+1. Run `ls .github/workflows/` to see existing workflows
+2. Run `cat package.json | grep scripts -A 50` to see available commands
+3. Check for `.qualityrc.json`, `CLAUDE.md`, or similar config files
+
 ## Project Structure & Modules
 
 - `app/`: Next.js App Router pages, layouts, server actions; API routes live in `app/api`.
@@ -44,3 +51,27 @@
 - Never commit secrets; copy `.env.local.example` to `.env.local` and keep keys (Anthropic, Supabase, Upstash) rotated.
 - `npm run security:audit` for dependency checks; `npm run security:secrets` to catch accidental tokens.
 - Avoid `eval`/dynamic require patterns; use vetted imports as enforced by ESLint security rules.
+
+## Quality Automation (create-quality-automation)
+
+**IMPORTANT**: This project uses `create-quality-automation` for CI/CD quality gates. Before suggesting or creating ANY new GitHub Actions workflows for lint/test/security/formatting, you MUST first check:
+
+1. `.github/workflows/quality.yml` — already exists and handles all quality checks
+2. `.qualityrc.json` — CQA configuration file
+
+**DO NOT** create duplicate workflows. The existing workflow already handles:
+- ESLint with security rules
+- Prettier formatting checks
+- Stylelint for CSS
+- Test execution
+- Security audit (`npm audit`)
+- Secret detection
+
+**Available Commands** (use these instead of suggesting new workflows):
+- `npm run quality:ci` — Full CI quality pipeline
+- `npm run validate:all` — Comprehensive validation
+- `npm run lint` / `npm run lint:fix` — Linting
+- `npm run format:check` / `npm run format` — Formatting
+- `npm run security:audit` — Dependency security check
+
+**Before proposing CI/CD changes**: Run `ls .github/workflows/` and `cat .github/workflows/quality.yml` to understand what already exists.

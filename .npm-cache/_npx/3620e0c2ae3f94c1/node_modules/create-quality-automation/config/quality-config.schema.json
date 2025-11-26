@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/brettstark73/create-quality-automation/blob/main/config/quality-config.schema.json",
+  "title": "Quality Automation Configuration",
+  "description": "Configuration for create-quality-automation progressive quality checks",
+  "type": "object",
+  "required": ["version"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Configuration schema version (semver format)"
+    },
+    "maturity": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "minimal",
+        "bootstrap",
+        "development",
+        "production-ready"
+      ],
+      "default": "auto",
+      "description": "Project maturity level: 'auto' for auto-detection or manual override"
+    },
+    "detected": {
+      "type": "object",
+      "description": "Auto-detected project information (populated by --check-maturity)",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["minimal", "bootstrap", "development", "production-ready"],
+          "description": "Detected maturity level"
+        },
+        "sourceFiles": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of source files detected"
+        },
+        "testFiles": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of test files detected"
+        },
+        "hasDocumentation": {
+          "type": "boolean",
+          "description": "Whether README or docs/ found"
+        },
+        "hasDependencies": {
+          "type": "boolean",
+          "description": "Whether package.json dependencies exist"
+        },
+        "detectedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of detection"
+        }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "description": "Quality check configuration",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "oneOf": [
+              {
+                "type": "boolean",
+                "description": "Explicitly enable (true) or disable (false) this check"
+              },
+              {
+                "type": "string",
+                "enum": ["auto"],
+                "description": "Auto-enable based on project maturity level"
+              }
+            ],
+            "default": "auto"
+          },
+          "required": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this check is required to pass for CI/CD success"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

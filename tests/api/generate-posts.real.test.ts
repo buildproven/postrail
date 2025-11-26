@@ -8,6 +8,22 @@ import { NextRequest } from 'next/server'
  * with mocked Supabase and Anthropic
  */
 
+// Helper to build a Supabase-like query builder with full method chain
+const createQueryBuilder = () => {
+  const builder: any = {
+    select: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    upsert: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue({ data: null, error: null }),
+    maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+  }
+  return builder
+}
+
 // Mock Supabase
 const mockSupabase = {
   auth: {
@@ -16,29 +32,7 @@ const mockSupabase = {
       error: null,
     })),
   },
-  from: vi.fn(() => ({
-    select: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    upsert: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    in: vi.fn().mockReturnThis(),
-    single: vi.fn().mockResolvedValue({
-      data: {
-        id: 'newsletter-id',
-        user_id: 'test-user-id',
-        title: 'Test Newsletter',
-        content: 'Test content',
-        status: 'draft',
-      },
-      error: null,
-    }),
-    maybeSingle: vi.fn().mockResolvedValue({
-      data: null,
-      error: null,
-    }),
-  })),
+  from: vi.fn(() => createQueryBuilder()),
 }
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -150,10 +144,17 @@ describe('/api/generate-posts - Real API Tests', () => {
         })),
       }))
 
-      mockSupabase.from.mockReturnValue({
-        insert: insertMock,
-        delete: vi.fn(() => ({ eq: vi.fn() })),
-      } as any)
+      const builder = createQueryBuilder()
+      builder.insert = insertMock
+      builder.delete = vi.fn(() => ({ eq: vi.fn() }))
+      // Ensure the existingNewsletter check returns null
+      builder.select = vi.fn().mockReturnThis()
+      builder.eq = vi.fn().mockReturnThis()
+      builder.maybeSingle = vi
+        .fn()
+        .mockResolvedValue({ data: null, error: null })
+
+      mockSupabase.from.mockReturnValue(builder as any)
 
       const request = new NextRequest('http://localhost/api/generate-posts', {
         method: 'POST',
@@ -227,17 +228,17 @@ describe('/api/generate-posts - Real API Tests', () => {
       const deleteMock = vi.fn(() => ({
         eq: vi.fn(() => Promise.resolve({ error: null })),
       }))
-      mockSupabase.from.mockReturnValue({
-        insert: vi.fn(() => ({
-          select: vi.fn(() => ({
-            single: vi.fn(() => ({
-              data: { id: 'test-id' },
-              error: null,
-            })),
+      const builder = createQueryBuilder()
+      builder.insert = vi.fn(() => ({
+        select: vi.fn(() => ({
+          single: vi.fn(() => ({
+            data: { id: 'test-id' },
+            error: null,
           })),
         })),
-        delete: deleteMock,
-      } as any)
+      }))
+      builder.delete = deleteMock
+      mockSupabase.from.mockReturnValue(builder as any)
 
       const request = new NextRequest('http://localhost/api/generate-posts', {
         method: 'POST',

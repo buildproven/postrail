@@ -1,0 +1,50 @@
+# Dependabot configuration for automated dependency updates
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # npm dependencies
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+    open-pull-requests-limit: 5
+    reviewers:
+      - 'brettstark73'
+    # Group non-security updates for easier review
+    groups:
+      development-dependencies:
+        dependency-type: 'development'
+        update-types: ['patch', 'minor']
+      production-dependencies:
+        dependency-type: 'production'
+        update-types: ['patch', 'minor']
+    # Separate security updates (always create individual PRs)
+    labels:
+      - 'dependencies'
+      - 'automated'
+    commit-message:
+      prefix: 'chore(deps)'
+      include: 'scope'
+    # Only update to latest release (not pre-release)
+    versioning-strategy: increase
+
+  # GitHub Actions
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '10:00'
+    open-pull-requests-limit: 3
+    reviewers:
+      - 'brettstark73'
+    labels:
+      - 'dependencies'
+      - 'github-actions'
+      - 'automated'
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'

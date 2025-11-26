@@ -11,11 +11,32 @@
  * and cannot bypass security controls.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  beforeAll,
+  afterAll,
+  vi,
+} from 'vitest'
 import { ssrfProtection } from '@/lib/ssrf-protection'
 import { rateLimiter } from '@/lib/rate-limiter'
 
 describe('Race Condition Security Tests', () => {
+  // Ensure rate limiters are enforced during these security tests
+  const originalSsrfEnv = process.env.ENFORCE_SSRF_RATE_LIMIT_TESTS
+  const originalAiEnv = process.env.ENFORCE_AI_RATE_LIMIT_TESTS
+  beforeAll(() => {
+    process.env.ENFORCE_SSRF_RATE_LIMIT_TESTS = 'true'
+    process.env.ENFORCE_AI_RATE_LIMIT_TESTS = 'true'
+  })
+
+  afterAll(() => {
+    process.env.ENFORCE_SSRF_RATE_LIMIT_TESTS = originalSsrfEnv
+    process.env.ENFORCE_AI_RATE_LIMIT_TESTS = originalAiEnv
+  })
+
   describe('CRITICAL #1: SSRF Rate Limiting Race Condition', () => {
     beforeEach(() => {
       // Clear any existing rate limit state

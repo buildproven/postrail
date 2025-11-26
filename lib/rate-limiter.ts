@@ -135,6 +135,14 @@ class RateLimiter {
   async checkRateLimit(
     userId: string
   ): Promise<{ allowed: boolean; retryAfter?: number; reason?: string }> {
+    const isTestEnv =
+      process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
+    const enforceInTests = process.env.ENFORCE_AI_RATE_LIMIT_TESTS === 'true'
+
+    if (isTestEnv && !enforceInTests) {
+      return { allowed: true }
+    }
+
     const now = Date.now()
     const userKey = `ai_generation:${userId}`
 

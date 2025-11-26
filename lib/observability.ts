@@ -371,8 +371,8 @@ class ObservabilityManager {
     )
 
     // Calculate error rates
-    const errorRates: Record<string, number> = {}
-    const eventGroups = ['ai_generation', 'scrape', 'twitter_post']
+    const eventGroups = ['ai_generation', 'scrape', 'twitter_post'] as const
+    const errorRateMap = new Map<string, number>()
 
     for (const group of eventGroups) {
       const totalEvents = Object.entries(counts)
@@ -388,14 +388,17 @@ class ObservabilityManager {
         .reduce((sum, [, count]) => sum + count, 0)
 
       if (totalEvents > 0) {
-        errorRates[group] = Math.round((errorEvents / totalEvents) * 100) / 100 // Round to 2 decimals
+        errorRateMap.set(
+          group,
+          Math.round((errorEvents / totalEvents) * 100) / 100
+        ) // Round to 2 decimals
       }
     }
 
     return {
       counts,
       averageDurations,
-      errorRates,
+      errorRates: Object.fromEntries(errorRateMap),
       recentEvents: filtered.slice(-50), // Last 50 events
     }
   }

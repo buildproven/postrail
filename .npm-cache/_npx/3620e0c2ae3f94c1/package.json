@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "create-quality-automation": "^4.1.1"
+  },
+  "_npx": {
+    "packages": [
+      "create-quality-automation@latest"
+    ]
+  }
+}

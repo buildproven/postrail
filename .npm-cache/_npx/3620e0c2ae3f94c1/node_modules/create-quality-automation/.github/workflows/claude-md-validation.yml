@@ -1,0 +1,82 @@
+name: CLAUDE.md Validation
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths:
+      - 'CLAUDE.md'
+      - 'package.json'
+      - 'scripts/validate-claude-md.js'
+      - '.github/workflows/claude-md-validation.yml'
+  pull_request:
+    branches: [main, master, develop]
+    paths:
+      - 'CLAUDE.md'
+      - 'package.json'
+      - 'scripts/validate-claude-md.js'
+      - '.github/workflows/claude-md-validation.yml'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  validate-claude-md:
+    runs-on: ubuntu-latest
+    name: Validate CLAUDE.md Consistency
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Validate CLAUDE.md
+        run: |
+          echo "🔍 Running CLAUDE.md validation..."
+          node scripts/validate-claude-md.js
+
+      - name: Check CLAUDE.md formatting
+        run: |
+          echo "📝 Checking CLAUDE.md formatting with Prettier..."
+          npx prettier --check CLAUDE.md
+
+      - name: Validate against package.json
+        run: |
+          echo "🔗 Cross-checking CLAUDE.md with package.json..."
+
+          # Extract package name from package.json
+          PACKAGE_NAME=$(node -e "console.log(require('./package.json').name)")
+
+          # Check if package name is mentioned in CLAUDE.md
+          if ! grep -q "$PACKAGE_NAME" CLAUDE.md; then
+            echo "❌ Package name '$PACKAGE_NAME' not found in CLAUDE.md"
+            exit 1
+          fi
+
+          echo "✅ Package name reference validated"
+
+      - name: Check for TODO markers
+        run: |
+          echo "🔍 Checking for unresolved TODO markers..."
+
+          if grep -i "TODO\|FIXME\|XXX" CLAUDE.md; then
+            echo "⚠️ Found TODO markers in CLAUDE.md - consider resolving them"
+            exit 1
+          else
+            echo "✅ No TODO markers found"
+          fi
+
+      - name: Validation summary
+        if: success()
+        run: |
+          echo ""
+          echo "✅ CLAUDE.md validation successful!"
+          echo ""
+          echo "All checks passed:"
+          echo "  ✓ Structure and required sections"
+          echo "  ✓ Package references"
+          echo "  ✓ Script documentation"
+          echo "  ✓ Formatting"
+          echo "  ✓ No TODO markers"
+          echo ""

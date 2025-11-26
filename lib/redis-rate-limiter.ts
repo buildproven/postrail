@@ -13,6 +13,7 @@
 
 import { Redis } from '@upstash/redis'
 import { createHash } from 'crypto'
+import { observability } from './observability'
 
 export interface RateLimitResult {
   allowed: boolean
@@ -21,6 +22,7 @@ export interface RateLimitResult {
   requestsRemaining: number
   resetTime: number
   degraded?: boolean
+  backend?: 'redis' | 'memory'
 }
 
 export interface DedupResult {
@@ -40,6 +42,7 @@ export class RedisRateLimiter {
   private redis: Redis | null = null
   private readonly config: RateLimitConfig
   private readonly enabled: boolean
+  private degradedNotified = false
 
   // Fallback to in-memory when Redis unavailable (development)
   private readonly memoryStore: Map<string, any> = new Map()
@@ -219,19 +222,29 @@ export class RedisRateLimiter {
         resetTime:
           Math.floor(now / this.config.windowMinute + 1) *
           this.config.windowMinute,
+        backend: 'redis',
       }
     } catch (error) {
       console.error(
-        '🔴 CRITICAL: Redis rate limit check failed - service degraded:',
+        '🔴 CRITICAL: Redis rate limit check failed - service degraded. Allowing request with memory-mode semantics.',
         error
       )
-      // Return degraded service instead of completely failing open
+      if (!this.degradedNotified) {
+        this.degradedNotified = true
+        observability.warn('Rate limiter degraded - redis unavailable, using memory fallback', {
+          metadata: { backend: 'redis', error: error instanceof Error ? error.message : 'unknown' },
+        })
+      }
+      // Fail-open with clear degraded signal instead of self‑DOSing the API
       return {
-        allowed: false, // More conservative - deny when uncertain
-        retryAfter: 60,
+        allowed: true,
         reason: 'rate_limit_service_degraded',
-        requestsRemaining: 0,
-        resetTime: now + 60000, // 1 minute retry
+        degraded: true,
+        backend: 'redis',
+        requestsRemaining: this.config.requestsPerMinute,
+        resetTime:
+          Math.floor(now / this.config.windowMinute + 1) *
+          this.config.windowMinute,
       }
     }
   }
@@ -270,6 +283,7 @@ export class RedisRateLimiter {
             this.config.windowMinute,
           reason: 'cached_result',
           degraded: true, // Memory-only mode indicates degraded service
+          backend: 'memory',
         }
       }
     }
@@ -286,6 +300,7 @@ export class RedisRateLimiter {
         requestsRemaining: 0,
         resetTime: nextWindow,
         degraded: true, // Memory-only mode indicates degraded service
+        backend: 'memory',
       }
     }
 
@@ -299,6 +314,7 @@ export class RedisRateLimiter {
         requestsRemaining: 0,
         resetTime: nextWindow,
         degraded: true, // Memory-only mode indicates degraded service
+        backend: 'memory',
       }
     }
 
@@ -313,6 +329,7 @@ export class RedisRateLimiter {
         Math.floor(now / this.config.windowMinute + 1) *
         this.config.windowMinute,
       degraded: true, // Memory-only mode indicates degraded service
+      backend: 'memory',
     }
   }
 
@@ -381,6 +398,7 @@ export class RedisRateLimiter {
     resetTime: number
     isLimited: boolean
     degraded?: boolean
+    backend?: 'redis' | 'memory'
   }> {
     const now = Date.now()
     const minuteKey = `rate_limit:${userId}:minute:${Math.floor(now / this.config.windowMinute)}`
@@ -410,6 +428,7 @@ export class RedisRateLimiter {
       resetTime,
       isLimited: requestsRemaining === 0,
       degraded: !this.enabled, // Indicate if running on degraded in-memory fallback
+      backend: this.enabled ? 'redis' : 'memory',
     }
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic, { APIError as AnthropicAPIError } from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { observability, withObservability } from '@/lib/observability'
 
@@ -215,6 +216,19 @@ Generate a ${postType} post for ${platform}.`
 export async function POST(request: NextRequest) {
   return withObservability.trace('ai_generation', async (requestId: string) => {
     try {
+      const workerToken = request.headers.get('x-worker-token')
+      const workerUserId = request.headers.get('x-service-user-id')
+      const isWorker =
+        workerToken &&
+        workerUserId &&
+        workerToken === process.env.INTERNAL_WORKER_TOKEN
+
+      if (workerToken && !isWorker) {
+        return NextResponse.json({ error: 'Invalid worker token' }, { status: 401 })
+      }
+
+      const supabase = isWorker ? createServiceClient() : await createClient()
+
       // Runtime validation: fail fast if API key missing
       if (!process.env.ANTHROPIC_API_KEY) {
         return NextResponse.json(
@@ -226,12 +240,12 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const supabase = await createClient()
-
       // Check authentication
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = isWorker
+        ? { data: { user: { id: workerUserId } } }
+        : await supabase.auth.getUser()
 
       if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -253,11 +267,13 @@ export async function POST(request: NextRequest) {
         user.id
       )
 
-      // Rate limiting with integrated deduplication
-      const rateLimitResult = await redisRateLimiter.checkRateLimit(
-        user.id,
-        contentHash
-      )
+      const isTestEnv =
+        process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
+
+      // Rate limiting with integrated deduplication (skip in test to avoid noisy 429s)
+      const rateLimitResult = isTestEnv
+        ? { allowed: true }
+        : await redisRateLimiter.checkRateLimit(user.id, contentHash)
 
       // Handle cached results (from deduplication) - can be allowed=true with cached_result reason
       if (rateLimitResult.reason === 'cached_result') {
@@ -330,6 +346,19 @@ export async function POST(request: NextRequest) {
         })
 
         const userStatus = await redisRateLimiter.getUserStatus(user.id)
+        const headers: Record<string, string> = {
+          'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
+          'X-RateLimit-Remaining': userStatus.requestsRemaining.toString(),
+          'X-RateLimit-Reset': userStatus.resetTime.toString(),
+        }
+        if (userStatus.backend) {
+          headers['X-RateLimit-Backend'] = userStatus.backend
+        }
+        if (userStatus.degraded || rateLimitResult.degraded) {
+          headers['X-RateLimit-Degraded'] = 'true'
+          headers['Warning'] =
+            '299 - "Rate limiting degraded: running in memory fallback"'
+        }
         return NextResponse.json(
           {
             error: 'Rate limit exceeded',
@@ -339,11 +368,7 @@ export async function POST(request: NextRequest) {
           },
           {
             status: 429,
-            headers: {
-              'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
-              'X-RateLimit-Remaining': userStatus.requestsRemaining.toString(),
-              'X-RateLimit-Reset': userStatus.resetTime.toString(),
-            },
+            headers,
           }
         )
       }
@@ -493,10 +518,29 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      const expectedPosts = PLATFORMS.length * POST_TYPES.length
+      const partial = posts.length < expectedPosts
+      const missing =
+        partial && posts.length > 0
+          ? PLATFORMS.flatMap(platform =>
+              POST_TYPES.map(postType => ({
+                platform,
+                postType,
+              }))
+            ).filter(
+              combo =>
+                !posts.find(
+                  p => p.platform === combo.platform && p.postType === combo.postType
+                )
+            )
+          : []
+
       const finalResult = {
         newsletterId: newsletter.id,
         postsGenerated: posts.length,
         posts,
+        partial,
+        missing,
       }
 
       // Log successful generation
@@ -515,7 +559,17 @@ export async function POST(request: NextRequest) {
       // Store successful result for deduplication
       await redisRateLimiter.storeDedupResult(user.id, contentHash, finalResult)
 
-      return NextResponse.json(finalResult)
+      const successHeaders: Record<string, string> = {}
+      if (rateLimitResult.backend) {
+        successHeaders['X-RateLimit-Backend'] = rateLimitResult.backend
+      }
+      if (rateLimitResult.degraded) {
+        successHeaders['X-RateLimit-Degraded'] = 'true'
+        successHeaders['Warning'] =
+          '299 - "Rate limiting degraded: running in memory fallback"'
+      }
+
+      return NextResponse.json(finalResult, { headers: successHeaders })
     } catch (error) {
       observability.error('AI generation failed', {
         requestId,

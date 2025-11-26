@@ -453,13 +453,31 @@ export async function checkPermission(
       return false
     }
 
-    // Check permission based on role
-    const roleKey = userRole.toUpperCase() as keyof typeof RBAC_PERMISSIONS
-    const rolePermissions = RBAC_PERMISSIONS[roleKey]
+    // Check permission based on role (explicit mapping avoids dynamic object indexing)
+    const roleKey = userRole.toUpperCase()
+    const rolePermissions =
+      roleKey === 'ADMIN'
+        ? RBAC_PERMISSIONS.ADMIN
+        : roleKey === 'USER'
+          ? RBAC_PERMISSIONS.USER
+          : undefined
 
-    // Use bracket notation is safe here - roleKey is constrained to 'ADMIN' | 'USER'
-    // eslint-disable-next-line security/detect-object-injection
-    return rolePermissions?.[permission] || false
+    if (!rolePermissions) return false
+
+    switch (permission) {
+      case 'viewSystemStats':
+        return rolePermissions.viewSystemStats
+      case 'viewAllUsers':
+        return rolePermissions.viewAllUsers
+      case 'manageRoles':
+        return rolePermissions.manageRoles
+      case 'viewAuditLogs':
+        return rolePermissions.viewAuditLogs
+      case 'manageSystemConfig':
+        return rolePermissions.manageSystemConfig
+      default:
+        return false
+    }
   } catch (error) {
     console.error('RBAC: Unexpected error in checkPermission:', error)
     return false

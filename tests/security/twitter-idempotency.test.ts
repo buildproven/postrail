@@ -18,18 +18,20 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 
 // Mock Twitter API
-vi.mock('twitter-api-v2', () => ({
-  TwitterApi: vi.fn().mockImplementation(() => ({
-    v2: {
+vi.mock('twitter-api-v2', () => {
+  class MockTwitterApi {
+    v2 = {
       tweet: vi.fn().mockResolvedValue({
         data: {
           id: '1234567890',
           text: 'Test tweet content',
         },
       }),
-    },
-  })),
-}))
+    }
+  }
+
+  return { TwitterApi: MockTwitterApi }
+})
 
 // Mock crypto decryption
 vi.mock('@/lib/crypto', () => ({

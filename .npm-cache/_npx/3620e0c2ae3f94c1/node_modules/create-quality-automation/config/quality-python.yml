@@ -1,0 +1,89 @@
+name: Python Quality Checks
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          fi
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Black formatting check
+        run: black --check .
+
+      - name: Ruff linting
+        run: ruff check .
+
+      - name: Import sorting check
+        run: isort --check-only --diff .
+
+      - name: Type checking with mypy
+        run: mypy .
+
+      - name: Security check with bandit
+        run: |
+          pip install bandit[toml]
+          bandit -r . -f json -o bandit-report.json || true
+          if [ -s bandit-report.json ]; then
+            echo "🔍 Security scan results:"
+            python -m json.tool bandit-report.json | head -50
+          fi
+
+      - name: Run tests
+        run: |
+          if [ -d tests ] || [ -f test_*.py ] || [ -f *_test.py ]; then
+            pytest --cov=. --cov-report=term-missing
+          else
+            echo "No tests found - skipping test execution"
+          fi
+
+      - name: Check for common Python security issues
+        run: |
+          echo "🔍 Scanning for Python security patterns..."
+
+          # Check for eval usage
+          if grep -r "eval(" . --include="*.py" --exclude-dir=venv --exclude-dir=.venv; then
+            echo "⚠️ Found eval() usage - review for security implications"
+          fi
+
+          # Check for exec usage
+          if grep -r "exec(" . --include="*.py" --exclude-dir=venv --exclude-dir=.venv; then
+            echo "⚠️ Found exec() usage - review for security implications"
+          fi
+
+          # Check for pickle usage (potential security risk)
+          if grep -r "pickle.loads\|pickle.load" . --include="*.py" --exclude-dir=venv --exclude-dir=.venv; then
+            echo "⚠️ Found pickle.load usage - ensure data source is trusted"
+          fi
+
+          # Check for SQL injection patterns
+          if grep -r "execute.*%\|execute.*format\|execute.*+.*" . --include="*.py" --exclude-dir=venv --exclude-dir=.venv; then
+            echo "⚠️ Potential SQL injection pattern found - use parameterized queries"
+          fi
+
+          echo "✅ Security pattern scan completed"

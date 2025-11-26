@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # CRITICAL: Install pnpm BEFORE Node.js setup
+      # pnpm/action-setup must come before actions/setup-node
+      # Otherwise setup-node won't detect pnpm and caching will fail
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm' # Now works because pnpm was installed first
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # For monorepos: Build packages before running tests
+      # This ensures dependent packages are built before tests run
+      - name: Build packages
+        run: pnpm run build --if-present
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Format check
+        run: pnpm run format:check
+
+      - name: Type check
+        run: pnpm run type-check --if-present
+
+      - name: Run tests
+        run: pnpm test --if-present
+
+      - name: Security audit
+        run: pnpm audit --audit-level high
+        continue-on-error: true # Don't fail CI on dev dependency vulnerabilities

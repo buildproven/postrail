@@ -1,0 +1,176 @@
+name: Nightly Gitleaks Real Download Verification
+
+# Run nightly to verify real gitleaks download and checksum verification
+# This catches upstream asset changes, checksum drift, and download issues
+on:
+  schedule:
+    # Run at 2 AM UTC daily
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  real-download-verification:
+    name: Real Gitleaks Download Test (Linux x64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache gitleaks binary
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/create-quality-automation/gitleaks
+          key: gitleaks-8.28.0-linux-x64-${{ hashFiles('lib/validation/config-security.js') }}
+          restore-keys: |
+            gitleaks-8.28.0-linux-x64-
+
+      - name: Clear any existing cache for fresh download test
+        run: |
+          echo "🧹 Clearing gitleaks cache for fresh download test..."
+          rm -rf ~/.cache/create-quality-automation/gitleaks || true
+
+      - name: Run real download verification test
+        run: |
+          echo "🔐 Running REAL gitleaks download and verification test..."
+          echo "Platform: $(uname -s)-$(uname -m)"
+          echo "Expected checksum: a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb"
+
+          # Create a test script that downloads and verifies gitleaks
+          cat > test-real-download.js << 'EOF'
+          const { ConfigSecurityScanner } = require('./lib/validation/config-security');
+          const { execSync } = require('child_process');
+          const path = require('path');
+          const os = require('os');
+
+          async function testRealDownload() {
+            console.log('🧪 Testing real gitleaks download and verification...');
+
+            const scanner = new ConfigSecurityScanner();
+            const cacheDir = path.join(os.homedir(), '.cache', 'create-quality-automation');
+            const gitleaksBinary = path.join(cacheDir, 'gitleaks', '8.28.0', 'gitleaks');
+
+            try {
+              // This should download, extract, and verify the real gitleaks binary
+              const binaryPath = await scanner.resolveGitleaksBinary();
+              console.log('✅ Binary resolved to:', binaryPath);
+
+              // Verify the binary is executable and works
+              const output = execSync(`${binaryPath} version`, { encoding: 'utf8' });
+              console.log('✅ Gitleaks version output:', output.trim());
+
+              if (!output.includes('8.28.0')) {
+                throw new Error(`Expected version 8.28.0, got: ${output}`);
+              }
+
+              // Verify checksum again
+              const isValid = await scanner.verifyBinaryChecksum(binaryPath);
+              if (!isValid) {
+                throw new Error('Checksum verification failed');
+              }
+
+              console.log('✅ Real download verification test passed!');
+              console.log('🔒 Binary downloaded, verified, and functional');
+
+            } catch (error) {
+              console.error('❌ Real download verification failed:', error.message);
+              throw error;
+            }
+          }
+
+          testRealDownload();
+          EOF
+
+          # Run the real download test
+          node test-real-download.js
+
+      - name: Verify production checksums match expected values
+        run: |
+          echo "🧪 Running production checksum validation..."
+          node tests/gitleaks-production-checksums.test.js
+
+      - name: Test real binary with security config
+        run: |
+          echo "🔐 Testing downloaded binary with security configuration..."
+
+          # Create a minimal test to verify the real binary works with our security config
+          echo "console.log('test file')" > test-file.js
+          echo "API_KEY=secret123" > .env.test
+
+          # Run security config with the real binary (should detect the secret)
+          if node setup.js --security-config --no-markdownlint 2>&1 | grep -q "secret"; then
+            echo "✅ Real gitleaks binary correctly detected secrets"
+          else
+            echo "❌ Real gitleaks binary failed to detect secrets"
+            exit 1
+          fi
+
+          # Cleanup test files
+          rm -f test-file.js .env.test
+
+      - name: Report success
+        run: |
+          echo "✅ Nightly gitleaks verification completed successfully!"
+          echo "📊 Verification report:"
+          echo "  - Real download: ✅ Successful"
+          echo "  - Checksum verification: ✅ Passed"
+          echo "  - Version check: ✅ 8.28.0"
+          echo "  - Functionality test: ✅ Working"
+          echo "  - Production checksums: ✅ Valid"
+
+      - name: Cache verification result
+        if: success()
+        run: |
+          # Cache remains in place for faster regular CI runs
+          echo "🎯 Real binary cached for regular CI performance"
+          ls -la ~/.cache/create-quality-automation/gitleaks/8.28.0/ || true
+
+  alert-on-failure:
+    name: Alert on Verification Failure
+    runs-on: ubuntu-latest
+    needs: real-download-verification
+    if: failure()
+
+    steps:
+      - name: Create Issue on Failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🚨 Nightly Gitleaks Verification Failed';
+            const body = `
+            ## Nightly Gitleaks Real Download Verification Failed
+
+            **Date**: ${new Date().toISOString()}
+            **Workflow**: ${context.workflow}
+            **Run**: ${context.runNumber}
+
+            ### Possible Issues
+            - Gitleaks release assets changed unexpectedly
+            - Network/download issues
+            - Checksum mismatch (potential security concern)
+            - Binary execution problems
+
+            ### Next Steps
+            1. Check the [workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details
+            2. Verify gitleaks v8.28.0 release hasn't been modified
+            3. Update checksums if legitimate release change
+            4. Investigate if potential supply chain attack
+
+            **Priority**: High - affects security scanning functionality
+            `;
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['security', 'bug', 'high-priority']
+            });

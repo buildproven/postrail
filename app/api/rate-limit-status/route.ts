@@ -46,6 +46,9 @@ export async function GET() {
       : null
 
     const headers: Record<string, string> = {}
+    if (userStatus.backend) {
+      headers['X-RateLimit-Backend'] = userStatus.backend
+    }
     if (userStatus.degraded) {
       headers['X-Rate-Limit-Degraded'] = 'true'
       headers['Warning'] =

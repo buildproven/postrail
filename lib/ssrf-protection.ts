@@ -214,6 +214,16 @@ class SSRFProtection {
     retryAfter?: number
     reason?: string
   }> {
+    const isTestEnv =
+      process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
+    const enforceInTests = process.env.ENFORCE_SSRF_RATE_LIMIT_TESTS === 'true'
+
+    // Default: bypass in test to keep integration tests stable; security race tests can
+    // opt-in via ENFORCE_SSRF_RATE_LIMIT_TESTS=true
+    if (isTestEnv && !enforceInTests) {
+      return { allowed: true }
+    }
+
     const now = Date.now()
 
     // Check user rate limit

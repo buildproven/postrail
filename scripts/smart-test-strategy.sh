@@ -1,9 +1,29 @@
 #!/bin/bash
-
-# Intelligent Test Strategy - Combines multiple factors
+# Smart Test Strategy - LetterFlow
+# Generated pattern from create-quality-automation
+# https://www.aibuilderlab.com/cqa
 set -e
 
-echo "🧠 Analyzing commit for optimal test strategy..."
+echo "🧠 Analyzing changes for optimal test strategy..."
+
+# Environment variable overrides
+if [[ "$SKIP_SMART" == "1" ]]; then
+  echo "⚠️  SKIP_SMART=1 - Running comprehensive tests"
+  npm run test:comprehensive
+  exit 0
+fi
+
+if [[ "$FORCE_COMPREHENSIVE" == "1" ]]; then
+  echo "🔴 FORCE_COMPREHENSIVE=1 - Running all tests"
+  npm run test:comprehensive
+  exit 0
+fi
+
+if [[ "$FORCE_MINIMAL" == "1" ]]; then
+  echo "⚪ FORCE_MINIMAL=1 - Running lint only"
+  npm run lint && npm run format:check
+  exit 0
+fi
 
 # Collect metrics
 CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD | wc -l | tr -d ' ')
@@ -12,17 +32,19 @@ CURRENT_BRANCH=$(git branch --show-current)
 HOUR=$(date +%H)
 DAY_OF_WEEK=$(date +%u)
 
-# Risk assessment
-HIGH_RISK_FILES=$(git diff --name-only HEAD~1..HEAD | grep -E "(auth|payment|security|crypto|api/generate|api/scrape)" || true)
-API_FILES=$(git diff --name-only HEAD~1..HEAD | grep -E "api/" || true)
-TEST_FILES=$(git diff --name-only HEAD~1..HEAD | grep -E "test|spec" || true)
-CONFIG_FILES=$(git diff --name-only HEAD~1..HEAD | grep -E "(package\.json|husky|\.env)" || true)
+# Risk assessment - SaaS/Web Application patterns
+HIGH_RISK_FILES=$(git diff --name-only HEAD~1..HEAD | grep -E "(auth|payment|security|crypto|api/generate|api/scrape|middleware)" || true)
+API_FILES=$(git diff --name-only HEAD~1..HEAD | grep -E "api/|routes/|endpoints/" || true)
+SECURITY_FILES=$(git diff --name-only HEAD~1..HEAD | grep -E "(auth|security|crypto|payment|billing|ssrf|rate-limit)" || true)
+CONFIG_FILES=$(git diff --name-only HEAD~1..HEAD | grep -E "(package\.json|husky|\.env|tsconfig)" || true)
+TEST_FILES=$(git diff --name-only HEAD~1..HEAD | grep -E "test|spec|__tests__" || true)
 
 # Calculate risk score (0-10)
 RISK_SCORE=0
 
 # File-based risk
 [[ -n "$HIGH_RISK_FILES" ]] && RISK_SCORE=$((RISK_SCORE + 4))
+[[ -n "$SECURITY_FILES" ]] && RISK_SCORE=$((RISK_SCORE + 3))
 [[ -n "$API_FILES" ]] && RISK_SCORE=$((RISK_SCORE + 2))
 [[ -n "$CONFIG_FILES" ]] && RISK_SCORE=$((RISK_SCORE + 2))
 
@@ -76,3 +98,4 @@ fi
 
 echo ""
 echo "💡 Tip: Run 'npm run test:comprehensive' locally for full validation"
+echo "💎 Smart Test Strategy powered by create-quality-automation"

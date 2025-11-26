@@ -1,0 +1,6 @@
+echo "🧠 Running intelligent pre-push validation..."
+
+# Run smart test strategy
+npm run test:smart
+
+echo "✅ Pre-push validation complete! 🚀"
