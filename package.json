@@ -41,7 +41,12 @@
     "validate:comprehensive": "npx create-quality-automation@latest --comprehensive",
     "validate:all": "npm run validate:comprehensive && npm run security:audit",
     "lint:fix": "eslint . --ext .js,.jsx,.mjs,.cjs,.ts,.tsx,.html --fix && stylelint \"app/**/*.{css,scss,sass,less,pcss}\" --fix --allow-empty-input",
-    "prepare": "husky"
+    "prepare": "husky",
+    "type-check": "tsc --noEmit",
+    "type-check:tests": "tsc --noEmit --project tests/tsconfig.json",
+    "type-check:all": "npm run type-check && npm run type-check:tests",
+    "quality:check": "npm run type-check:all && npm run lint && npm run test",
+    "quality:ci": "npm run quality:check && npm run security:audit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.69.0",
@@ -118,6 +123,24 @@
     ],
     "app/**/*.{css,scss,sass,less,pcss}": [
       "stylelint --fix",
+      "prettier --write"
+    ],
+    "**/*.{js,jsx,mjs,cjs,html}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{css,scss,sass,less,pcss}": [
+      "stylelint --fix",
+      "prettier --write"
+    ],
+    "**/*.{ts,tsx}": [
+      "tsc --noEmit --skipLibCheck",
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "tests/**/*.{ts,tsx,js,jsx}": [
+      "tsc --noEmit --project tests/tsconfig.json",
+      "eslint --fix",
       "prettier --write"
     ]
   },
