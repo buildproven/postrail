@@ -1,8 +1,8 @@
-# LetterFlow Operational Runbook
+# Postrail Operational Runbook
 
 ## Overview
 
-This runbook provides procedures for operating LetterFlow securely in production, including key management, incident response, and troubleshooting common issues.
+This runbook provides procedures for operating Postrail securely in production, including key management, incident response, and troubleshooting common issues.
 
 ## 🔑 Key Management & Rotation
 

@@ -53,7 +53,7 @@ test.describe('Importing Issue Investigation', () => {
     }
 
     // Verify page loaded successfully
-    await expect(page).toHaveTitle(/LetterFlow|Newsletter/)
+    await expect(page).toHaveTitle(/Postrail|Newsletter/)
 
     console.log('Page states observed:', pageStates)
   })

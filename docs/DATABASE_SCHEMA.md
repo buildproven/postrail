@@ -1,6 +1,6 @@
-# LetterFlow Database Schema
+# Postrail Database Schema
 
-Comprehensive documentation of the LetterFlow PostgreSQL database schema hosted on Supabase.
+Comprehensive documentation of the Postrail PostgreSQL database schema hosted on Supabase.
 
 **Last Updated**: November 21, 2025
 **Database**: PostgreSQL 15+ via Supabase
@@ -24,7 +24,7 @@ Comprehensive documentation of the LetterFlow PostgreSQL database schema hosted 
 
 ## Schema Overview
 
-LetterFlow uses a PostgreSQL database with four primary tables:
+Postrail uses a PostgreSQL database with four primary tables:
 
 ```
 ┌─────────────────┐
@@ -1184,22 +1184,22 @@ ORDER BY tablename;
 
 **Related Documentation**:
 
-- `/Users/brettstark/Projects/letterflow/docs/SETUP_SUPABASE.md` - Initial database setup
-- `/Users/brettstark/Projects/letterflow/docs/ARCHITECTURE.md` - System architecture overview
-- `/Users/brettstark/Projects/letterflow/docs/DATABASE_ANALYSIS_2025-11-21.md` - Detailed audit findings
-- `/Users/brettstark/Projects/letterflow/CLAUDE.md` - Development patterns and conventions
+- `/Users/brettstark/Projects/postrail/docs/SETUP_SUPABASE.md` - Initial database setup
+- `/Users/brettstark/Projects/postrail/docs/ARCHITECTURE.md` - System architecture overview
+- `/Users/brettstark/Projects/postrail/docs/DATABASE_ANALYSIS_2025-11-21.md` - Detailed audit findings
+- `/Users/brettstark/Projects/postrail/CLAUDE.md` - Development patterns and conventions
 
 **Migration Files**:
 
-- `/Users/brettstark/Projects/letterflow/docs/DATABASE_MIGRATION_twitter.sql` ✅ Applied
-- `/Users/brettstark/Projects/letterflow/docs/DATABASE_MIGRATION_scheduled_time.sql` ✅ Applied
-- `/Users/brettstark/Projects/letterflow/docs/DATABASE_MIGRATION_unique_constraint.sql` ⏳ Pending
+- `/Users/brettstark/Projects/postrail/docs/DATABASE_MIGRATION_twitter.sql` ✅ Applied
+- `/Users/brettstark/Projects/postrail/docs/DATABASE_MIGRATION_scheduled_time.sql` ✅ Applied
+- `/Users/brettstark/Projects/postrail/docs/DATABASE_MIGRATION_unique_constraint.sql` ⏳ Pending
 
 **Code References**:
 
-- Database queries: `/Users/brettstark/Projects/letterflow/app/api/**/route.ts`
-- Supabase clients: `/Users/brettstark/Projects/letterflow/lib/supabase/`
-- Type definitions: `/Users/brettstark/Projects/letterflow/components/*.tsx`
+- Database queries: `/Users/brettstark/Projects/postrail/app/api/**/route.ts`
+- Supabase clients: `/Users/brettstark/Projects/postrail/lib/supabase/`
+- Type definitions: `/Users/brettstark/Projects/postrail/components/*.tsx`
 
 **Supabase Dashboard**:
 

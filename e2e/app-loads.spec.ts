@@ -18,7 +18,7 @@ test.describe('App Loading', () => {
     await page.waitForLoadState('networkidle')
 
     // Should see the homepage content
-    await expect(page).toHaveTitle(/LetterFlow|Newsletter/)
+    await expect(page).toHaveTitle(/Postrail|Newsletter/)
 
     // Should not have any console errors
     const errors: string[] = []

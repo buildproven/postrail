@@ -157,7 +157,7 @@ export function TwitterSetupGuide({ onSuccess }: TwitterSetupGuideProps) {
                   <p className="font-medium">Create a New App</p>
                   <p className="text-gray-600">
                     Click &quot;Create Project&quot; → Name it (e.g.,
-                    &quot;LetterFlow Bot&quot;) → Create an app within the
+                    &quot;Postrail Bot&quot;) → Create an app within the
                     project
                   </p>
                 </div>

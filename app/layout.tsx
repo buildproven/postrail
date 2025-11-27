@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'LetterFlow - Automate Your Newsletter Social Posts',
+  title: 'Postrail - Automate Your Newsletter Social Posts',
   description:
     'AI-powered social media automation for newsletter creators. Generate and schedule posts to LinkedIn, Threads, and Facebook automatically.',
 }

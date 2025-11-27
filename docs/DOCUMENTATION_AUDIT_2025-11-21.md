@@ -1,10 +1,10 @@
-# LetterFlow Documentation & Maintainability Audit Report
+# Postrail Documentation & Maintainability Audit Report
 
 Generated: 2025-11-21
 
 ## Executive Summary
 
-LetterFlow has **good foundational documentation** with comprehensive architecture and security documentation, but suffers from **critical gaps in setup documentation** and **inconsistent component documentation**. The codebase has **healthy inline comments in security-critical areas** but lacks **systematic JSDoc and parameter documentation** for developers.
+Postrail has **good foundational documentation** with comprehensive architecture and security documentation, but suffers from **critical gaps in setup documentation** and **inconsistent component documentation**. The codebase has **healthy inline comments in security-critical areas** but lacks **systematic JSDoc and parameter documentation** for developers.
 
 **Overall Health Score: 6.5/10**
 
@@ -24,7 +24,7 @@ LetterFlow has **good foundational documentation** with comprehensive architectu
 **Status**: MISSING FILE
 **Files Affected**:
 
-- Referenced in: `/home/user/letterflow/CLAUDE.md`, `/home/user/letterflow/README.md`, `/home/user/letterflow/docs/GETTING_STARTED.md`, `/home/user/letterflow/docs/QUICK_TEST_GUIDE.md`, `/home/user/letterflow/lib/env-validator.ts`
+- Referenced in: `/home/user/postrail/CLAUDE.md`, `/home/user/postrail/README.md`, `/home/user/postrail/docs/GETTING_STARTED.md`, `/home/user/postrail/docs/QUICK_TEST_GUIDE.md`, `/home/user/postrail/lib/env-validator.ts`
 - Not found: Project root
 
 **Impact**:
@@ -66,14 +66,14 @@ ENABLE_MONITORING_ENDPOINT=false
 #### 2. CLAUDE.md Platform Count Inaccuracy
 
 **Status**: OUTDATED DOCUMENTATION
-**Location**: `/home/user/letterflow/CLAUDE.md` (line 21, 64, 87)
+**Location**: `/home/user/postrail/CLAUDE.md` (line 21, 64, 87)
 
 **Current State**:
 
 - CLAUDE.md states: "Multi-Platform: LinkedIn, Threads, and Facebook integration"
 - Code implements: LinkedIn, Threads, Facebook, AND Twitter
 
-**Actual PLATFORMS array** (`/home/user/letterflow/app/api/generate-posts/route.ts:21`):
+**Actual PLATFORMS array** (`/home/user/postrail/app/api/generate-posts/route.ts:21`):
 
 ```typescript
 const PLATFORMS = ['linkedin', 'threads', 'facebook', 'twitter'] as const
@@ -83,7 +83,7 @@ const PLATFORMS = ['linkedin', 'threads', 'facebook', 'twitter'] as const
 
 - Medium: Documentation misleads developers about feature completeness
 - Generates 8 posts (4 platforms × 2 post types), not 6
-- Twitter-specific documentation in `/home/user/letterflow/docs/TWITTER_SETUP.md` exists but CLAUDE.md doesn't mention it
+- Twitter-specific documentation in `/home/user/postrail/docs/TWITTER_SETUP.md` exists but CLAUDE.md doesn't mention it
 
 **Recommended Fix**:
 Update CLAUDE.md to reflect actual implementation:
@@ -111,9 +111,9 @@ Update CLAUDE.md to reflect actual implementation:
 
 **Examples of Undocumented Components**:
 
-- `/home/user/letterflow/components/post-preview-card.tsx` - Props interface exists but no JSDoc
-- `/home/user/letterflow/components/newsletter-editor.tsx` - Props not documented
-- `/home/user/letterflow/app/api/platforms/twitter/post/route.ts` - Request body type exists but no JSDoc
+- `/home/user/postrail/components/post-preview-card.tsx` - Props interface exists but no JSDoc
+- `/home/user/postrail/components/newsletter-editor.tsx` - Props not documented
+- `/home/user/postrail/app/api/platforms/twitter/post/route.ts` - Request body type exists but no JSDoc
 
 **Impact**:
 
@@ -174,7 +174,7 @@ For API routes:
 - Copy-paste errors in component usage
 
 **Recommended Fix**:
-Create `/home/user/letterflow/docs/COMPONENT_LIBRARY.md`:
+Create `/home/user/postrail/docs/COMPONENT_LIBRARY.md`:
 
 ````markdown
 # Component Library
@@ -219,7 +219,7 @@ Displays a preview of a social media post with character count.
 #### 5. Missing Database Schema Documentation
 **Status**: INCOMPLETE DOCUMENTATION
 **Current State**:
-- Migration files exist (`/home/user/letterflow/docs/DATABASE_MIGRATION_*.sql`)
+- Migration files exist (`/home/user/postrail/docs/DATABASE_MIGRATION_*.sql`)
 - No consolidated schema documentation
 - No ER diagram or schema overview
 
@@ -235,7 +235,7 @@ Displays a preview of a social media post with character count.
 - No documentation of unique constraints or indexes
 
 **Recommended Fix**:
-Create `/home/user/letterflow/docs/DATABASE_SCHEMA.md` with:
+Create `/home/user/postrail/docs/DATABASE_SCHEMA.md` with:
 ```markdown
 # Database Schema
 
@@ -291,10 +291,10 @@ Generated social media posts per newsletter.
 **Status**: PARTIALLY DOCUMENTED
 **Affected Files**:
 
-- `/home/user/letterflow/next.config.ts` - No comments explaining purpose
-- `/home/user/letterflow/tailwind.config.ts` - No documentation of theme strategy
-- `/home/user/letterflow/eslint.config.cjs` - Comments only for security rules
-- `/home/user/letterflow/components.json` - No shadcn/ui setup documentation
+- `/home/user/postrail/next.config.ts` - No comments explaining purpose
+- `/home/user/postrail/tailwind.config.ts` - No documentation of theme strategy
+- `/home/user/postrail/eslint.config.cjs` - Comments only for security rules
+- `/home/user/postrail/components.json` - No shadcn/ui setup documentation
 
 **Current State**:
 
@@ -372,7 +372,7 @@ const nextConfig: NextConfig = {
 - No documentation of retry strategies
 
 **Recommended Fix**:
-Create `/home/user/letterflow/docs/API_ERRORS.md`:
+Create `/home/user/postrail/docs/API_ERRORS.md`:
 
 ````markdown
 # API Error Handling
@@ -424,7 +424,7 @@ All errors return JSON:
 
 #### 8. No Contributing Guidelines
 **Status**: MISSING FILE
-**Missing**: `/home/user/letterflow/CONTRIBUTING.md`
+**Missing**: `/home/user/postrail/CONTRIBUTING.md`
 
 **Impact**:
 - Low-Medium: Future contributors unclear on process
@@ -434,7 +434,7 @@ All errors return JSON:
 **Recommended Fix**:
 Create `CONTRIBUTING.md`:
 ```markdown
-# Contributing to LetterFlow
+# Contributing to Postrail
 
 ## Code Style
 - **Language**: TypeScript (strict mode enabled)
@@ -473,8 +473,8 @@ npm run test:smoke    # Run pre-deployment checks
 #### 9. TODO Comments - Incomplete Implementations
 **Status**: BLOCKED FEATURES
 **Location**: 2 instances
-- `/home/user/letterflow/app/api/rate-limit-status/route.ts:41` - "TODO: Implement proper admin role checking"
-- `/home/user/letterflow/app/api/ssrf-status/route.ts:44` - "TODO: Implement proper admin role checking"
+- `/home/user/postrail/app/api/rate-limit-status/route.ts:41` - "TODO: Implement proper admin role checking"
+- `/home/user/postrail/app/api/ssrf-status/route.ts:44` - "TODO: Implement proper admin role checking"
 
 **Impact**:
 - Medium: Admin monitoring endpoints not fully implemented
@@ -561,7 +561,7 @@ Create `CHANGELOG.md` following [Keep a Changelog](https://keepachangelog.com/):
 - Medium: IDE doesn't surface exported types
 
 **Recommended Fix**:
-Create `/home/user/letterflow/docs/TYPE_DEFINITIONS.md` documenting exported types:
+Create `/home/user/postrail/docs/TYPE_DEFINITIONS.md` documenting exported types:
 
 ```markdown
 # Type Definitions
@@ -589,7 +589,7 @@ Create `/home/user/letterflow/docs/TYPE_DEFINITIONS.md` documenting exported typ
 **Status**: PARTIAL DOCUMENTATION
 **Current State**:
 
-- `/home/user/letterflow/docs/TESTING.md` exists and is comprehensive
+- `/home/user/postrail/docs/TESTING.md` exists and is comprehensive
 - Some test files have inline comments explaining test purpose
 - Some tests lack descriptive comments
 
@@ -635,8 +635,8 @@ describe('AI Post Generation', () => {
   - Error handling patterns consistent
 
 - **Architecture Documentation**: Comprehensive
-  - `/home/user/letterflow/docs/ARCHITECTURE.md` - Excellent data flow diagrams
-  - `/home/user/letterflow/CLAUDE.md` - Detailed patterns section
+  - `/home/user/postrail/docs/ARCHITECTURE.md` - Excellent data flow diagrams
+  - `/home/user/postrail/CLAUDE.md` - Detailed patterns section
   - Security architecture well-explained
 
 - **Testing Strategy**: Well-documented
@@ -668,13 +668,13 @@ describe('AI Post Generation', () => {
 ### Well-Commented Areas ✅
 
 1. **Security-Critical Code**:
-   - `/home/user/letterflow/app/api/scrape/route.ts` - Lines 8-16 explain multi-layer protection
-   - `/home/user/letterflow/lib/ssrf-protection.ts` - Lines 1-14 document purpose
-   - `/home/user/letterflow/lib/env-validator.ts` - Clear inline validation comments
+   - `/home/user/postrail/app/api/scrape/route.ts` - Lines 8-16 explain multi-layer protection
+   - `/home/user/postrail/lib/ssrf-protection.ts` - Lines 1-14 document purpose
+   - `/home/user/postrail/lib/env-validator.ts` - Clear inline validation comments
 
 2. **Complex Logic**:
-   - `/home/user/letterflow/app/api/scrape/route.ts` - Lines 92-100 explain CSS stripping
-   - `/home/user/letterflow/app/api/generate-posts/route.ts` - Lines 186-242 explain rate limiting flow
+   - `/home/user/postrail/app/api/scrape/route.ts` - Lines 92-100 explain CSS stripping
+   - `/home/user/postrail/app/api/generate-posts/route.ts` - Lines 186-242 explain rate limiting flow
 
 3. **Library Files**:
    - Rate limiting modules have JSDoc method headers
@@ -709,7 +709,7 @@ describe('AI Post Generation', () => {
 **API Route**: MEDIUM difficulty
 
 - CLAUDE.md provides pattern
-- Examples exist in `/home/user/letterflow/app/api/`
+- Examples exist in `/home/user/postrail/app/api/`
 - Error handling patterns not always followed
 - No checklist provided
 
@@ -782,7 +782,7 @@ describe('AI Post Generation', () => {
 
 ## Conclusion
 
-LetterFlow has **solid security and architecture documentation** but suffers from **critical gaps in setup documentation** and **inconsistent code documentation practices**. The immediate priority is creating the missing `.env.local.example` file and fixing inaccuracies in CLAUDE.md.
+Postrail has **solid security and architecture documentation** but suffers from **critical gaps in setup documentation** and **inconsistent code documentation practices**. The immediate priority is creating the missing `.env.local.example` file and fixing inaccuracies in CLAUDE.md.
 
 **Key Numbers**:
 

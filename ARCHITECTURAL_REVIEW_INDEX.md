@@ -1,6 +1,6 @@
-# LetterFlow Architectural Review - Index & Quick Reference
+# Postrail Architectural Review - Index & Quick Reference
 
-**Full Review:** `/home/user/letterflow/ARCHITECTURAL_REVIEW.md` (1,399 lines)  
+**Full Review:** `/home/user/postrail/ARCHITECTURAL_REVIEW.md` (1,399 lines)  
 **Executive Summary:** [See above]  
 **Review Date:** November 21, 2025  
 **Rating:** ⭐⭐⭐⭐ (4/5 Stars - Production-Ready)
@@ -93,9 +93,9 @@
 **Severity:** 🔴 CRITICAL  
 **Affected Files:**
 
-- `/home/user/letterflow/app/api/generate-posts/route.ts` (430 lines)
-- `/home/user/letterflow/app/api/scrape/route.ts` (172 lines)
-- `/home/user/letterflow/app/api/platforms/twitter/post/route.ts` (300 lines)
+- `/home/user/postrail/app/api/generate-posts/route.ts` (430 lines)
+- `/home/user/postrail/app/api/scrape/route.ts` (172 lines)
+- `/home/user/postrail/app/api/platforms/twitter/post/route.ts` (300 lines)
 
 **Action Items:**
 
@@ -183,7 +183,7 @@ Then update all routes to use standardized format:
 ### ISSUE #4: Database Query Pagination (MEDIUM)
 
 **Severity:** 🟠 HIGH  
-**Affected File:** `/home/user/letterflow/app/dashboard/newsletters/page.tsx` (line 17-21)
+**Affected File:** `/home/user/postrail/app/dashboard/newsletters/page.tsx` (line 17-21)
 
 **Current Code (NO LIMIT):**
 
@@ -292,7 +292,7 @@ Then refactor all routes:
 ## File Structure After Refactoring
 
 ```
-letterflow/
+postrail/
 ├── app/
 │   ├── api/
 │   │   ├── generate-posts/route.ts      (100 lines, just HTTP)
@@ -413,7 +413,7 @@ letterflow/
 
 ## References
 
-- Full Review: `/home/user/letterflow/ARCHITECTURAL_REVIEW.md`
+- Full Review: `/home/user/postrail/ARCHITECTURAL_REVIEW.md`
 - Zod Documentation: https://zod.dev
 - Next.js Best Practices: https://nextjs.org/docs
 - Repository Pattern: https://martinfowler.com/eaaCatalog/repository.html

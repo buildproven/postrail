@@ -29,7 +29,7 @@ All critical and important security issues identified by the quality automation 
 **Attack Example**:
 
 ```
-https://letterflow.io/auth/callback?next=//evil.com
+https://postrail.io/auth/callback?next=//evil.com
 → User logs in successfully
 → Redirected to https://evil.com (phishing site)
 ```

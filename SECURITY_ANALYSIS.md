@@ -1,14 +1,14 @@
-# LetterFlow Security and Vulnerability Analysis Report
+# Postrail Security and Vulnerability Analysis Report
 
 **Analysis Date:** 2025-11-21
-**Project:** LetterFlow (Newsletter AI Generation + Social Posting)
-**Repository:** https://github.com/brettstark73/letterflow
+**Project:** Postrail (Newsletter AI Generation + Social Posting)
+**Repository:** https://github.com/brettstark73/postrail
 
 ---
 
 ## Executive Summary
 
-The LetterFlow codebase demonstrates a **strong security foundation** with well-implemented authentication, encryption, and SSRF protection. However, there are **4 critical race conditions**, **multiple high-severity input validation gaps**, and **potential information disclosure vulnerabilities** that require immediate remediation before production deployment.
+The Postrail codebase demonstrates a **strong security foundation** with well-implemented authentication, encryption, and SSRF protection. However, there are **4 critical race conditions**, **multiple high-severity input validation gaps**, and **potential information disclosure vulnerabilities** that require immediate remediation before production deployment.
 
 **Overall Risk Level:** HIGH (Due to critical race conditions)
 **Remediation Priority:** CRITICAL (Fix race conditions), HIGH (Fix input validation)
@@ -20,7 +20,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 1. CRITICAL: Race Condition in SSRF Rate Limiting
 
 - **Severity:** CRITICAL (CWE-362: Concurrent Execution using Shared Resource without Proper Synchronization)
-- **File:** `/home/user/letterflow/lib/ssrf-protection.ts` (lines 176-217)
+- **File:** `/home/user/postrail/lib/ssrf-protection.ts` (lines 176-217)
 - **Description:** The `checkRateLimit()` method performs a check followed by an increment in non-atomic operations. Between the time the code checks if `record.count >= limit` (line 206) and when it increments the counter (line 214), another concurrent request can pass the same check.
 - **Exploitation Scenario:**
 
@@ -59,7 +59,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 2. CRITICAL: Race Condition in Twitter Post Idempotency
 
 - **Severity:** CRITICAL (CWE-362, CWE-667: Improper Locking)
-- **File:** `/home/user/letterflow/app/api/platforms/twitter/post/route.ts` (lines 99-190)
+- **File:** `/home/user/postrail/app/api/platforms/twitter/post/route.ts` (lines 99-190)
 - **Description:** The code fetches the post record and checks its status (lines 100-110), then attempts to acquire a lock using optimistic locking (lines 172-190). Between the fetch and lock attempt, another concurrent request can:
   1. Read the same "draft" status
   2. Update it to "publishing"
@@ -110,8 +110,8 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 
 - **Severity:** CRITICAL (CWE-400: Uncontrolled Resource Consumption, Memory Leak)
 - **Files:**
-  - `/home/user/letterflow/lib/rate-limiter.ts` (line 41)
-  - `/home/user/letterflow/lib/ssrf-protection.ts` (line 72)
+  - `/home/user/postrail/lib/rate-limiter.ts` (line 41)
+  - `/home/user/postrail/lib/ssrf-protection.ts` (line 72)
 - **Description:** Both classes call `setInterval()` in their constructors but never store the interval handle for cleanup. When the module is loaded multiple times (possible in certain Next.js scenarios), multiple interval timers accumulate, consuming memory.
 - **Exploitation Scenario:**
 
@@ -152,7 +152,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 4. CRITICAL: SSRF Protection IP Detection Broken in Production
 
 - **Severity:** CRITICAL (CWE-918: Server-Side Request Forgery)
-- **File:** `/home/user/letterflow/lib/ssrf-protection.ts` (lines 313-334)
+- **File:** `/home/user/postrail/lib/ssrf-protection.ts` (lines 313-334)
 - **Description:** The `getClientIP()` function always returns `'127.0.0.1'` as a fallback (line 333), which:
   1. Breaks IP-based rate limiting (all requests appear from localhost)
   2. Causes SSRF check to reject private IPs incorrectly
@@ -213,7 +213,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 5. HIGH: Missing Input Validation on Newsletter Content
 
 - **Severity:** HIGH (CWE-400: Uncontrolled Resource Consumption)
-- **File:** `/home/user/letterflow/app/api/generate-posts/route.ts` (lines 177-184)
+- **File:** `/home/user/postrail/app/api/generate-posts/route.ts` (lines 177-184)
 - **Description:** No validation on `title` or `content` length before passing to AI API
 - **Exploitation:**
 
@@ -264,7 +264,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 6. HIGH: Admin Role Check Not Null-Safe
 
 - **Severity:** HIGH (CWE-476: NULL Pointer Dereference)
-- **File:** `/home/user/letterflow/app/api/monitoring/route.ts` (lines 26-31)
+- **File:** `/home/user/postrail/app/api/monitoring/route.ts` (lines 26-31)
 - **Description:** The code checks `!user.app_metadata?.role` but then accesses without optional chaining
 - **Code:**
 
@@ -306,7 +306,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 7. HIGH: Information Disclosure in Error Logs
 
 - **Severity:** HIGH (CWE-532: Insertion of Sensitive Information into Log File)
-- **File:** `/home/user/letterflow/app/api/scrape/route.ts` (lines 67-68)
+- **File:** `/home/user/postrail/app/api/scrape/route.ts` (lines 67-68)
 - **Description:** Full URL and validation details logged to console in production
 - **Code:**
   ```typescript
@@ -347,7 +347,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 8. HIGH: Excessive Error Details in API Responses
 
 - **Severity:** HIGH (CWE-209: Information Exposure Through an Error Message)
-- **File:** `/home/user/letterflow/app/api/platforms/twitter/post/route.ts` (lines 225-248)
+- **File:** `/home/user/postrail/app/api/platforms/twitter/post/route.ts` (lines 225-248)
 - **Description:** Returns detailed Twitter API error messages to clients
 - **Code:**
   ```typescript
@@ -404,7 +404,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 9. HIGH: Deduplication Hash Collision Risk
 
 - **Severity:** HIGH (CWE-327: Use of a Broken or Risky Cryptographic Algorithm)
-- **File:** `/home/user/letterflow/lib/rate-limiter.ts` (lines 104-109)
+- **File:** `/home/user/postrail/lib/rate-limiter.ts` (lines 104-109)
 - **Description:** Uses only first 16 characters of SHA-256, creating collision vulnerability
 - **Code:**
   ```typescript
@@ -453,13 +453,13 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 10. HIGH: No CSRF Token Protection
 
 - **Severity:** HIGH (CWE-352: Cross-Site Request Forgery (CSRF))
-- **File:** `/home/user/letterflow/app/api/platforms/twitter/connect/route.ts` (line 26, POST method)
+- **File:** `/home/user/postrail/app/api/platforms/twitter/connect/route.ts` (line 26, POST method)
 - **Description:** POST requests accepted without CSRF token validation
 - **Exploitation:**
   ```html
   <!-- Attacker's website -->
   <form
-    action="https://letterflow.com/api/platforms/twitter/connect"
+    action="https://postrail.com/api/platforms/twitter/connect"
     method="POST"
   >
     <input name="apiKey" value="attacker-key" />
@@ -505,7 +505,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 11. HIGH: Timestamp-Based Rate Limit Bypass
 
 - **Severity:** HIGH (CWE-367: Time-of-Check to Time-of-Use (TOCTOU) Race Condition)
-- **File:** `/home/user/letterflow/lib/ssrf-protection.ts` (lines 138, 192)
+- **File:** `/home/user/postrail/lib/ssrf-protection.ts` (lines 138, 192)
 - **Description:** Uses `Date.now()` for rate limit windows which could theoretically be manipulated in test environments
 - **Code:**
   ```typescript
@@ -584,7 +584,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 14. MEDIUM: Redis Fallback Breaks Service on Error
 
 - **Severity:** MEDIUM (CWE-561: Dead Code)
-- **File:** `/home/user/letterflow/lib/redis-rate-limiter.ts` (lines 195-205)
+- **File:** `/home/user/postrail/lib/redis-rate-limiter.ts` (lines 195-205)
 - **Description:** On Redis error, rate limiter denies ALL requests (conservative but breaks service)
 - **Code:**
   ```typescript
@@ -616,7 +616,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 15. MEDIUM: Debug Logs in Production Code
 
 - **Severity:** MEDIUM (CWE-532: Insertion of Sensitive Information into Log File)
-- **File:** `/home/user/letterflow/app/dashboard/newsletters/[id]/preview/page.tsx` (lines with DEBUG comments)
+- **File:** `/home/user/postrail/app/dashboard/newsletters/[id]/preview/page.tsx` (lines with DEBUG comments)
 - **Description:** Client-side console.log statements left in code
 - **Impact:** Could expose sensitive data in browser logs, poor user privacy
 - **Recommended Fix:**
@@ -636,7 +636,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 16. LOW: Missing Request Size Limits
 
 - **Severity:** LOW (CWE-400: Uncontrolled Resource Consumption)
-- **File:** `/home/user/letterflow/app/api/generate-posts/route.ts` (line 177)
+- **File:** `/home/user/postrail/app/api/generate-posts/route.ts` (line 177)
 - **Description:** No limit on incoming JSON request body size
 - **Impact:** Large request could cause memory issues, but Next.js has default limits
 - **Recommended Fix:**
@@ -651,7 +651,7 @@ The LetterFlow codebase demonstrates a **strong security foundation** with well-
 ### 17. LOW: Inconsistent HTTP Method Handling
 
 - **Severity:** LOW (CWE-405: Improper Resource Validation)
-- **File:** `/home/user/letterflow/app/api/platforms/twitter/connect/route.ts`
+- **File:** `/home/user/postrail/app/api/platforms/twitter/connect/route.ts`
 - **Description:** GET, POST, DELETE methods mixed without consistent validation
 - **Impact:** Minor - each method validates independently, but consistency could be improved
 
@@ -764,7 +764,7 @@ describe('Information Disclosure', () => {
 
 ## Conclusion
 
-LetterFlow has a solid security foundation but requires **critical fixes** before production deployment. Focus on:
+Postrail has a solid security foundation but requires **critical fixes** before production deployment. Focus on:
 
 1. Eliminating race conditions (most urgent)
 2. Adding input validation

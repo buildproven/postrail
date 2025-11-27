@@ -23,7 +23,7 @@ export default async function DashboardLayout({
       <nav className="border-b">
         <div className="flex h-16 items-center px-4 container mx-auto">
           <Link href="/dashboard" className="text-xl font-bold">
-            LetterFlow
+            Postrail
           </Link>
           <div className="ml-auto flex items-center space-x-4">
             <Link

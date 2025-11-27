@@ -1,4 +1,4 @@
-# LetterFlow Testing Analysis - Complete Documentation Index
+# Postrail Testing Analysis - Complete Documentation Index
 
 ## Documents Generated
 
@@ -212,34 +212,34 @@ Three comprehensive testing analysis documents have been created to help improve
 
 **Test Directories:**
 
-- `/home/user/letterflow/tests/api/` - API route tests (8 files)
-- `/home/user/letterflow/tests/components/` - Component tests (5 files)
-- `/home/user/letterflow/tests/lib/` - Library tests (3 files)
-- `/home/user/letterflow/tests/integration/` - Integration tests (4 files)
-- `/home/user/letterflow/tests/contracts/` - Contract tests (1 file)
-- `/home/user/letterflow/tests/execution/` - Execution tests (1 file)
-- `/home/user/letterflow/tests/smoke/` - Smoke tests (1 file)
-- `/home/user/letterflow/tests/mocks/` - Mock utilities
-- `/home/user/letterflow/e2e/` - E2E tests (3 files)
+- `/home/user/postrail/tests/api/` - API route tests (8 files)
+- `/home/user/postrail/tests/components/` - Component tests (5 files)
+- `/home/user/postrail/tests/lib/` - Library tests (3 files)
+- `/home/user/postrail/tests/integration/` - Integration tests (4 files)
+- `/home/user/postrail/tests/contracts/` - Contract tests (1 file)
+- `/home/user/postrail/tests/execution/` - Execution tests (1 file)
+- `/home/user/postrail/tests/smoke/` - Smoke tests (1 file)
+- `/home/user/postrail/tests/mocks/` - Mock utilities
+- `/home/user/postrail/e2e/` - E2E tests (3 files)
 
 **Configuration Files:**
 
-- `/home/user/letterflow/tests/setup.ts` - Test setup
-- `/home/user/letterflow/vitest.config.ts` - Vitest config
-- `/home/user/letterflow/playwright.config.ts` - Playwright config
-- `/home/user/letterflow/.github/workflows/quality.yml` - CI/CD pipeline
+- `/home/user/postrail/tests/setup.ts` - Test setup
+- `/home/user/postrail/vitest.config.ts` - Vitest config
+- `/home/user/postrail/playwright.config.ts` - Playwright config
+- `/home/user/postrail/.github/workflows/quality.yml` - CI/CD pipeline
 
 **Strong Reference Examples:**
 
-- `/home/user/letterflow/tests/api/scrape.real.test.ts` - Real integration pattern
-- `/home/user/letterflow/tests/lib/supabase/middleware.test.ts` - Mock patterns
-- `/home/user/letterflow/tests/execution/command-execution.test.ts` - Isolated environment
+- `/home/user/postrail/tests/api/scrape.real.test.ts` - Real integration pattern
+- `/home/user/postrail/tests/lib/supabase/middleware.test.ts` - Mock patterns
+- `/home/user/postrail/tests/execution/command-execution.test.ts` - Isolated environment
 
 **Weak Examples to Improve:**
 
-- `/home/user/letterflow/tests/api/generate-posts.test.ts` - Missing error tests
-- `/home/user/letterflow/tests/components/*.test.tsx` - No rendering tests
-- `/home/user/letterflow/e2e/*.spec.ts` - Too few flows
+- `/home/user/postrail/tests/api/generate-posts.test.ts` - Missing error tests
+- `/home/user/postrail/tests/components/*.test.tsx` - No rendering tests
+- `/home/user/postrail/e2e/*.spec.ts` - Too few flows
 
 ---
 
@@ -346,10 +346,10 @@ Review these sections in order:
 
 **Original Analysis Date:** November 21, 2025
 **Test Suite Statistics:** 1,285+ tests across 27 files (6,914 lines)
-**Project:** LetterFlow (Newsletter → Social Media Post Generator)
+**Project:** Postrail (Newsletter → Social Media Post Generator)
 
-**Repository Root:** `/home/user/letterflow/`
-**Test Root:** `/home/user/letterflow/tests/`
-**E2E Root:** `/home/user/letterflow/e2e/`
+**Repository Root:** `/home/user/postrail/`
+**Test Root:** `/home/user/postrail/tests/`
+**E2E Root:** `/home/user/postrail/e2e/`
 
 For questions about specific gaps or implementation details, refer to the comprehensive analysis documents above.

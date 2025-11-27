@@ -1,4 +1,4 @@
-# LetterFlow - Detailed Dependency Analysis
+# Postrail - Detailed Dependency Analysis
 
 ## Complete Dependency Inventory
 

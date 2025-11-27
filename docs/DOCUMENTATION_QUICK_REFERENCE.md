@@ -1,4 +1,4 @@
-# LetterFlow Documentation Audit - Quick Reference
+# Postrail Documentation Audit - Quick Reference
 
 **Report Generated**: November 21, 2025
 **Overall Score**: 6.5/10
@@ -139,10 +139,10 @@ Referenced but missing files: 1 (.env.local.example)
 
 ### Top-Level Documentation
 
-- `/home/user/letterflow/README.md` - Project overview
-- `/home/user/letterflow/CLAUDE.md` - Developer patterns
-- `/home/user/letterflow/DEBUGGING_GUIDE.md` - Debug guide
-- `/home/user/letterflow/TESTING_SUMMARY.md` - Test summary
+- `/home/user/postrail/README.md` - Project overview
+- `/home/user/postrail/CLAUDE.md` - Developer patterns
+- `/home/user/postrail/DEBUGGING_GUIDE.md` - Debug guide
+- `/home/user/postrail/TESTING_SUMMARY.md` - Test summary
 
 ### In `/docs/` Directory
 

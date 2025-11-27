@@ -23,7 +23,7 @@ describe('Command Execution - Isolated Environment', () => {
    * Creates an isolated test environment by copying project to temp directory
    */
   function createIsolatedEnv(): string {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'letterflow-test-'))
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'postrail-test-'))
 
     // Copy essential configuration files
     const filesToCopy = [
@@ -204,7 +204,7 @@ describe('Command Execution - Isolated Environment', () => {
 
 describe('Build Command - Production Readiness', () => {
   it('should build production bundle without errors', async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'letterflow-build-'))
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'postrail-build-'))
 
     try {
       // Copy project

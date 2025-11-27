@@ -7,7 +7,7 @@
 3. Sign in with GitHub
 4. Click "New Project"
 5. Fill in:
-   - **Name**: letterflow
+   - **Name**: postrail
    - **Database Password**: (generate a strong password and save it)
    - **Region**: Choose closest to your users
    - **Pricing Plan**: Free tier is perfect for development

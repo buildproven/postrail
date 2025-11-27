@@ -10,7 +10,7 @@
 2. **Create New Project**:
    - Click "New Project"
    - **Organization**: Select or create one
-   - **Name**: `letterflow`
+   - **Name**: `postrail`
    - **Database Password**: Click "Generate a password" and **SAVE IT**
    - **Region**: Choose closest to you (e.g., US West)
    - **Pricing Plan**: Free
@@ -30,7 +30,7 @@
    - Find "Project API keys" → Copy the **`anon public`** key (NOT service_role)
 
 3. **Update .env.local**:
-   - Open `/Users/brettstark/Projects/letterflow/.env.local`
+   - Open `/Users/brettstark/Projects/postrail/.env.local`
    - Replace these two lines:
      ```
      NEXT_PUBLIC_SUPABASE_URL=your-project-url.supabase.co
@@ -52,7 +52,7 @@
 
 2. **Copy & Paste SQL**:
    - Open the file below and copy ALL the SQL
-   - See: `/Users/brettstark/Projects/letterflow/docs/SETUP_SUPABASE.md`
+   - See: `/Users/brettstark/Projects/postrail/docs/SETUP_SUPABASE.md`
    - Or copy from here: [scroll down for SQL]
 
 3. **Run the SQL**:
@@ -87,7 +87,7 @@ The dev server needs to reload the new environment variables:
 2. **Restart it**:
 
    ```bash
-   cd /Users/brettstark/Projects/letterflow
+   cd /Users/brettstark/Projects/postrail
    npm run dev
    ```
 

@@ -15,7 +15,7 @@
 3. Click **New Query**
 4. Copy and paste entire contents of:
    ```
-   /Users/brettstark/Projects/letterflow/docs/DATABASE_MIGRATION_performance_indexes.sql
+   /Users/brettstark/Projects/postrail/docs/DATABASE_MIGRATION_performance_indexes.sql
    ```
 5. Click **Run** (or press Cmd/Ctrl + Enter)
 6. Wait for "Success" message (~30 seconds)
@@ -38,7 +38,7 @@ Expected: 5 new indexes listed
 **Option A: Replace Existing File**
 
 ```bash
-cd /Users/brettstark/Projects/letterflow
+cd /Users/brettstark/Projects/postrail
 
 # Backup current version
 cp app/dashboard/newsletters/page.tsx \

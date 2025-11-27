@@ -20,7 +20,7 @@ import {
 } from '../lib/performance-benchmark'
 
 async function main() {
-  console.log('🚀 LetterFlow Performance Benchmark\n')
+  console.log('🚀 Postrail Performance Benchmark\n')
 
   // Get user ID from environment or prompt
   const userId = process.env.TEST_USER_ID

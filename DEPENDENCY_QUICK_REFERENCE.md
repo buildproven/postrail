@@ -1,4 +1,4 @@
-# LetterFlow Dependency Audit - Quick Reference
+# Postrail Dependency Audit - Quick Reference
 
 ## Critical Issues (Fix Immediately)
 
@@ -86,4 +86,4 @@ npm install lucide-react@0.554.0
 
 ## See Full Report
 
-See `letterflow_dependency_audit.md` for complete analysis
+See `postrail_dependency_audit.md` for complete analysis

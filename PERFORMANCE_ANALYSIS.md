@@ -1,14 +1,14 @@
-# LetterFlow Performance Analysis & Optimization Report
+# Postrail Performance Analysis & Optimization Report
 
 **Analysis Date**: November 21, 2025  
-**Project**: LetterFlow (Next.js 16 + Supabase + Claude AI)  
+**Project**: Postrail (Next.js 16 + Supabase + Claude AI)  
 **Total Issues Found**: 27 (8 High, 11 Medium, 8 Low)
 
 ---
 
 ## Executive Summary
 
-LetterFlow has a solid architecture with rate limiting, SSRF protection, and observability. However, several performance bottlenecks exist that could impact user experience and increase operational costs:
+Postrail has a solid architecture with rate limiting, SSRF protection, and observability. However, several performance bottlenecks exist that could impact user experience and increase operational costs:
 
 - **Database N+1 queries** reduce page load performance
 - **Expensive computations on every render** cause React slowdowns
@@ -30,7 +30,7 @@ LetterFlow has a solid architecture with rate limiting, SSRF protection, and obs
 ### 1. N+1 Query Problem: Newsletter List with Posts
 
 **Performance Impact**: HIGH  
-**File**: `/home/user/letterflow/app/dashboard/newsletters/page.tsx` (Lines 17-21)  
+**File**: `/home/user/postrail/app/dashboard/newsletters/page.tsx` (Lines 17-21)  
 **Current Issue**:
 
 ```typescript
@@ -75,8 +75,8 @@ const { data: newsletters } = await supabase
 **Performance Impact**: HIGH  
 **Files**:
 
-- `/home/user/letterflow/app/dashboard/newsletters/[id]/preview/page.tsx` (Line 79)
-- `/home/user/letterflow/app/dashboard/newsletters/new/page.tsx` (Lines 186, 63)
+- `/home/user/postrail/app/dashboard/newsletters/[id]/preview/page.tsx` (Line 79)
+- `/home/user/postrail/app/dashboard/newsletters/new/page.tsx` (Lines 186, 63)
 
 **Current Issue**:
 
@@ -113,7 +113,7 @@ const wordCount = useMemo(
 ### 3. Expensive Parallel API Calls Without Timeout Handling
 
 **Performance Impact**: HIGH  
-**File**: `/home/user/letterflow/app/api/generate-posts/route.ts` (Lines 308-335)
+**File**: `/home/user/postrail/app/api/generate-posts/route.ts` (Lines 308-335)
 
 **Current Issue**:
 
@@ -185,7 +185,7 @@ for (const platform of PLATFORMS) {
 ### 4. JSDOM HTML Parsing Causes Memory Spikes
 
 **Performance Impact**: HIGH  
-**File**: `/home/user/letterflow/app/api/scrape/route.ts` (Lines 93-105)
+**File**: `/home/user/postrail/app/api/scrape/route.ts` (Lines 93-105)
 
 **Current Issue**:
 
@@ -243,7 +243,7 @@ const text = htmlToText.convert(html, {
 ### 5. Double Database Check for Newsletter Uniqueness
 
 **Performance Impact**: HIGH  
-**File**: `/home/user/letterflow/app/api/generate-posts/route.ts` (Lines 244-278)
+**File**: `/home/user/postrail/app/api/generate-posts/route.ts` (Lines 244-278)
 
 **Current Issue**:
 
@@ -311,10 +311,10 @@ if (newsletter?.social_posts?.length > 0) {
 **Performance Impact**: HIGH (under high load)  
 **Files**:
 
-- `/home/user/letterflow/lib/rate-limiter.ts` (Line 41)
-- `/home/user/letterflow/lib/redis-rate-limiter.ts` (implied)
-- `/home/user/letterflow/lib/ssrf-protection.ts` (Line 72)
-- `/home/user/letterflow/lib/observability.ts` (Line 90)
+- `/home/user/postrail/lib/rate-limiter.ts` (Line 41)
+- `/home/user/postrail/lib/redis-rate-limiter.ts` (implied)
+- `/home/user/postrail/lib/ssrf-protection.ts` (Line 72)
+- `/home/user/postrail/lib/observability.ts` (Line 90)
 
 **Current Issue**:
 
@@ -383,7 +383,7 @@ if (typeof global !== 'undefined') {
 ### 7. Redis Pipeline Used Suboptimally
 
 **Performance Impact**: HIGH (for scale)  
-**File**: `/home/user/letterflow/lib/redis-rate-limiter.ts` (Lines 132-187)
+**File**: `/home/user/postrail/lib/redis-rate-limiter.ts` (Lines 132-187)
 
 **Current Issue**:
 
@@ -452,7 +452,7 @@ const result = await this.redis!.eval(
 ### 8. Quadratic Time Complexity in SSRF Domain Blocklist Check
 
 **Performance Impact**: HIGH (with large blocklists)  
-**File**: `/home/user/letterflow/lib/ssrf-protection.ts` (Lines 114-128)
+**File**: `/home/user/postrail/lib/ssrf-protection.ts` (Lines 114-128)
 
 **Current Issue**:
 
@@ -519,7 +519,7 @@ class SSRFProtection {
 ### 9. Platform Posting Requires Three Database Queries
 
 **Performance Impact**: MEDIUM  
-**File**: `/home/user/letterflow/app/api/platforms/twitter/post/route.ts` (Lines 100-179)
+**File**: `/home/user/postrail/app/api/platforms/twitter/post/route.ts` (Lines 100-179)
 
 **Current Issue**:
 
@@ -571,7 +571,7 @@ const { error } = await supabase
 ### 10. No Caching Headers on Static Assets
 
 **Performance Impact**: MEDIUM  
-**File**: `/home/user/letterflow/next.config.ts`
+**File**: `/home/user/postrail/next.config.ts`
 
 **Current Issue**:
 
@@ -622,7 +622,7 @@ const nextConfig: NextConfig = {
 ### 11. NewsletterEditor Component Recalculates Word Count Every Render
 
 **Performance Impact**: MEDIUM  
-**File**: `/home/user/letterflow/components/newsletter-editor.tsx` (Line 63)
+**File**: `/home/user/postrail/components/newsletter-editor.tsx` (Line 63)
 
 **Current Issue**:
 
@@ -668,7 +668,7 @@ onUpdate: ({ editor }) => {
 ### 12. Missing Pagination on Newsletter List
 
 **Performance Impact**: MEDIUM  
-**File**: `/home/user/letterflow/app/dashboard/newsletters/page.tsx` (Lines 17-21)
+**File**: `/home/user/postrail/app/dashboard/newsletters/page.tsx` (Lines 17-21)
 
 **Current Issue**:
 
@@ -718,7 +718,7 @@ const [{ data: newsletters, count }, { count: totalCount }] = await Promise.all(
 ### 13. Anthropic SDK Not Lazy-Loaded
 
 **Performance Impact**: MEDIUM  
-**File**: `/home/user/letterflow/app/api/generate-posts/route.ts` (Lines 1-19)
+**File**: `/home/user/postrail/app/api/generate-posts/route.ts` (Lines 1-19)
 
 **Current Issue**:
 
@@ -763,7 +763,7 @@ const message = await getAnthropicClient().messages.create({...})
 ### 14. No Streaming Response for Long Operations
 
 **Performance Impact**: MEDIUM  
-**File**: `/home/user/letterflow/app/api/generate-posts/route.ts` (Lines 307-404)
+**File**: `/home/user/postrail/app/api/generate-posts/route.ts` (Lines 307-404)
 
 **Current Issue**:
 
@@ -826,7 +826,7 @@ export async function POST(request: NextRequest) {
 ### 15. useCallback Missing for Event Handlers
 
 **Performance Impact**: MEDIUM  
-**File**: `/home/user/letterflow/app/dashboard/newsletters/new/page.tsx` (Lines 28-61)
+**File**: `/home/user/postrail/app/dashboard/newsletters/new/page.tsx` (Lines 28-61)
 
 **Current Issue**:
 
@@ -872,7 +872,7 @@ const handleGenerate = useCallback(async () => {
 ### 16. Platform Connection Fetches Full Metadata
 
 **Performance Impact**: MEDIUM  
-**File**: `/home/user/letterflow/app/api/platforms/twitter/post/route.ts` (Lines 25-58)
+**File**: `/home/user/postrail/app/api/platforms/twitter/post/route.ts` (Lines 25-58)
 
 **Current Issue**:
 
@@ -938,7 +938,7 @@ const qstash = new Client({
 await qstash.publishJSON({
   api: {
     name: 'log_user_event',
-    base_url: 'https://letterflow.io',
+    base_url: 'https://postrail.io',
   },
   body: {
     userId: user.id,
@@ -1013,7 +1013,7 @@ observability.debug('Newsletter loaded', { id, postCount: posts?.length })
 ### 20. Missing Idle Session Cleanup
 
 **Performance Impact**: MEDIUM (long-term)  
-**File**: `/home/user/letterflow/lib/supabase/middleware.ts`
+**File**: `/home/user/postrail/lib/supabase/middleware.ts`
 
 **Current Issue**: No cleanup of idle sessions.
 
@@ -1042,7 +1042,7 @@ if (user) {
 
 ### 21. Missing Compression Configuration
 
-**File**: `/home/user/letterflow/next.config.ts`  
+**File**: `/home/user/postrail/next.config.ts`  
 **Impact**: Bundle size could be 30-40% smaller with proper compression.
 
 ### 22. No Image Optimization

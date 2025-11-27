@@ -1,5 +1,5 @@
 #!/bin/bash
-# Smart Test Strategy - LetterFlow
+# Smart Test Strategy - Postrail
 # Generated pattern from create-quality-automation
 # https://www.aibuilderlab.com/cqa
 set -e

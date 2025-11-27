@@ -41,7 +41,7 @@ SELECT * FROM social_posts WHERE newsletter_id = ?
 
 ### 1. Database Index Migration
 
-**File**: `/Users/brettstark/Projects/letterflow/docs/DATABASE_MIGRATION_performance_indexes.sql`
+**File**: `/Users/brettstark/Projects/postrail/docs/DATABASE_MIGRATION_performance_indexes.sql`
 
 **Indexes Added**:
 
@@ -76,7 +76,7 @@ CREATE INDEX idx_social_posts_user_status
 
 ### 2. Optimized Query Implementation
 
-**File**: `/Users/brettstark/Projects/letterflow/app/dashboard/newsletters/page.optimized.tsx`
+**File**: `/Users/brettstark/Projects/postrail/app/dashboard/newsletters/page.optimized.tsx`
 
 **Before (N+1 Pattern)**:
 
@@ -145,9 +145,9 @@ Newsletter Title
 
 **Files**:
 
-- `/Users/brettstark/Projects/letterflow/lib/performance-benchmark.ts`
-- `/Users/brettstark/Projects/letterflow/scripts/benchmark-performance.ts`
-- `/Users/brettstark/Projects/letterflow/tests/performance/query-optimization.test.ts`
+- `/Users/brettstark/Projects/postrail/lib/performance-benchmark.ts`
+- `/Users/brettstark/Projects/postrail/scripts/benchmark-performance.ts`
+- `/Users/brettstark/Projects/postrail/tests/performance/query-optimization.test.ts`
 
 **Capabilities**:
 
@@ -231,7 +231,7 @@ npm run test tests/performance/query-optimization.test.ts
 
 ```bash
 # In Supabase SQL Editor, run:
-/Users/brettstark/Projects/letterflow/docs/DATABASE_MIGRATION_performance_indexes.sql
+/Users/brettstark/Projects/postrail/docs/DATABASE_MIGRATION_performance_indexes.sql
 ```
 
 **2. Verify Indexes**:

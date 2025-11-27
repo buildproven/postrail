@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     const response = await axios.get(url, {
       headers: {
         'User-Agent':
-          'Mozilla/5.0 (compatible; LetterFlow/1.0; +https://letterflow.io)',
+          'Mozilla/5.0 (compatible; Postrail/1.0; +https://postrail.io)',
       },
       timeout: 10000,
       maxContentLength: MAX_RESPONSE_SIZE,

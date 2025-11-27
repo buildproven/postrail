@@ -53,7 +53,7 @@ export default function SignUpPage() {
             Create an account
           </CardTitle>
           <CardDescription>
-            Enter your email and password to create your LetterFlow account
+            Enter your email and password to create your Postrail account
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSignUp}>

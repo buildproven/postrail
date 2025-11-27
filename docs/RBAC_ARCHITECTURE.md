@@ -1,6 +1,6 @@
 # RBAC Architecture Documentation
 
-**Role-Based Access Control Implementation for LetterFlow**
+**Role-Based Access Control Implementation for Postrail**
 
 Last Updated: 2025-11-21
 Status: Production-Ready
@@ -24,7 +24,7 @@ Security Level: High
 
 ## Overview
 
-LetterFlow implements a comprehensive Role-Based Access Control (RBAC) system to secure admin-only features and system monitoring endpoints. The implementation follows industry best practices with defense-in-depth security.
+Postrail implements a comprehensive Role-Based Access Control (RBAC) system to secure admin-only features and system monitoring endpoints. The implementation follows industry best practices with defense-in-depth security.
 
 ### Key Features
 

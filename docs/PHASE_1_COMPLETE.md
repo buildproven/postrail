@@ -4,11 +4,11 @@
 
 ### ✅ Project Infrastructure
 
-- **Name**: LetterFlow (letterflow.io)
+- **Name**: Postrail (postrail.io)
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS + shadcn/ui
-- **Location**: `/Users/brettstark/Projects/letterflow`
+- **Location**: `/Users/brettstark/Projects/postrail`
 
 ### ✅ Authentication System
 
@@ -92,7 +92,7 @@ See `/docs/SETUP_SUPABASE.md` for complete guide:
 ## File Structure
 
 ```
-letterflow/
+postrail/
 ├── app/
 │   ├── auth/
 │   │   ├── signup/page.tsx       # Signup form
@@ -139,7 +139,7 @@ Total files created: 30+
 
    ```bash
    # Visit https://supabase.com
-   # Create new project called "letterflow"
+   # Create new project called "postrail"
    ```
 
 2. **Configure environment** (2 min)
@@ -299,7 +299,7 @@ npm audit fix --force
 
 ```bash
 # Resume where you left off:
-cd /Users/brettstark/Projects/letterflow
+cd /Users/brettstark/Projects/postrail
 
 # Check dev server status:
 curl http://localhost:3000

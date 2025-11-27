@@ -173,7 +173,7 @@ LONG-TERM (Ongoing):
                               CONCLUSION
 ================================================================================
 
-LetterFlow has SOLID FOUNDATIONS but needs IMMEDIATE ATTENTION to setup
+Postrail has SOLID FOUNDATIONS but needs IMMEDIATE ATTENTION to setup
 documentation and component documentation.
 
 GOOD NEWS:

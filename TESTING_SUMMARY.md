@@ -1,4 +1,4 @@
-# LetterFlow - Comprehensive Testing Summary
+# Postrail - Comprehensive Testing Summary
 
 **Date**: 2025-11-18
 **Test Results**: 163 passed / 166 total (98% pass rate)

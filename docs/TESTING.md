@@ -1,4 +1,4 @@
-# Testing Guide for LetterFlow
+# Testing Guide for Postrail
 
 ## ⚠️ CRITICAL: Mostly Placeholder Tests
 

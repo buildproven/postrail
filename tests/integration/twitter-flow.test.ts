@@ -444,8 +444,8 @@ describe('Twitter Integration - UI/UX Flow', () => {
       'Show instructions',
       'User navigates to Twitter Developer Portal',
       'User creates app and gets credentials',
-      'User pastes credentials into LetterFlow',
-      'LetterFlow validates and stores',
+      'User pastes credentials into Postrail',
+      'Postrail validates and stores',
       'Show success message',
     ]
 

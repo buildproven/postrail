@@ -2,7 +2,7 @@
 
 ## Overview
 
-LetterFlow uses a **BYOK (Bring Your Own Keys)** approach for Twitter integration. This means:
+Postrail uses a **BYOK (Bring Your Own Keys)** approach for Twitter integration. This means:
 
 - Each user provides their own Twitter API credentials
 - Each user gets their own **500 posts/month** quota (Twitter Free Tier)
@@ -22,7 +22,7 @@ LetterFlow uses a **BYOK (Bring Your Own Keys)** approach for Twitter integratio
 3. Click "Sign up for Free Account"
 4. Fill out the application:
    - **Use case**: Automation & bots
-   - **Description**: "Automated social media posting for my newsletters using LetterFlow"
+   - **Description**: "Automated social media posting for my newsletters using Postrail"
    - Accept the terms and conditions
 5. Verify your email address
 6. Wait for approval (usually instant, sometimes takes 1-2 days)
@@ -32,12 +32,12 @@ LetterFlow uses a **BYOK (Bring Your Own Keys)** approach for Twitter integratio
 1. Once approved, go to the [Developer Portal](https://developer.twitter.com/en/portal/dashboard)
 2. Click **"+ Create Project"**
 3. Fill in project details:
-   - **Name**: "LetterFlow Bot" (or any name you prefer)
+   - **Name**: "Postrail Bot" (or any name you prefer)
    - **Use case**: Choose the most relevant option (e.g., "Making a bot")
    - **Project description**: "Automated newsletter social media posting"
 
 4. Create an **App** within the project:
-   - **App name**: "letterflow-bot-{your-username}" (must be unique)
+   - **App name**: "postrail-bot-{your-username}" (must be unique)
    - **Environment**: Production
 
 ## Step 3: Configure App Permissions
@@ -49,7 +49,7 @@ LetterFlow uses a **BYOK (Bring Your Own Keys)** approach for Twitter integratio
    - **App permissions**: Select **"Read and Write"** (REQUIRED for posting)
    - **Type of App**: Web App
    - **Callback URL**: `http://localhost:3000` (not used for BYOK, but required)
-   - **Website URL**: Your LetterFlow instance URL (or `http://localhost:3000`)
+   - **Website URL**: Your Postrail instance URL (or `http://localhost:3000`)
 5. Click **Save**
 
 ## Step 4: Get Your API Keys
@@ -76,9 +76,9 @@ LetterFlow uses a **BYOK (Bring Your Own Keys)** approach for Twitter integratio
 
 ⚠️ **IMPORTANT**: Save these credentials securely! Twitter only shows the secrets once.
 
-## Step 5: Connect in LetterFlow
+## Step 5: Connect in Postrail
 
-1. Log into LetterFlow
+1. Log into Postrail
 2. Go to **Dashboard → Platforms**
 3. Click **"Connect Twitter"**
 4. Paste your 4 credentials:
@@ -88,7 +88,7 @@ LetterFlow uses a **BYOK (Bring Your Own Keys)** approach for Twitter integratio
    - Access Token Secret
 5. Click **"Connect Twitter"**
 
-LetterFlow will:
+Postrail will:
 
 - Validate your credentials
 - Test posting permissions
@@ -99,7 +99,7 @@ LetterFlow will:
 
 Once connected:
 
-1. Create a newsletter in LetterFlow
+1. Create a newsletter in Postrail
 2. Generate social media posts (Twitter will be included)
 3. Schedule or post immediately
 4. Posts will be published to your Twitter account
@@ -114,7 +114,7 @@ Once connected:
 
 **Best practices:**
 
-- LetterFlow generates 2 posts per newsletter (pre-CTA + post-CTA)
+- Postrail generates 2 posts per newsletter (pre-CTA + post-CTA)
 - With 2 newsletters/week, you'll use ~16 posts/month
 - Plenty of headroom for the free tier!
 
@@ -146,7 +146,7 @@ Once connected:
 ## Security Notes
 
 - Your credentials are **encrypted** before storage using AES-256-GCM
-- LetterFlow never shares your credentials
+- Postrail never shares your credentials
 - You can disconnect anytime from Dashboard → Platforms
 - Disconnecting removes credentials from the database
 - To fully revoke access, also revoke the app in [Twitter Settings](https://twitter.com/settings/connected_apps)
@@ -157,13 +157,13 @@ Once connected:
 
 - Twitter Developer Account: Free
 - Twitter Free Tier: 500 posts/month (plenty for newsletters)
-- LetterFlow: Uses your own quota, no additional cost
+- Postrail: Uses your own quota, no additional cost
 
 ## BYOK vs Traditional OAuth
 
 | Approach              | User Setup   | Quota              | Scalability |
 | --------------------- | ------------ | ------------------ | ----------- |
-| **BYOK (LetterFlow)** | 10-min setup | 500/month per user | Infinite    |
+| **BYOK (Postrail)** | 10-min setup | 500/month per user | Infinite    |
 | **Traditional OAuth** | 1-click      | 500/month shared   | Limited     |
 
 **Why BYOK?**
@@ -178,8 +178,8 @@ Once connected:
 ## Next Steps
 
 1. ✅ Complete Twitter setup (above)
-2. ✅ Connect Twitter in LetterFlow
+2. ✅ Connect Twitter in Postrail
 3. 📝 Create your first newsletter
 4. 🚀 Generate and post to Twitter!
 
-Need help? Check the [main documentation](../README.md) or [file an issue](https://github.com/yourusername/letterflow/issues).
+Need help? Check the [main documentation](../README.md) or [file an issue](https://github.com/yourusername/postrail/issues).

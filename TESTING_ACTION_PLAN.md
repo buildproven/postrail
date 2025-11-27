@@ -1,4 +1,4 @@
-# LetterFlow Testing - Action Plan
+# Postrail Testing - Action Plan
 
 **Report Generated:** 2025-11-21
 **Current Test Count:** 1,285+ tests across 27 files (6,914 lines)
@@ -75,7 +75,7 @@ describe('NewsletterEditor Rendering', () => {
 
 **Effort:** 2-3 days
 **Impact:** Prevents production crashes
-**Location:** `/home/user/letterflow/tests/api/`
+**Location:** `/home/user/postrail/tests/api/`
 
 **Example Pattern:**
 
@@ -127,7 +127,7 @@ describe('/api/generate-posts - Error Scenarios', () => {
 
 **Effort:** 3-4 days
 **Impact:** Catches user flow regressions
-**Location:** `/home/user/letterflow/e2e/`
+**Location:** `/home/user/postrail/e2e/`
 
 **Example Pattern:**
 
@@ -274,26 +274,26 @@ COVERAGE
 
 ### High Priority (Week 1)
 
-1. `/home/user/letterflow/tests/components/NewsletterEditor.render.test.tsx`
-2. `/home/user/letterflow/tests/components/PostPreviewCard.render.test.tsx`
-3. `/home/user/letterflow/tests/components/TwitterSetupGuide.render.test.tsx`
-4. `/home/user/letterflow/tests/api/generate-posts-error.test.ts`
-5. `/home/user/letterflow/tests/api/twitter-post-error.test.ts`
-6. `/home/user/letterflow/e2e/auth-flow.spec.ts`
-7. `/home/user/letterflow/e2e/newsletter-to-posting.spec.ts`
-8. `/home/user/letterflow/e2e/error-recovery.spec.ts`
+1. `/home/user/postrail/tests/components/NewsletterEditor.render.test.tsx`
+2. `/home/user/postrail/tests/components/PostPreviewCard.render.test.tsx`
+3. `/home/user/postrail/tests/components/TwitterSetupGuide.render.test.tsx`
+4. `/home/user/postrail/tests/api/generate-posts-error.test.ts`
+5. `/home/user/postrail/tests/api/twitter-post-error.test.ts`
+6. `/home/user/postrail/e2e/auth-flow.spec.ts`
+7. `/home/user/postrail/e2e/newsletter-to-posting.spec.ts`
+8. `/home/user/postrail/e2e/error-recovery.spec.ts`
 
 ### Medium Priority (Week 2)
 
-9. `/home/user/letterflow/tests/integration/ssrf-protection.test.ts`
-10. `/home/user/letterflow/tests/api/rate-limit-status.test.ts`
-11. `/home/user/letterflow/tests/integration/database-operations.test.ts`
+9. `/home/user/postrail/tests/integration/ssrf-protection.test.ts`
+10. `/home/user/postrail/tests/api/rate-limit-status.test.ts`
+11. `/home/user/postrail/tests/integration/database-operations.test.ts`
 
 ### Lower Priority (Week 3+)
 
-12. `/home/user/letterflow/tests/api/monitoring.test.ts`
-13. `/home/user/letterflow/tests/api/ssrf-status.test.ts`
-14. `/home/user/letterflow/.github/workflows/contract-tests.yml`
+12. `/home/user/postrail/tests/api/monitoring.test.ts`
+13. `/home/user/postrail/tests/api/ssrf-status.test.ts`
+14. `/home/user/postrail/.github/workflows/contract-tests.yml`
 
 ---
 
@@ -393,20 +393,20 @@ npm run test:coverage -- --coverage.enabled=true
 
 ## References
 
-**Full Analysis:** `/home/user/letterflow/TESTING_ANALYSIS.md`
-**Quick Summary:** `/home/user/letterflow/TEST_GAPS_SUMMARY.md`
+**Full Analysis:** `/home/user/postrail/TESTING_ANALYSIS.md`
+**Quick Summary:** `/home/user/postrail/TEST_GAPS_SUMMARY.md`
 
 **Test Infrastructure:**
 
-- `/home/user/letterflow/tests/setup.ts`
-- `/home/user/letterflow/vitest.config.ts`
-- `/home/user/letterflow/playwright.config.ts`
+- `/home/user/postrail/tests/setup.ts`
+- `/home/user/postrail/vitest.config.ts`
+- `/home/user/postrail/playwright.config.ts`
 
 **Reference Test Files:**
 
-- `/home/user/letterflow/tests/api/scrape.real.test.ts`
-- `/home/user/letterflow/tests/lib/supabase/middleware.test.ts`
-- `/home/user/letterflow/tests/execution/command-execution.test.ts`
+- `/home/user/postrail/tests/api/scrape.real.test.ts`
+- `/home/user/postrail/tests/lib/supabase/middleware.test.ts`
+- `/home/user/postrail/tests/execution/command-execution.test.ts`
 
 ---
 

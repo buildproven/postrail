@@ -56,7 +56,7 @@ Off-hours/weekends          → Comprehensive tests (time available)
 ### **Activate Smart Strategy**
 ```bash
 # Switch to intelligent risk-based testing
-cd letterflow
+cd postrail
 mv .husky/pre-push .husky/pre-push-fixed
 mv .husky/pre-push-smart .husky/pre-push
 chmod +x .husky/pre-push

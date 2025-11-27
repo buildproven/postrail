@@ -74,7 +74,7 @@ async function runMigration() {
       )
       console.log('\n📋 Manual migration required:')
       console.log('\n1. Go to: https://supabase.com/dashboard')
-      console.log('2. Select your letterflow project')
+      console.log('2. Select your postrail project')
       console.log('3. Click "SQL Editor" in left sidebar')
       console.log('4. Click "New query"')
       console.log('5. Paste and run this SQL:\n')

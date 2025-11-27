@@ -1,9 +1,9 @@
-# Getting Started with LetterFlow
+# Getting Started with Postrail
 
 ## Project Name Decision
 
-**Name**: LetterFlow
-**Domain**: letterflow.io (recommended)
+**Name**: Postrail
+**Domain**: postrail.io (recommended)
 **Reasoning**: Clean, memorable, no conflicts found, describes functionality well
 
 ---
@@ -20,7 +20,7 @@
 ✅ **Project Structure Created**
 
 ```
-letterflow/
+postrail/
 ├── app/
 │   ├── layout.tsx          # Root layout with fonts
 │   ├── globals.css         # Tailwind + global styles
@@ -47,7 +47,7 @@ letterflow/
 ### 1. Install Dependencies
 
 ```bash
-cd /Users/brettstark/Projects/letterflow
+cd /Users/brettstark/Projects/postrail
 npm install
 ```
 
@@ -322,7 +322,7 @@ npm run dev -- -p 3001
 
 ## Next Immediate Steps
 
-1. **Install dependencies**: `cd /Users/brettstark/Projects/letterflow && npm install`
+1. **Install dependencies**: `cd /Users/brettstark/Projects/postrail && npm install`
 2. **Run dev server**: `npm run dev`
 3. **Setup Supabase**: Create project and get credentials
 4. **Install shadcn/ui**: `npx shadcn@latest init`

@@ -68,7 +68,7 @@
 ## File Structure (Week 2 Additions)
 
 ```
-letterflow/
+postrail/
 ├── app/
 │   ├── dashboard/
 │   │   └── newsletters/

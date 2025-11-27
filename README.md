@@ -1,10 +1,10 @@
-# LetterFlow
+# Postrail
 
 AI-powered social media automation for newsletter creators.
 
-## What is LetterFlow?
+## What is Postrail?
 
-LetterFlow automatically generates and schedules social media posts to promote your newsletters across LinkedIn, Threads, and Facebook. Using AI, it creates platform-specific content that drives engagement and grows your subscriber base.
+Postrail automatically generates and schedules social media posts to promote your newsletters across LinkedIn, Threads, and Facebook. Using AI, it creates platform-specific content that drives engagement and grows your subscriber base.
 
 ## Features
 
@@ -68,7 +68,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 ## Project Structure
 
 ```
-letterflow/
+postrail/
 ├── app/                  # Next.js app directory
 │   ├── (auth)/          # Authentication pages
 │   ├── (dashboard)/     # Protected dashboard pages

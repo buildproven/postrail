@@ -1,4 +1,4 @@
--- LetterFlow RBAC Implementation
+-- Postrail RBAC Implementation
 -- Created: 2025-11-21
 -- Purpose: Add Role-Based Access Control with secure admin role management
 --

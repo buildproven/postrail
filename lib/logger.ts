@@ -65,7 +65,7 @@ export const logger = pino({
   // Base fields included in all logs
   base: {
     env: process.env.NODE_ENV,
-    app: 'letterflow',
+    app: 'postrail',
   },
 })
 

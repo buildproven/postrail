@@ -1,4 +1,4 @@
-# LetterFlow Database Analysis - SUMMARY
+# Postrail Database Analysis - SUMMARY
 
 **Full Analysis**: 50+ pages, covering all 10 requested areas  
 **Generated**: November 21, 2025
@@ -10,7 +10,7 @@
 ### 1. MISSING `updated_at` COLUMN (BREAKS OPTIMISTIC LOCKING)
 
 **Severity**: CRITICAL  
-**File**: `/home/user/letterflow/app/api/platforms/twitter/post/route.ts:102`  
+**File**: `/home/user/postrail/app/api/platforms/twitter/post/route.ts:102`  
 **Issue**: Code queries non-existent column, optimistic locking fails  
 **Impact**: Concurrent POST requests can both publish duplicate posts
 
@@ -33,7 +33,7 @@ FOR EACH ROW EXECUTE FUNCTION (NEW.updated_at = now());
 ### 2. STATUS ENUM MISMATCH
 
 **Severity**: CRITICAL  
-**File**: `/home/user/letterflow/app/api/platforms/twitter/post/route.ts:175`  
+**File**: `/home/user/postrail/app/api/platforms/twitter/post/route.ts:175`  
 **Issue**: Code uses 'publishing' status, database only allows: draft, scheduled, published, failed
 
 ```typescript
@@ -53,7 +53,7 @@ ALTER TABLE social_posts ADD CONSTRAINT social_posts_status_check
 ### 3. UNIQUE CONSTRAINT NOT APPLIED
 
 **Severity**: CRITICAL  
-**File**: `/home/user/letterflow/docs/DATABASE_MIGRATION_unique_constraint.sql`  
+**File**: `/home/user/postrail/docs/DATABASE_MIGRATION_unique_constraint.sql`  
 **Issue**: Migration exists but not yet applied to live database  
 **Impact**: Duplicate posts can be generated for same newsletter
 
@@ -82,7 +82,7 @@ ALTER TABLE social_posts ADD CONSTRAINT social_posts_status_check
 ### 5. NON-TRANSACTIONAL AI GENERATION
 
 **Severity**: HIGH  
-**File**: `/home/user/letterflow/app/api/generate-posts/route.ts:338-380`  
+**File**: `/home/user/postrail/app/api/generate-posts/route.ts:338-380`  
 **Issue**: Newsletter created before posts validated; partial failures leave orphans
 
 **Current Mitigation** (Line 269-278):
@@ -100,8 +100,8 @@ ALTER TABLE social_posts ADD CONSTRAINT social_posts_status_check
 **Issue**: Missing TypeScript types for database schemas  
 **Files**:
 
-- `/home/user/letterflow/components/post-preview-card.tsx:14` - SocialPost interface incomplete
-- `/home/user/letterflow/app/dashboard/platforms/page.tsx:16` - PlatformConnection missing fields
+- `/home/user/postrail/components/post-preview-card.tsx:14` - SocialPost interface incomplete
+- `/home/user/postrail/app/dashboard/platforms/page.tsx:16` - PlatformConnection missing fields
 - No Newsletter type defined anywhere
 
 **Impact**: Type-unsafe database queries, runtime errors possible
@@ -125,7 +125,7 @@ ALTER TABLE social_posts ADD CONSTRAINT social_posts_status_check
 
 ### RLS Policies (WELL IMPLEMENTED)
 
-**File**: `/home/user/letterflow/docs/SETUP_SUPABASE.md:93-207`  
+**File**: `/home/user/postrail/docs/SETUP_SUPABASE.md:93-207`  
 ✅ Hierarchical ownership checks (User → Newsletter → Posts → Analytics)  
 ✅ Prevents cross-user data access  
 ✅ Prevents credential theft  
@@ -191,17 +191,17 @@ ALTER TABLE social_posts ADD CONSTRAINT social_posts_status_check
 1. **User's Newsletters** (SELECT \* FROM newsletters WHERE user_id = ?)
    - Current: O(n) full table scan
    - With index: O(log n) seek
-   - Files: `/home/user/letterflow/app/dashboard/newsletters/page.tsx:18`
+   - Files: `/home/user/postrail/app/dashboard/newsletters/page.tsx:18`
 
 2. **Newsletter's Posts** (SELECT \* FROM social_posts WHERE newsletter_id = ?)
    - Current: O(n) full table scan
    - With index: O(log n) seek
-   - Files: `/home/user/letterflow/app/dashboard/newsletters/[id]/preview/page.tsx:45`
+   - Files: `/home/user/postrail/app/dashboard/newsletters/[id]/preview/page.tsx:45`
 
 3. **Twitter Credentials** (SELECT \* FROM platform_connections WHERE user_id = ? AND platform = 'twitter')
    - Current: O(n) full table scan
    - With index: O(log n) seek
-   - Files: `/home/user/letterflow/app/api/platforms/twitter/post/route.ts:29`
+   - Files: `/home/user/postrail/app/api/platforms/twitter/post/route.ts:29`
 
 ---
 
@@ -237,9 +237,9 @@ ALTER TABLE social_posts ADD CONSTRAINT social_posts_status_check
 
 **Files**:
 
-- `/home/user/letterflow/docs/DATABASE_MIGRATION_twitter.sql`
-- `/home/user/letterflow/docs/DATABASE_MIGRATION_scheduled_time.sql`
-- `/home/user/letterflow/docs/DATABASE_MIGRATION_unique_constraint.sql`
+- `/home/user/postrail/docs/DATABASE_MIGRATION_twitter.sql`
+- `/home/user/postrail/docs/DATABASE_MIGRATION_scheduled_time.sql`
+- `/home/user/postrail/docs/DATABASE_MIGRATION_unique_constraint.sql`
 
 ---
 
@@ -247,42 +247,42 @@ ALTER TABLE social_posts ADD CONSTRAINT social_posts_status_check
 
 ### Database Configuration
 
-- `/home/user/letterflow/docs/SETUP_SUPABASE.md` - Schema creation and RLS policies
-- `/home/user/letterflow/docs/ARCHITECTURE.md` - Database design overview
+- `/home/user/postrail/docs/SETUP_SUPABASE.md` - Schema creation and RLS policies
+- `/home/user/postrail/docs/ARCHITECTURE.md` - Database design overview
 
 ### API Routes (Database Queries)
 
-- `/home/user/letterflow/app/api/generate-posts/route.ts` - Newsletter + posts creation (non-transactional)
-- `/home/user/letterflow/app/api/platforms/twitter/post/route.ts` - Twitter publishing (broken optimistic lock)
-- `/home/user/letterflow/app/api/platforms/twitter/connect/route.ts` - Credential storage (encrypted)
-- `/home/user/letterflow/app/api/scrape/route.ts` - URL scraping with SSRF protection
+- `/home/user/postrail/app/api/generate-posts/route.ts` - Newsletter + posts creation (non-transactional)
+- `/home/user/postrail/app/api/platforms/twitter/post/route.ts` - Twitter publishing (broken optimistic lock)
+- `/home/user/postrail/app/api/platforms/twitter/connect/route.ts` - Credential storage (encrypted)
+- `/home/user/postrail/app/api/scrape/route.ts` - URL scraping with SSRF protection
 
 ### UI Components
 
-- `/home/user/letterflow/app/dashboard/newsletters/page.tsx` - Newsletter listing
-- `/home/user/letterflow/app/dashboard/newsletters/[id]/preview/page.tsx` - Newsletter detail + posts
-- `/home/user/letterflow/app/dashboard/newsletters/[id]/schedule/page.tsx` - Post scheduling (stub)
-- `/home/user/letterflow/app/dashboard/platforms/page.tsx` - Platform connections
+- `/home/user/postrail/app/dashboard/newsletters/page.tsx` - Newsletter listing
+- `/home/user/postrail/app/dashboard/newsletters/[id]/preview/page.tsx` - Newsletter detail + posts
+- `/home/user/postrail/app/dashboard/newsletters/[id]/schedule/page.tsx` - Post scheduling (stub)
+- `/home/user/postrail/app/dashboard/platforms/page.tsx` - Platform connections
 
 ### Database Types
 
-- `/home/user/letterflow/components/post-preview-card.tsx:14` - SocialPost interface (incomplete)
-- `/home/user/letterflow/app/dashboard/platforms/page.tsx:16` - PlatformConnection interface (incomplete)
+- `/home/user/postrail/components/post-preview-card.tsx:14` - SocialPost interface (incomplete)
+- `/home/user/postrail/app/dashboard/platforms/page.tsx:16` - PlatformConnection interface (incomplete)
 
 ### Supporting Libraries
 
-- `/home/user/letterflow/lib/supabase/server.ts` - Server-side Supabase client
-- `/home/user/letterflow/lib/supabase/client.ts` - Client-side Supabase client
-- `/home/user/letterflow/lib/crypto.ts` - AES-256-GCM encryption/decryption
-- `/home/user/letterflow/lib/env-validator.ts` - Environment validation with ENCRYPTION_KEY checks
-- `/home/user/letterflow/lib/rate-limiter.ts` - In-memory rate limiting
-- `/home/user/letterflow/lib/redis-rate-limiter.ts` - Distributed rate limiting with Upstash
-- `/home/user/letterflow/lib/observability.ts` - Structured logging and metrics
+- `/home/user/postrail/lib/supabase/server.ts` - Server-side Supabase client
+- `/home/user/postrail/lib/supabase/client.ts` - Client-side Supabase client
+- `/home/user/postrail/lib/crypto.ts` - AES-256-GCM encryption/decryption
+- `/home/user/postrail/lib/env-validator.ts` - Environment validation with ENCRYPTION_KEY checks
+- `/home/user/postrail/lib/rate-limiter.ts` - In-memory rate limiting
+- `/home/user/postrail/lib/redis-rate-limiter.ts` - Distributed rate limiting with Upstash
+- `/home/user/postrail/lib/observability.ts` - Structured logging and metrics
 
 ### Tests
 
-- `/home/user/letterflow/tests/api/twitter-connect.real.test.ts` - Integration tests
-- `/home/user/letterflow/tests/contracts/api-contracts.test.ts` - API contract verification
+- `/home/user/postrail/tests/api/twitter-connect.real.test.ts` - Integration tests
+- `/home/user/postrail/tests/contracts/api-contracts.test.ts` - API contract verification
 
 ---
 

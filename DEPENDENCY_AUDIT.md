@@ -1,7 +1,7 @@
-# LetterFlow - Comprehensive Dependency Audit Report
+# Postrail - Comprehensive Dependency Audit Report
 
 **Audit Date:** November 21, 2025  
-**Project:** LetterFlow v0.1.0  
+**Project:** Postrail v0.1.0  
 **Node Version Required:** v20+  
 **Total Dependencies:** 301 production + 865 development = 1,166 total  
 **Security Vulnerabilities:** 8 low severity (no critical/high)
@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-The LetterFlow project has a **solid foundation with modern frameworks** but requires:
+The Postrail project has a **solid foundation with modern frameworks** but requires:
 
 1. **3 unused dependencies** to remove (reducing attack surface & bundle size)
 2. **1 critical version mismatch** (eslint-config-next)

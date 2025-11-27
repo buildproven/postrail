@@ -1,8 +1,8 @@
-# LetterFlow Architecture & Data Flow
+# Postrail Architecture & Data Flow
 
 ## System Overview
 
-LetterFlow is a secure newsletter-to-social-media automation platform with comprehensive security controls, rate limiting, and observability.
+Postrail is a secure newsletter-to-social-media automation platform with comprehensive security controls, rate limiting, and observability.
 
 ## Data Flow Architecture
 

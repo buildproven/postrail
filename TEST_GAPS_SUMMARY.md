@@ -1,4 +1,4 @@
-# LetterFlow Testing - Quick Reference Summary
+# Postrail Testing - Quick Reference Summary
 
 ## Key Metrics
 
@@ -142,22 +142,22 @@ npm test -- --coverage tests/api/
 
 ### Key Test Infrastructure Files
 
-- `/home/user/letterflow/tests/setup.ts` - Test configuration
-- `/home/user/letterflow/vitest.config.ts` - Vitest settings
-- `/home/user/letterflow/playwright.config.ts` - E2E settings
-- `/home/user/letterflow/.github/workflows/quality.yml` - CI/CD pipeline
+- `/home/user/postrail/tests/setup.ts` - Test configuration
+- `/home/user/postrail/vitest.config.ts` - Vitest settings
+- `/home/user/postrail/playwright.config.ts` - E2E settings
+- `/home/user/postrail/.github/workflows/quality.yml` - CI/CD pipeline
 
 ### Strong Test Examples to Reference
 
-- `/home/user/letterflow/tests/api/scrape.real.test.ts` - Good real integration test
-- `/home/user/letterflow/tests/lib/supabase/middleware.test.ts` - Good mock patterns
-- `/home/user/letterflow/tests/execution/command-execution.test.ts` - Isolated environment pattern
+- `/home/user/postrail/tests/api/scrape.real.test.ts` - Good real integration test
+- `/home/user/postrail/tests/lib/supabase/middleware.test.ts` - Good mock patterns
+- `/home/user/postrail/tests/execution/command-execution.test.ts` - Isolated environment pattern
 
 ### Weak Test Examples to Improve
 
-- `/home/user/letterflow/tests/api/generate-posts.test.ts` - Missing error scenarios
-- `/home/user/letterflow/tests/components/*.test.tsx` - No rendering tests
-- `/home/user/letterflow/e2e/*.spec.ts` - Too few E2E flows
+- `/home/user/postrail/tests/api/generate-posts.test.ts` - Missing error scenarios
+- `/home/user/postrail/tests/components/*.test.tsx` - No rendering tests
+- `/home/user/postrail/e2e/*.spec.ts` - Too few E2E flows
 
 ## Quick Wins (1-2 hours each)
 
@@ -169,7 +169,7 @@ npm test -- --coverage tests/api/
 
 ## Full Report
 
-See `/home/user/letterflow/TESTING_ANALYSIS.md` for comprehensive analysis with:
+See `/home/user/postrail/TESTING_ANALYSIS.md` for comprehensive analysis with:
 
 - Detailed gap explanations
 - Code examples for each gap

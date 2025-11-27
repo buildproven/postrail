@@ -20,7 +20,7 @@ describe('Pre-Deployment Smoke Tests', () => {
       const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'))
 
       // Verify critical fields
-      expect(pkg.name).toBe('letterflow')
+      expect(pkg.name).toBe('postrail')
       expect(pkg.version).toBeTruthy()
       expect(pkg.scripts).toBeDefined()
       expect(pkg.dependencies).toBeDefined()

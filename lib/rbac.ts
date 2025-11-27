@@ -1,7 +1,7 @@
 /**
  * RBAC (Role-Based Access Control) Utilities
  *
- * Provides secure role checking and authorization for LetterFlow.
+ * Provides secure role checking and authorization for Postrail.
  * Integrates with Supabase auth and user_roles table.
  *
  * Security Design:

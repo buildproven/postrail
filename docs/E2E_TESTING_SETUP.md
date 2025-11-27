@@ -206,7 +206,7 @@ await expect(page.getByText('Success')).toBeVisible()
 
 ```typescript
 // ✅ Good - tests what users see
-await expect(page).toHaveTitle(/LetterFlow/)
+await expect(page).toHaveTitle(/Postrail/)
 await expect(page.getByText('Error')).toBeVisible()
 
 // ❌ Bad - tests internals

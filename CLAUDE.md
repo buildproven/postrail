@@ -285,7 +285,7 @@ Uses `@mozilla/readability` (same as Firefox Reader Mode) for intelligent conten
 
 ### Security Architecture
 
-**Multi-Layer Security Implementation**: LetterFlow implements comprehensive security controls across five layers:
+**Multi-Layer Security Implementation**: Postrail implements comprehensive security controls across five layers:
 
 #### 1. Rate Limiting (`lib/rate-limiter.ts`)
 

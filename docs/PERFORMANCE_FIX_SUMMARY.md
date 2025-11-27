@@ -18,7 +18,7 @@ Dashboard with 10+ newsletters experienced 2-4 second load times due to:
 
 ### 1. Database Indexes
 
-**File**: `/Users/brettstark/Projects/letterflow/docs/DATABASE_MIGRATION_performance_indexes.sql`
+**File**: `/Users/brettstark/Projects/postrail/docs/DATABASE_MIGRATION_performance_indexes.sql`
 
 Added 5 critical indexes:
 
@@ -30,7 +30,7 @@ Added 5 critical indexes:
 
 ### 2. Optimized Queries
 
-**File**: `/Users/brettstark/Projects/letterflow/app/dashboard/newsletters/page.optimized.tsx`
+**File**: `/Users/brettstark/Projects/postrail/app/dashboard/newsletters/page.optimized.tsx`
 
 Changed from:
 
@@ -48,9 +48,9 @@ To:
 
 **Files**:
 
-- `/Users/brettstark/Projects/letterflow/lib/performance-benchmark.ts`
-- `/Users/brettstark/Projects/letterflow/scripts/benchmark-performance.ts`
-- `/Users/brettstark/Projects/letterflow/tests/performance/query-optimization.test.ts`
+- `/Users/brettstark/Projects/postrail/lib/performance-benchmark.ts`
+- `/Users/brettstark/Projects/postrail/scripts/benchmark-performance.ts`
+- `/Users/brettstark/Projects/postrail/tests/performance/query-optimization.test.ts`
 
 ## Performance Results
 
