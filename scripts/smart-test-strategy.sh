@@ -69,6 +69,10 @@ else
 fi
 
 # Decision logic
+# NOTE: test:e2e is ALWAYS excluded from pre-push (run in CI only)
+# - test:e2e: Requires browser setup, CI has better Playwright infrastructure
+# These run in GitHub Actions on every PR and push to main
+
 echo "📊 Analysis Results:"
 echo "   📁 Files: $CHANGED_FILES"
 echo "   📏 Lines: $CHANGED_LINES"
@@ -78,10 +82,10 @@ echo "   ⚡ Speed Bonus: $SPEED_BONUS"
 echo ""
 
 if [[ $RISK_SCORE -ge 7 ]]; then
-  echo "🔄 HIGH RISK - Comprehensive validation required"
-  echo "   • All tests + security audit + performance checks"
-  npm run test:comprehensive
-  npm run security:audit
+  echo "🔄 HIGH RISK - Comprehensive validation (pre-push)"
+  echo "   • All unit tests + smoke + security audit"
+  echo "   • (e2e tests run in CI only)"
+  npm run test:all && npm run test:smoke && npm run security:audit
 elif [[ $RISK_SCORE -ge 4 ]]; then
   echo "⚡ MEDIUM RISK - Standard validation"
   echo "   • Core tests + smoke tests (excludes slow crypto/browser)"
