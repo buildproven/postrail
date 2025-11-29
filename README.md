@@ -1,37 +1,74 @@
 # Postrail
 
-AI-powered social media automation for newsletter creators.
+AI-powered social media automation for newsletter creators. Automatically generate and schedule social media posts to promote your newsletters across LinkedIn, Threads, Facebook, and Twitter.
 
-## What is Postrail?
+---
 
-Postrail automatically generates and schedules social media posts to promote your newsletters across LinkedIn, Threads, and Facebook. Using AI, it creates platform-specific content that drives engagement and grows your subscriber base.
+> **Maintainer & Ownership**
+> This project is maintained by **Vibe Build Lab LLC**, a studio focused on AI-assisted product development, micro-SaaS, and "vibe coding" workflows for solo founders and small teams.
+> Learn more at **https://www.vibebuildlab.com**.
+
+---
 
 ## Features
 
-- **AI Post Generation**: Automatically create optimized posts for each platform
-- **Smart Scheduling**: Pre-CTA (before newsletter) and Post-CTA (after newsletter) posting strategy
-- **Multi-Platform**: LinkedIn, Threads, and Facebook integration
-- **Character Limit Enforcement**: Never exceed platform limits
-- **Analytics**: Track performance across all platforms
-- **URL Scraping**: Import newsletters directly from beehiiv, Substack, or custom URLs
-- **Enterprise Security**: Rate limiting, SSRF protection, comprehensive monitoring
-- **Production-Ready Observability**: Structured logging, metrics collection, health checks
-- **Idempotent Operations**: Prevent duplicate posts and ensure data consistency
+- **AI Post Generation** - Automatically create optimized posts for each platform using Claude AI
+- **Smart Scheduling** - Pre-CTA (before newsletter) and Post-CTA (after newsletter) posting strategy
+- **Multi-Platform** - LinkedIn, Threads, Facebook, and Twitter integration
+- **Newsletter Scraping** - Import from beehiiv, Substack, or custom URLs
+- **Character Limit Enforcement** - Never exceed platform limits
+- **Enterprise Security** - Rate limiting, SSRF protection, comprehensive monitoring
+- **Production-Ready** - Structured logging, metrics collection, health checks
+- **Idempotent Operations** - Prevent duplicate posts and ensure data consistency
+
+## Target Users
+
+- **Newsletter creators** who want to grow their audience on social media
+- **Content marketers** managing newsletter promotion campaigns
+- **Solopreneurs** who need to automate repetitive posting tasks
+- **Agencies** managing multiple newsletter clients
+
+## Pricing & Licensing
+
+| Tier | Price | Features |
+|------|-------|----------|
+| **Standard** | $29/mo or $290/yr | Core features, 4 platforms |
+| **Growth** | $59/mo or $590/yr | Unlimited newsletters, analytics, priority support |
+
+**Trial**: 14-day free trial (no credit card required)
+- 3 generations per day
+- 10 generations total during trial
+
+**Vibe Lab Pro members**: 25% discount on all tiers ($22/mo or $44/mo)
+
+**Lifetime Deal**: $199 (limited to first 100 users)
+
+### License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Framework** | Next.js 15 (App Router) |
+| **Language** | TypeScript |
+| **Database** | Supabase (PostgreSQL) |
+| **Auth** | Supabase Auth |
+| **AI** | Anthropic Claude API |
+| **Queue** | Upstash Redis + QStash |
+| **Styling** | Tailwind CSS + shadcn/ui |
+| **Testing** | Vitest + Playwright |
+| **Security** | Rate limiting, SSRF protection, observability |
 
 ## Getting Started
 
 ### Prerequisites
 
-- **Node.js 20+** and npm (check with `node --version`)
-- Supabase account (for database and auth)
-- Anthropic API key (for Claude AI)
+- **Node.js 20+** (enforced via `.npmrc`)
+- Supabase account
+- Anthropic API key
 - Platform OAuth credentials (LinkedIn, Meta)
-
-**Important**: This project requires Node 20+. If using nvm:
-
-```bash
-nvm use 20
-```
 
 ### Installation
 
@@ -39,7 +76,7 @@ nvm use 20
 # Verify Node version (must be 20+)
 node --version
 
-# Install dependencies (will fail on Node < 20 due to .npmrc)
+# Install dependencies
 npm install
 
 # Copy environment variables
@@ -53,113 +90,94 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-## Tech Stack
+### Environment Variables
 
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS + shadcn/ui
-- **Database**: Supabase (PostgreSQL)
-- **Auth**: Supabase Auth
-- **AI**: Anthropic Claude API
-- **Queue**: Upstash Redis + QStash
-- **Security**: Multi-layer protection (Rate limiting, SSRF protection, Observability)
-- **Hosting**: Render (free tier) or Railway
+**Required:**
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `ANTHROPIC_API_KEY` - Claude API key
 
-## Project Structure
+**Optional:**
+- `LINKEDIN_CLIENT_ID/SECRET` - LinkedIn OAuth
+- `META_APP_ID/SECRET` - Facebook/Threads OAuth
+- `UPSTASH_REDIS_*` - Queue system
 
-```
-postrail/
-├── app/                  # Next.js app directory
-│   ├── (auth)/          # Authentication pages
-│   ├── (dashboard)/     # Protected dashboard pages
-│   ├── api/             # API routes (with security middleware)
-│   └── layout.tsx       # Root layout
-├── components/          # React components
-│   ├── ui/             # shadcn/ui components
-│   └── ...             # Custom components
-├── lib/                # Utility functions & security modules
-│   ├── supabase/       # Supabase client
-│   ├── rate-limiter.ts # Rate limiting with deduplication
-│   ├── ssrf-protection.ts # Server-side request forgery protection
-│   ├── observability.ts   # Structured logging & monitoring
-│   ├── env-validator.ts   # Environment validation
-│   ├── ai/             # AI post generation
-│   └── platforms/      # Platform API integrations
-├── docs/               # Comprehensive documentation
-│   ├── ARCHITECTURE.md     # System architecture & data flow
-│   ├── OPERATIONAL_RUNBOOK.md # Operations & incident response
-│   ├── GETTING_STARTED.md
-│   ├── SETUP_SUPABASE.md
-│   ├── TESTING.md
-│   └── WEEK_2_COMPLETE.md
-└── public/            # Static assets
-```
+## Usage Example
 
-## Development Roadmap
+### Workflow
 
-### Phase 1: Foundation (Week 1) ✅
+1. **Import Newsletter** - Paste your newsletter URL or enter content directly
+2. **AI Generates Posts** - 8 posts created (4 platforms × 2 post types)
+3. **Review & Edit** - Customize generated content as needed
+4. **Schedule** - Set optimal posting times for each platform
+5. **Publish** - Posts go out automatically at scheduled times
 
+### AI Post Strategy
+
+**Pre-CTA Posts** (24-8 hours before newsletter):
+- Create FOMO, urgency, curiosity
+- Tease 3-5 key insights
+- Clear CTA: "Sign up so you don't miss it"
+
+**Post-CTA Posts** (48-72 hours after newsletter):
+- Reframe as valuable resource
+- List 3-4 specific outcomes
+- Engagement trigger: "Comment [WORD] to get access"
+
+## Development Commands
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start dev server with Turbopack |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run Vitest unit tests |
+| `npm run test:e2e` | Playwright E2E tests |
+| `npm run test:coverage` | Generate coverage report |
+| `npm run security:audit` | Check npm dependencies |
+
+## Roadmap
+
+### Phase 1: Foundation ✅
 - [x] Project setup
 - [x] Basic authentication
 - [x] Database schema
 
-### Phase 2: AI Generation (Week 2)
+### Phase 2: AI Generation (Current)
+- [x] Newsletter input module
+- [x] Claude AI integration
+- [x] Post generation for 4 platforms
 
-- [ ] Newsletter input module
-- [ ] Claude AI integration
-- [ ] Post generation for 3 platforms
-
-### Phase 3: Platform Integration (Weeks 3-4)
-
+### Phase 3: Platform Integration
 - [ ] LinkedIn OAuth + posting
 - [ ] Threads OAuth + posting
 - [ ] Facebook OAuth + posting
 
-### Phase 4: Scheduling (Week 5)
-
+### Phase 4: Scheduling
 - [ ] Queue system setup
 - [ ] Automated scheduling
 - [ ] Background job processing
 
-### Phase 5: Analytics & Polish (Week 6)
-
+### Phase 5: Analytics & Polish
 - [ ] Analytics dashboard
 - [ ] Performance tracking
 - [ ] PWA setup
 
 ## Documentation
 
-### Architecture & Operations
-
-- [System Architecture](./docs/ARCHITECTURE.md) - Data flow and security design
-- [Operational Runbook](./docs/OPERATIONAL_RUNBOOK.md) - Key rotation and incident response
-
-### Development Guides
-
+- [System Architecture](./docs/ARCHITECTURE.md)
+- [Operational Runbook](./docs/OPERATIONAL_RUNBOOK.md)
 - [Getting Started](./docs/GETTING_STARTED.md)
 - [Supabase Setup](./docs/SETUP_SUPABASE.md)
 - [Testing Guide](./docs/TESTING.md)
-- [Week 2 Progress](./docs/WEEK_2_COMPLETE.md)
-
-### Security Features
-
-- **Rate Limiting**: 3 requests/minute, 10/hour per user with content deduplication
-- **SSRF Protection**: DNS validation, private IP blocking, port filtering
-- **Observability**: Request tracing, metrics collection, health monitoring
-- **Idempotency**: Optimistic locking prevents duplicate operations
-
-## License
-
-MIT License - see LICENSE file for details
 
 ## Contributing
 
 This is currently a personal project. If you're interested in contributing, please open an issue first to discuss proposed changes.
 
-## Support
+## License
 
-For questions or issues, please open a GitHub issue.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Built with ❤️ for newsletter creators**
+> Discover more tools at **https://www.vibebuildlab.com**.

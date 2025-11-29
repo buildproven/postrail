@@ -4,6 +4,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { observability, withObservability } from '@/lib/observability'
+import {
+  checkTrialAccess,
+  recordTrialGeneration,
+} from '@/lib/trial-guard'
 
 // Validate API key at module load - fail fast with clear error
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -249,6 +253,36 @@ export async function POST(request: NextRequest) {
 
       if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+
+      // Check trial access (for trial users)
+      const trialResult = await checkTrialAccess(user.id)
+      if (!trialResult.allowed) {
+        observability.info('Generation blocked by trial guard', {
+          requestId,
+          userId: user.id,
+          event: 'trial_access_denied',
+          metadata: {
+            reason: trialResult.status?.reason,
+            trialEnded: trialResult.status?.trialEnded,
+            generationsTotal: trialResult.status?.generationsTotal,
+          },
+        })
+
+        return NextResponse.json(
+          {
+            error: trialResult.error,
+            trialStatus: trialResult.status,
+            upgrade_prompt:
+              trialResult.status?.trialEnded || trialResult.status?.reason === 'total_limit_reached'
+                ? 'Upgrade to Standard ($29/mo) for unlimited generations!'
+                : 'Daily limit reached. Try again tomorrow or upgrade for unlimited access.',
+          },
+          {
+            status: 403,
+            headers: trialResult.headers,
+          }
+        )
       }
 
       const { title, content } = await request.json()
@@ -556,6 +590,19 @@ export async function POST(request: NextRequest) {
         },
       })
 
+      // Record trial generation (if trial user)
+      if (trialResult.status?.isTrial) {
+        const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+          request.headers.get('x-real-ip') ||
+          '127.0.0.1'
+
+        await recordTrialGeneration(user.id, {
+          tokensUsed: 1024, // Estimate per generation
+          ipAddress,
+          userAgent: request.headers.get('user-agent') || undefined,
+        })
+      }
+
       // Store successful result for deduplication
       await redisRateLimiter.storeDedupResult(user.id, contentHash, finalResult)
 
@@ -569,7 +616,18 @@ export async function POST(request: NextRequest) {
           '299 - "Rate limiting degraded: running in memory fallback"'
       }
 
-      return NextResponse.json(finalResult, { headers: successHeaders })
+      // Add trial status headers
+      if (trialResult.headers) {
+        Object.assign(successHeaders, trialResult.headers)
+      }
+
+      return NextResponse.json(
+        {
+          ...finalResult,
+          trialStatus: trialResult.status,
+        },
+        { headers: successHeaders }
+      )
     } catch (error) {
       observability.error('AI generation failed', {
         requestId,

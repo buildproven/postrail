@@ -19,6 +19,7 @@ export type EventType =
   | 'ai_generation_success'
   | 'ai_generation_failure'
   | 'ai_generation_rate_limited'
+  | 'ai_generation_cache_race'
   | 'scrape_request'
   | 'scrape_success'
   | 'scrape_failure'
@@ -32,6 +33,10 @@ export type EventType =
   | 'supabase_error'
   | 'anthropic_error'
   | 'twitter_api_error'
+  | 'trial_access_denied'
+  | 'public_demo_rate_limited'
+  | 'public_demo_success'
+  | 'public_demo_failure'
 
 // Structured log entry
 interface LogEntry {
