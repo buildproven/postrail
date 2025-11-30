@@ -39,13 +39,11 @@ AI-powered social media automation for newsletter creators. Automatically genera
 - 3 generations per day
 - 10 generations total during trial
 
-**Vibe Lab Pro members**: 25% discount on all tiers ($22/mo or $44/mo)
-
 **Lifetime Deal**: $199 (limited to first 100 users)
 
 ### License
 
-MIT License - see [LICENSE](LICENSE) for details.
+Commercial License - see [LICENSE](LICENSE) for details.
 
 ## Tech Stack
 
@@ -174,7 +172,7 @@ This is currently a personal project. If you're interested in contributing, plea
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+Commercial License - see [LICENSE](LICENSE) for details.
 
 ## Legal
 
