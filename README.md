@@ -164,11 +164,9 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ## Documentation
 
-- [System Architecture](./docs/ARCHITECTURE.md)
-- [Operational Runbook](./docs/OPERATIONAL_RUNBOOK.md)
-- [Getting Started](./docs/GETTING_STARTED.md)
-- [Supabase Setup](./docs/SETUP_SUPABASE.md)
-- [Testing Guide](./docs/TESTING.md)
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) – System architecture and key patterns
+- [docs/TESTING.md](./docs/TESTING.md) – Testing strategy and guidelines
+- [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) – Deployment guide
 
 ## Contributing
 
@@ -178,6 +176,11 @@ This is currently a personal project. If you're interested in contributing, plea
 
 MIT License - see [LICENSE](LICENSE) for details.
 
+## Legal
+
+- [Privacy Policy](https://vibebuildlab.com/privacy-policy)
+- [Terms of Service](https://vibebuildlab.com/terms)
+
 ---
 
-> Discover more tools at **https://www.vibebuildlab.com**.
+> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)
