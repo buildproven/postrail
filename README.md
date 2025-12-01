@@ -36,6 +36,8 @@ AI-powered social media automation for newsletter creators. Automatically genera
 | **Growth** | $59/mo or $590/yr | Unlimited newsletters, analytics, priority support |
 
 **Trial**: 14-day free trial (no credit card required)
+
+> **Note**: Postrail is a standalone product and is **not** included in Vibe Lab Pro. VLP members receive a **25% discount** on all tiers.
 - 3 generations per day
 - 10 generations total during trial
 

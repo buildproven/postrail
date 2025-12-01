@@ -147,13 +147,13 @@ jobs:
         run: |
           # Run comprehensive configuration security validation
           echo "🔍 Running configuration security validation..."
-          npx create-quality-automation@latest --security-config --no-eslint-security
+          npx create-qa-architect@latest --security-config --no-eslint-security
 
       - name: Documentation validation
         run: |
           # Run comprehensive documentation validation
           echo "📖 Running documentation validation..."
-          npx create-quality-automation@latest --validate-docs
+          npx create-qa-architect@latest --validate-docs
         continue-on-error: true
 
       - name: Lighthouse CI
@@ -168,7 +168,7 @@ jobs:
         continue-on-error: true
 
       # NOTE: The "Test README Quick Start Instructions" step has been removed
-      # because it relies on setup.js which only exists in the create-quality-automation
+      # because it relies on setup.js which only exists in the create-qa-architect
       # package itself, not in consumer repositories that copy this workflow.
       #
       # Consumer projects get the quality checks above (prettier, eslint, stylelint, etc.)

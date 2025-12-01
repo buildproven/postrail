@@ -146,7 +146,7 @@ return withObservability.trace('operation_name', async requestId => {
 
 **Current State**: 393+ passing tests with 75%+ coverage across 5 test types
 
-Based on [TEST_STRATEGY_AUDIT.md](https://github.com/brettstark73/create-quality-automation/blob/claude/fix-eslint-command-01Eg8BZZe58yiZ7RNGsGHkXL/TEST_STRATEGY_AUDIT.md), we implement comprehensive testing that validates both structure AND execution.
+Based on [TEST_STRATEGY_AUDIT.md](https://github.com/brettstark73/create-qa-architect/blob/claude/fix-eslint-command-01Eg8BZZe58yiZ7RNGsGHkXL/TEST_STRATEGY_AUDIT.md), we implement comprehensive testing that validates both structure AND execution.
 
 ### Test Types
 

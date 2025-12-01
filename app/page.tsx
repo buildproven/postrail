@@ -37,10 +37,9 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Built with Next.js, TypeScript, and Tailwind CSS
-        </p>
+      <footer className="row-start-3 flex flex-col gap-1 items-center justify-center text-sm text-gray-600 dark:text-gray-400">
+        <p>© 2025 Vibe Build Lab LLC. All rights reserved.</p>
+        <p>Vibe Build Lab LLC, c/o Northwest Registered Agent, WY.</p>
       </footer>
     </div>
   )

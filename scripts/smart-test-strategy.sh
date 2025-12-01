@@ -1,6 +1,6 @@
 #!/bin/bash
 # Smart Test Strategy - Postrail
-# Generated pattern from create-quality-automation
+# Generated pattern from create-qa-architect
 # https://www.aibuilderlab.com/cqa
 set -e
 
@@ -102,4 +102,4 @@ fi
 
 echo ""
 echo "💡 Tip: Run 'npm run test:comprehensive' locally for full validation"
-echo "💎 Smart Test Strategy powered by create-quality-automation"
+echo "💎 Smart Test Strategy powered by create-qa-architect"
