@@ -590,5 +590,5 @@ export const withObservability = {
   },
 }
 
-// Export types
-export type { LogEntry, Metric, HealthStatus, EventType }
+// Export types (EventType already exported at declaration)
+export type { LogEntry, Metric, HealthStatus }

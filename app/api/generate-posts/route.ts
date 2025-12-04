@@ -306,11 +306,17 @@ export async function POST(request: NextRequest) {
 
       // Rate limiting with integrated deduplication (skip in test to avoid noisy 429s)
       const rateLimitResult = isTestEnv
-        ? { allowed: true }
+        ? {
+            allowed: true as const,
+            reason: 'test_bypass' as const,
+            requestsRemaining: 999,
+            resetTime: Date.now() + 60000,
+            backend: 'memory' as const,
+          }
         : await redisRateLimiter.checkRateLimit(user.id, contentHash)
 
       // Handle cached results (from deduplication) - can be allowed=true with cached_result reason
-      if (rateLimitResult.reason === 'cached_result') {
+      if ('reason' in rateLimitResult && rateLimitResult.reason === 'cached_result') {
         const cachedResult = await redisRateLimiter.getCachedResult(
           user.id,
           contentHash

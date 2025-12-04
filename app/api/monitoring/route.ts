@@ -17,9 +17,9 @@ export async function GET(request: NextRequest) {
       // Log unauthorized monitoring access attempts for security monitoring
       observability.warn('Unauthorized monitoring access attempt', {
         userId: adminCheck.userId,
-        path: request.nextUrl?.pathname,
         event: 'monitoring_unauthorized_access',
         metadata: {
+          path: request.nextUrl?.pathname,
           errorMessage: adminCheck.error,
         },
       })
@@ -67,8 +67,14 @@ export async function GET(request: NextRequest) {
 
     if (section === 'all' || section === 'logs') {
       // Get logs with optional filtering
-      const level = url.searchParams.get('level') || undefined
-      const event = url.searchParams.get('event') || undefined
+      const levelParam = url.searchParams.get('level')
+      const validLevels = ['debug', 'info', 'warn', 'error', 'fatal'] as const
+      const level = levelParam && validLevels.includes(levelParam as typeof validLevels[number])
+        ? (levelParam as typeof validLevels[number])
+        : undefined
+      const eventParam = url.searchParams.get('event')
+      // Cast to EventType - invalid values will just return no results
+      const event = eventParam as import('@/lib/observability').EventType | undefined
       const requestId = url.searchParams.get('requestId') || undefined
 
       response.logs = observability.getLogs({

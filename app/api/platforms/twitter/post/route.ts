@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { TwitterApi } from 'twitter-api-v2'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
+import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 
 /**
  * Twitter Post Publishing Endpoint
@@ -72,6 +73,26 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limit: Use existing redisRateLimiter (per-user, shared with generate-posts)
+    const rateLimitResult = await redisRateLimiter.checkRateLimit(user.id)
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          retryAfter: rateLimitResult.retryAfter,
+          requestsRemaining: rateLimitResult.requestsRemaining,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitResult.retryAfter || 60),
+            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
+            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
+          },
+        }
+      )
     }
 
     const { socialPostId, content }: TwitterPostRequest = await request.json()
