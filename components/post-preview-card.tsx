@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Linkedin, Facebook } from 'lucide-react'
+import { Linkedin, Facebook, Twitter } from 'lucide-react'
 
 interface SocialPost {
   id: string
@@ -46,6 +46,12 @@ const PLATFORM_CONFIG = {
     icon: Facebook,
     color: 'bg-blue-500',
     limit: 63206,
+  },
+  x: {
+    name: 'X',
+    icon: Twitter,
+    color: 'bg-black',
+    limit: 280,
   },
 }
 

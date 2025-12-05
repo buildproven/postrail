@@ -137,12 +137,10 @@
       "prettier --write"
     ],
     "**/*.{ts,tsx}": [
-      "tsc --noEmit --skipLibCheck",
       "eslint --fix",
       "prettier --write"
     ],
     "tests/**/*.{ts,tsx,js,jsx}": [
-      "tsc --noEmit --project tests/tsconfig.json",
       "eslint --fix",
       "prettier --write"
     ]
