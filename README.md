@@ -28,25 +28,6 @@ AI-powered social media automation for newsletter creators. Automatically genera
 - **Solopreneurs** who need to automate repetitive posting tasks
 - **Agencies** managing multiple newsletter clients
 
-## Pricing & Licensing
-
-| Tier | Price | Features |
-|------|-------|----------|
-| **Standard** | $29/mo or $290/yr | Core features, 4 platforms |
-| **Growth** | $59/mo or $590/yr | Unlimited newsletters, analytics, priority support |
-
-**Trial**: 14-day free trial (no credit card required)
-
-> **Note**: Postrail is a standalone product and is **not** included in Vibe Lab Pro. VLP members receive a **25% discount** on all tiers.
-- 3 generations per day
-- 10 generations total during trial
-
-**Lifetime Deal**: $199 (limited to first 100 users)
-
-### License
-
-Commercial License - see [LICENSE](LICENSE) for details.
-
 ## Tech Stack
 
 | Layer | Technology |
@@ -135,37 +116,9 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 | `npm run test:coverage` | Generate coverage report |
 | `npm run security:audit` | Check npm dependencies |
 
-## Roadmap
-
-### Phase 1: Foundation ✅
-- [x] Project setup
-- [x] Basic authentication
-- [x] Database schema
-
-### Phase 2: AI Generation (Current)
-- [x] Newsletter input module
-- [x] Claude AI integration
-- [x] Post generation for 4 platforms
-
-### Phase 3: Platform Integration
-- [ ] LinkedIn OAuth + posting
-- [ ] Threads OAuth + posting
-- [ ] Facebook OAuth + posting
-
-### Phase 4: Scheduling
-- [ ] Queue system setup
-- [ ] Automated scheduling
-- [ ] Background job processing
-
-### Phase 5: Analytics & Polish
-- [ ] Analytics dashboard
-- [ ] Performance tracking
-- [ ] PWA setup
-
 ## Documentation
 
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) – System architecture and key patterns
-- [docs/TESTING.md](./docs/TESTING.md) – Testing strategy and guidelines
 - [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) – Deployment guide
 
 ## Contributing
