@@ -15,6 +15,17 @@ import { Redis } from '@upstash/redis'
 import { createHash } from 'crypto'
 import { observability } from './observability'
 
+export interface GenerationResult {
+  newsletterId: string
+  postsGenerated: number
+  posts: Array<{
+    platform: string
+    postType: string
+    content: string
+    characterCount: number
+  }>
+}
+
 export interface RateLimitResult {
   allowed: boolean
   retryAfter?: number
@@ -27,7 +38,7 @@ export interface RateLimitResult {
 
 export interface DedupResult {
   isDuplicate: boolean
-  cachedResult?: any
+  cachedResult?: GenerationResult
   requestId?: string
 }
 
@@ -38,6 +49,21 @@ interface RateLimitConfig {
   windowHour: number
 }
 
+interface HealthCheckDetails {
+  timestamp: string
+  latency?: number
+  redisConfigured?: boolean
+  memoryKeys?: number
+  error?: string
+}
+
+interface CachedDedupResult {
+  result: GenerationResult
+  timestamp: number
+}
+
+type MemoryStoreValue = number | CachedDedupResult
+
 export class RedisRateLimiter {
   private redis: Redis | null = null
   private readonly config: RateLimitConfig
@@ -45,7 +71,7 @@ export class RedisRateLimiter {
   private degradedNotified = false
 
   // Fallback to in-memory when Redis unavailable (development)
-  private readonly memoryStore: Map<string, any> = new Map()
+  private readonly memoryStore: Map<string, MemoryStoreValue> = new Map()
 
   constructor() {
     this.config = {
@@ -266,14 +292,16 @@ export class RedisRateLimiter {
       this.cleanupMemoryStore()
     }
 
-    const minuteCount = this.memoryStore.get(minuteKey) || 0
-    const hourCount = this.memoryStore.get(hourKey) || 0
+    const minuteValue = this.memoryStore.get(minuteKey)
+    const minuteCount = typeof minuteValue === 'number' ? minuteValue : 0
+    const hourValue = this.memoryStore.get(hourKey)
+    const hourCount = typeof hourValue === 'number' ? hourValue : 0
 
     // Check deduplication
     if (contentHash) {
       const dedupKey = `dedup:${userId}:${contentHash}`
       const cached = this.memoryStore.get(dedupKey)
-      if (cached && now - cached.timestamp < 10 * 60 * 1000) {
+      if (cached && typeof cached === 'object' && 'timestamp' in cached && now - cached.timestamp < 10 * 60 * 1000) {
         // 10 minute cache
         return {
           allowed: true,
@@ -339,7 +367,7 @@ export class RedisRateLimiter {
   async storeDedupResult(
     userId: string,
     contentHash: string,
-    result: any
+    result: GenerationResult
   ): Promise<void> {
     const dedupKey = `dedup:${userId}:${contentHash}`
 
@@ -360,7 +388,7 @@ export class RedisRateLimiter {
   async getCachedResult(
     userId: string,
     contentHash: string
-  ): Promise<any | null> {
+  ): Promise<GenerationResult | null> {
     const dedupKey = `dedup:${userId}:${contentHash}`
 
     if (this.enabled && this.redis) {
@@ -373,8 +401,10 @@ export class RedisRateLimiter {
       }
     } else {
       const cached = this.memoryStore.get(dedupKey)
-      if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000) {
-        return cached.result
+      if (cached && typeof cached === 'object' && 'timestamp' in cached && 'result' in cached) {
+        if (Date.now() - cached.timestamp < 10 * 60 * 1000) {
+          return cached.result
+        }
       }
       return null
     }
@@ -413,7 +443,8 @@ export class RedisRateLimiter {
       }
     } else {
       const memoryKey = `${userId}:minute:${Math.floor(now / this.config.windowMinute)}`
-      minuteCount = this.memoryStore.get(memoryKey) || 0
+      const value = this.memoryStore.get(memoryKey)
+      minuteCount = typeof value === 'number' ? value : 0
     }
 
     const requestsRemaining = Math.max(
@@ -483,7 +514,8 @@ export class RedisRateLimiter {
       // Remove keys older than 1 hour
       if (
         key.includes(':dedup:') &&
-        value.timestamp &&
+        typeof value === 'object' &&
+        'timestamp' in value &&
         now - value.timestamp > 60 * 60 * 1000
       ) {
         expiredKeys.push(key)
@@ -522,9 +554,9 @@ export class RedisRateLimiter {
   async healthCheck(): Promise<{
     healthy: boolean
     backend: string
-    details: any
+    details: HealthCheckDetails
   }> {
-    const _details: any = { timestamp: new Date().toISOString() }
+    const timestamp = new Date().toISOString()
 
     if (this.enabled && this.redis) {
       try {
@@ -535,13 +567,14 @@ export class RedisRateLimiter {
         return {
           healthy: latency < 1000, // Consider unhealthy if >1s latency
           backend: 'redis',
-          details: { latency, redisConfigured: true },
+          details: { timestamp, latency, redisConfigured: true },
         }
       } catch (error) {
         return {
           healthy: false,
           backend: 'redis',
           details: {
+            timestamp,
             error: error instanceof Error ? error.message : 'Unknown error',
             redisConfigured: true,
           },
@@ -551,7 +584,7 @@ export class RedisRateLimiter {
       return {
         healthy: true,
         backend: 'memory',
-        details: { memoryKeys: this.memoryStore.size, redisConfigured: false },
+        details: { timestamp, memoryKeys: this.memoryStore.size, redisConfigured: false },
       }
     }
   }

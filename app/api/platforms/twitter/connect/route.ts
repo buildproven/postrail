@@ -36,6 +36,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // CSRF Protection: Validate Origin header
+    const origin = request.headers.get('origin')
+    const host = request.headers.get('host')
+    
+    // Allow requests with no origin (server-to-server) or matching origin
+    // In production, strictly check that origin matches the host
+    if (origin && host && !origin.includes(host)) {
+       console.error(`CSRF blocked: Origin ${origin} does not match Host ${host}`)
+       return NextResponse.json({ error: 'Forbidden - Invalid Origin' }, { status: 403 })
+    }
+
     const body = await request.json()
     const {
       apiKey,

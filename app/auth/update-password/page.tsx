@@ -18,7 +18,9 @@ export default function UpdatePasswordPage() {
     e.preventDefault()
     setError('')
 
-    // eslint-disable-next-line security/detect-possible-timing-attacks
+    // False positive: Both values are user input from the same session (not comparing against stored secret)
+    // Timing-safe comparison is only needed when comparing against server-side secrets
+    // eslint-disable-next-line security/detect-possible-timing-attacks -- False positive: Comparing user-provided inputs, not secrets
     if (password !== confirmPassword) {
       setError('Passwords do not match')
       return

@@ -17,22 +17,35 @@ interface RateLimitRecord {
   locked: boolean // Mutex flag for atomic operations
 }
 
+interface GenerationResult {
+  newsletterId: string
+  postsGenerated: number
+  posts: Array<{
+    platform: string
+    postType: string
+    content: string
+    characterCount: number
+  }>
+}
+
+interface CachedResult {
+  result: GenerationResult
+  timestamp: number
+}
+
 interface PendingRequest {
   requestId: string
   userId: string
   contentHash: string
   timestamp: number
-  resolve: (value: any) => void
-  reject: (error: any) => void
+  resolve: (value: GenerationResult) => void
+  reject: (error: Error) => void
 }
 
 class RateLimiter {
   private userLimits = new Map<string, RateLimitRecord>()
   private pendingRequests = new Map<string, PendingRequest>()
-  private completedRequests = new Map<
-    string,
-    { result: any; timestamp: number }
-  >()
+  private completedRequests = new Map<string, CachedResult>()
   private cleanupIntervalHandle: ReturnType<typeof setInterval> | null = null
 
   // Rate limiting configuration
@@ -230,7 +243,6 @@ class RateLimiter {
       .createHash('sha256')
       .update(`${userId}:${title}:${content}`)
       .digest('hex')
-      .substring(0, 16)
   }
 
   /**
@@ -246,7 +258,7 @@ class RateLimiter {
    * @param {string} userId - User ID for cache isolation
    * @param {string} title - Newsletter title
    * @param {string} content - Newsletter content
-   * @returns {Promise<{isDuplicate: boolean, requestId?: string, existingResult?: any}>} Deduplication decision
+   * @returns {Promise<{isDuplicate: boolean, requestId?: string, existingResult?: GenerationResult}>} Deduplication decision
    *
    * @example
    * const result = await handleDeduplication('user123', 'Title', 'Content...')
@@ -261,7 +273,7 @@ class RateLimiter {
   ): Promise<{
     isDuplicate: boolean
     requestId?: string
-    existingResult?: any
+    existingResult?: GenerationResult
   }> {
     const contentHash = this.generateContentHash(title, content, userId)
     const requestId = `${userId}:${contentHash}`
@@ -320,7 +332,7 @@ class RateLimiter {
    * @param {string} requestId - Unique request identifier (from generateContentHash)
    * @param {string} userId - User ID for tracking
    * @param {string} contentHash - Content hash for cleanup
-   * @returns {{promise: Promise<any>, resolve: Function, reject: Function}} Promise with control functions
+   * @returns {{promise: Promise<GenerationResult>, resolve: Function, reject: Function}} Promise with control functions
    *
    * @example
    * const { promise, resolve, reject } = registerPendingRequest(requestId, userId, hash)
@@ -336,14 +348,14 @@ class RateLimiter {
     userId: string,
     contentHash: string
   ): {
-    promise: Promise<any>
-    resolve: (value: any) => void
-    reject: (error: any) => void
+    promise: Promise<GenerationResult>
+    resolve: (value: GenerationResult) => void
+    reject: (error: Error) => void
   } {
-    let resolve: (value: any) => void
-    let reject: (error: any) => void
+    let resolve: (value: GenerationResult) => void
+    let reject: (error: Error) => void
 
-    const promise = new Promise<any>((res, rej) => {
+    const promise = new Promise<GenerationResult>((res, rej) => {
       resolve = res
       reject = rej
     })
@@ -371,7 +383,7 @@ class RateLimiter {
    * - Notifies any waiting duplicate requests
    *
    * @param {string} requestId - Request identifier to complete
-   * @param {any} result - Generation result to cache and return
+   * @param {GenerationResult} result - Generation result to cache and return
    *
    * @example
    * completePendingRequest(requestId, {
@@ -380,7 +392,7 @@ class RateLimiter {
    *   postsGenerated: 8
    * })
    */
-  completePendingRequest(requestId: string, result: any) {
+  completePendingRequest(requestId: string, result: GenerationResult) {
     const pendingRequest = this.pendingRequests.get(requestId)
     if (pendingRequest) {
       pendingRequest.resolve(result)
@@ -403,7 +415,7 @@ class RateLimiter {
    * - Notifies any waiting duplicate requests
    *
    * @param {string} requestId - Request identifier to fail
-   * @param {any} error - Error object to propagate
+   * @param {Error} error - Error object to propagate
    *
    * @example
    * try {
@@ -413,7 +425,7 @@ class RateLimiter {
    *   throw err
    * }
    */
-  failPendingRequest(requestId: string, error: any) {
+  failPendingRequest(requestId: string, error: Error) {
     const pendingRequest = this.pendingRequests.get(requestId)
     if (pendingRequest) {
       pendingRequest.reject(error)

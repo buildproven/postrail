@@ -156,7 +156,8 @@ describe('Platform-Specific Link Usage', () => {
     const invalidUrls = [
       'http://localhost:3000',
       'https://192.168.1.1',
-      'javascript:alert(1)', // eslint-disable-line no-script-url
+      // eslint-disable-next-line no-script-url -- Intentional: Testing XSS protection against javascript: protocol URLs
+      'javascript:alert(1)',
     ]
 
     validUrls.forEach(url => {
@@ -169,7 +170,8 @@ describe('Platform-Specific Link Usage', () => {
       const isInvalid =
         url.includes('localhost') ||
         url.includes('192.168') ||
-        url.startsWith('javascript:') // eslint-disable-line no-script-url
+        // eslint-disable-next-line no-script-url -- Intentional: Testing detection of javascript: protocol URLs in validation logic
+        url.startsWith('javascript:')
       expect(isInvalid).toBe(true)
     })
   })

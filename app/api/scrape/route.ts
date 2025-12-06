@@ -100,9 +100,14 @@ export async function POST(request: NextRequest) {
     // Enhanced SSRF Protection: validate URL with DNS resolution, port filtering, and domain blocking
     const urlValidation = await ssrfProtection.validateUrl(url)
     if (!urlValidation.allowed) {
-      console.log(
-        `SSRF protection blocked URL: ${url}, reason: ${urlValidation.error}, IP: ${urlValidation.ip || 'unknown'}`
-      )
+      try {
+        const hostname = new URL(url).hostname
+        console.log(
+          `SSRF protection blocked request to ${hostname}: ${urlValidation.error}`
+        )
+      } catch {
+        console.log(`SSRF protection blocked invalid URL request: ${urlValidation.error}`)
+      }
       return NextResponse.json(
         {
           error: 'URL validation failed',

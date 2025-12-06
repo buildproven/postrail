@@ -20,6 +20,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'
+import fs from 'fs'
 
 const shouldRunContractTests = process.env.ENABLE_CONTRACT_TESTS === 'true'
 
@@ -253,8 +254,7 @@ describe.skipIf(!shouldRunContractTests)(
 
 describe('SDK Version Compatibility Checks (Always Run)', () => {
   it('should verify all critical dependencies are installed', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf-8'))
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'))
 
     const criticalDeps = [
       '@anthropic-ai/sdk',
@@ -271,8 +271,7 @@ describe('SDK Version Compatibility Checks (Always Run)', () => {
   })
 
   it('should verify no conflicting package versions', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf-8'))
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'))
 
     // React and React DOM should match versions
     const reactVersion = pkg.dependencies?.react
@@ -284,10 +283,7 @@ describe('SDK Version Compatibility Checks (Always Run)', () => {
   })
 
   it('should verify TypeScript is properly configured', () => {
-    const tsconfig = JSON.parse(
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      require('fs').readFileSync('tsconfig.json', 'utf-8')
-    )
+    const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json', 'utf-8'))
 
     // Verify critical compiler options
     expect(tsconfig.compilerOptions).toHaveProperty('strict')

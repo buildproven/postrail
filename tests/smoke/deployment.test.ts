@@ -13,6 +13,7 @@
 
 import { describe, it, expect } from 'vitest'
 import fs from 'fs'
+import { execSync } from 'child_process'
 
 describe('Pre-Deployment Smoke Tests', () => {
   describe('Configuration Files', () => {
@@ -86,8 +87,6 @@ describe('Pre-Deployment Smoke Tests', () => {
 
     it('should not have .env.local committed', () => {
       // .env.local should NOT be tracked in git (but can exist locally)
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { execSync } = require('child_process')
       try {
         const trackedFiles = execSync('git ls-files', { encoding: 'utf-8' })
         expect(trackedFiles).not.toContain('.env.local')

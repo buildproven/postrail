@@ -29,10 +29,12 @@ export default function Home() {
           <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400">
             <li>Paste your newsletter content or provide a URL</li>
             <li>
-              AI generates optimized posts for LinkedIn, Threads, and Facebook
+              <strong>Twitter/X:</strong> Auto-post immediately with your own API keys
             </li>
-            <li>Schedule posts to publish before and after your newsletter</li>
-            <li>Track performance with built-in analytics</li>
+            <li>
+              <strong>LinkedIn, Threads, Facebook:</strong> Generate optimized drafts to copy & paste
+            </li>
+            <li>Schedule posts to maximize engagement (coming soon)</li>
           </ol>
         </div>
       </main>
