@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { title, content } = await request.json()
+    const { title, content, newsletterDate } = await request.json()
 
     if (!content) {
       return NextResponse.json(
@@ -177,6 +177,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Calculate scheduled times based on newsletter date
+    const pubDate = newsletterDate ? new Date(newsletterDate) : new Date()
+    const preCtaTime = new Date(pubDate.getTime() - 24 * 60 * 60 * 1000) // 24h before
+    const postCtaTime = new Date(pubDate.getTime() + 48 * 60 * 60 * 1000) // 48h after
 
     // Create newsletter record
     const { data: newsletter, error: newsletterError } = await supabase
@@ -240,14 +245,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Save generated posts to database
-    // scheduled_time is null for drafts, will be set during scheduling phase
+    // scheduled_time is calculated relative to newsletter publication time
     const socialPostsData = posts.map(post => ({
       newsletter_id: newsletter.id,
       platform: post.platform,
       post_type: post.postType,
       content: post.content,
       character_count: post.characterCount,
-      scheduled_time: null,
+      scheduled_time:
+        post.postType === 'pre_cta'
+          ? preCtaTime.toISOString()
+          : postCtaTime.toISOString(),
       status: 'draft',
     }))
 

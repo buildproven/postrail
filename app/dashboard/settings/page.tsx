@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { Button } from '@/components/ui/button'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -57,6 +58,45 @@ export default async function SettingsPage() {
             <p className="text-sm text-blue-800">
               User preferences and customization options will be available in a
               future update.
+            </p>
+          </div>
+        </div>
+
+        {/* Subscription */}
+        <div className="border rounded-lg p-6 bg-white">
+          <h2 className="text-lg font-semibold mb-4">Subscription</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 border rounded bg-gray-50">
+              <div>
+                <p className="font-medium">Free Trial</p>
+                <p className="text-sm text-gray-600">
+                  10 posts total • 3 posts/day
+                </p>
+              </div>
+              <form action="/api/billing/checkout" method="POST">
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/billing/checkout', {
+                        method: 'POST',
+                      })
+                      const data = await res.json()
+                      if (data.url) window.location.href = data.url
+                      else alert('Failed to start checkout')
+                    } catch (e) {
+                      console.error(e)
+                      alert('Error starting checkout')
+                    }
+                  }}
+                >
+                  Upgrade to Pro
+                </Button>
+              </form>
+            </div>
+            <p className="text-xs text-gray-500">
+              Pro plan includes unlimited posts, advanced scheduling, and
+              priority support.
             </p>
           </div>
         </div>

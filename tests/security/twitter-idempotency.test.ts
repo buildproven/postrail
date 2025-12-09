@@ -38,6 +38,17 @@ vi.mock('@/lib/crypto', () => ({
   decrypt: vi.fn((encrypted: string) => `decrypted_${encrypted}`),
 }))
 
+// Mock rate limiter
+vi.mock('@/lib/redis-rate-limiter', () => ({
+  redisRateLimiter: {
+    checkRateLimit: vi.fn().mockResolvedValue({
+      allowed: true,
+      requestsRemaining: 10,
+      resetTime: Date.now() + 60000,
+    }),
+  },
+}))
+
 describe('Twitter Post Idempotency Race Condition', () => {
   let mockSupabase: any
 

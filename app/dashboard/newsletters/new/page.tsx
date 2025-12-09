@@ -22,6 +22,13 @@ export default function NewNewsletterPage() {
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  // Default to tomorrow at 9am
+  const [newsletterDate, setNewsletterDate] = useState(() => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(9, 0, 0, 0)
+    return tomorrow.toISOString().slice(0, 16) // Format for datetime-local
+  })
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
@@ -73,7 +80,11 @@ export default function NewNewsletterPage() {
       const response = await fetch('/api/generate-posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content }),
+        body: JSON.stringify({
+          title,
+          content,
+          newsletterDate: new Date(newsletterDate).toISOString(),
+        }),
       })
 
       if (!response.ok) {
@@ -115,6 +126,30 @@ export default function NewNewsletterPage() {
           Import your newsletter and generate AI-powered social media posts
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Newsletter Details</CardTitle>
+          <CardDescription>
+            When will this newsletter be published?
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="newsletter-date">Publication Date & Time</Label>
+            <Input
+              id="newsletter-date"
+              type="datetime-local"
+              value={newsletterDate}
+              onChange={e => setNewsletterDate(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              We'll schedule "Pre-CTA" posts 24h before this, and "Post-CTA"
+              posts 48h after.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="url" className="w-full">
         <TabsList className="grid w-full grid-cols-2">

@@ -1,90 +1,107 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { TwitterApi } from 'twitter-api-v2'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 
 /**
- * Twitter Post Publishing Endpoint
+ * Facebook Post Publishing Endpoint
  *
- * Posts content to Twitter using OAuth 2.0 or BYOK credentials.
+ * Posts content to Facebook Page using OAuth tokens.
  * Supports:
- * - Text posts (up to 280 characters)
- * - OAuth 2.0 (1-click connect)
- * - BYOK (bring your own keys) for legacy connections
+ * - Text posts (up to 63,206 characters)
+ * - Page posts (not personal profile)
  */
 
-interface TwitterPostRequest {
+interface FacebookPostRequest {
   socialPostId: string
   content: string
+  pageId?: string // Optional: specify which page to post to
 }
 
-interface TwitterOAuthMetadata {
-  accessToken: string
-  refreshToken?: string | null
-  tokenType?: string
-  scope?: string
-  // BYOK format (legacy)
-  apiKey?: string
-  apiSecret?: string
-  accessTokenSecret?: string
+interface FacebookCredentials {
+  pageAccessToken: string
+  pageId: string
+  pageName?: string
+  allPages?: Array<{ id: string; name: string; category?: string }>
+}
+
+interface FacebookOAuthMetadata {
+  pageAccessToken?: string
+  pageId?: string
+  pageName?: string
+  allPages?: Array<{ id: string; name: string; category?: string }>
+  userAccessToken?: string
 }
 
 /**
- * Get Twitter client for user - supports both OAuth 2.0 and BYOK
+ * Get decrypted Facebook credentials for user
+ * Supports both OAuth and BYOK formats
  */
-async function getTwitterClient(userId: string): Promise<TwitterApi> {
+async function getFacebookCredentials(
+  userId: string,
+  requestedPageId?: string
+): Promise<FacebookCredentials> {
   const supabase = await createClient()
 
   const { data: connection, error } = await supabase
     .from('platform_connections')
-    .select('metadata, oauth_token, is_active')
+    .select('metadata, oauth_token, platform_user_id, is_active')
     .eq('user_id', userId)
-    .eq('platform', 'twitter')
+    .eq('platform', 'facebook')
     .single()
 
   if (error || !connection) {
-    throw new Error('Twitter account not connected')
+    throw new Error('Facebook account not connected')
   }
 
   if (!connection.is_active) {
-    throw new Error('Twitter connection is inactive. Please reconnect.')
+    throw new Error('Facebook connection is inactive. Please reconnect.')
   }
 
-  const metadata = connection.metadata as TwitterOAuthMetadata
+  const metadata = connection.metadata as FacebookOAuthMetadata
 
-  // OAuth 2.0 format (new): has accessToken in metadata, no apiKey
-  if (metadata.accessToken && !metadata.apiKey) {
-    const accessToken = decrypt(metadata.accessToken)
-    return new TwitterApi(accessToken)
+  // If a specific page is requested and we have multiple pages, find it
+  if (requestedPageId && metadata.allPages) {
+    const requestedPage = metadata.allPages.find(p => p.id === requestedPageId)
+    if (requestedPage) {
+      // For now, we use the stored page token (all pages share same token in our flow)
+      // In a more complex setup, each page would have its own token
+      return {
+        pageAccessToken: metadata.pageAccessToken
+          ? decrypt(metadata.pageAccessToken)
+          : decrypt(connection.oauth_token),
+        pageId: requestedPage.id,
+        pageName: requestedPage.name,
+        allPages: metadata.allPages,
+      }
+    }
   }
 
-  // BYOK format (legacy): has apiKey, apiSecret, accessToken, accessTokenSecret
-  if (
-    metadata.apiKey &&
-    metadata.apiSecret &&
-    metadata.accessToken &&
-    metadata.accessTokenSecret
-  ) {
-    return new TwitterApi({
-      appKey: decrypt(metadata.apiKey),
-      appSecret: decrypt(metadata.apiSecret),
-      accessToken: decrypt(metadata.accessToken),
-      accessSecret: decrypt(metadata.accessTokenSecret),
-    })
+  // OAuth format: pageAccessToken in metadata
+  if (metadata.pageAccessToken) {
+    return {
+      pageAccessToken: decrypt(metadata.pageAccessToken),
+      pageId: metadata.pageId || connection.platform_user_id,
+      pageName: metadata.pageName,
+      allPages: metadata.allPages,
+    }
   }
 
-  // Fallback: try oauth_token field
+  // Fallback: token in oauth_token field (BYOK format)
   if (connection.oauth_token) {
-    const accessToken = decrypt(connection.oauth_token)
-    return new TwitterApi(accessToken)
+    return {
+      pageAccessToken: decrypt(connection.oauth_token),
+      pageId: metadata.pageId || connection.platform_user_id,
+      pageName: metadata.pageName,
+      allPages: metadata.allPages,
+    }
   }
 
-  throw new Error('Twitter credentials not found. Please reconnect.')
+  throw new Error('Facebook credentials not found. Please reconnect.')
 }
 
 /**
- * POST: Publish a post to Twitter
+ * POST: Publish a post to Facebook Page
  */
 export async function POST(request: NextRequest) {
   try {
@@ -119,7 +136,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { socialPostId, content }: TwitterPostRequest = await request.json()
+    const { socialPostId, content, pageId }: FacebookPostRequest =
+      await request.json()
 
     // Validate inputs
     if (!socialPostId || !content) {
@@ -129,12 +147,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check character limit (280 for Twitter)
-    if (content.length > 280) {
+    // Check character limit (63,206 for Facebook)
+    if (content.length > 63206) {
       return NextResponse.json(
         {
-          error: 'Content exceeds Twitter character limit',
-          limit: 280,
+          error: 'Content exceeds Facebook character limit',
+          limit: 63206,
           current: content.length,
         },
         { status: 400 }
@@ -192,8 +210,7 @@ export async function POST(request: NextRequest) {
       ) {
         return NextResponse.json({
           success: true,
-          tweetId: currentPostTyped.platform_post_id,
-          url: `https://twitter.com/i/web/status/${currentPostTyped.platform_post_id}`,
+          postId: currentPostTyped.platform_post_id,
           fromCache: true,
           message: 'Post was already published successfully',
           publishedAt: currentPostTyped.published_at,
@@ -238,23 +255,58 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify platform
-    if (postWithNewsletter.platform !== 'twitter') {
+    if (postWithNewsletter.platform !== 'facebook') {
       await supabase
         .from('social_posts')
         .update({ status: 'draft' })
         .eq('id', socialPostId)
       return NextResponse.json(
-        { error: 'This post is not configured for Twitter' },
+        { error: 'This post is not configured for Facebook' },
         { status: 400 }
       )
     }
 
-    // Get Twitter client
-    const client = await getTwitterClient(user.id)
+    // Get Facebook credentials
+    const credentials = await getFacebookCredentials(user.id, pageId)
 
-    // Post to Twitter
+    // Post to Facebook using Graph API
     try {
-      const { data: tweet } = await client.v2.tweet(content)
+      const response = await fetch(
+        `https://graph.facebook.com/v22.0/${credentials.pageId}/feed`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: content,
+            access_token: credentials.pageAccessToken,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Facebook post error:', response.status, errorData)
+
+        // Handle specific Facebook errors
+        if (errorData.error?.code === 190) {
+          throw new Error('401: Access token expired')
+        }
+        if (errorData.error?.code === 200) {
+          throw new Error('403: Permission denied')
+        }
+        if (errorData.error?.code === 368) {
+          throw new Error('duplicate: Content was already posted')
+        }
+
+        throw new Error(
+          `Facebook API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`
+        )
+      }
+
+      const postResult = await response.json()
+      const fbPostId = postResult.id
 
       // Update social_post record with success
       await supabase
@@ -262,47 +314,50 @@ export async function POST(request: NextRequest) {
         .update({
           status: 'published',
           published_at: new Date().toISOString(),
-          platform_post_id: tweet.id,
+          platform_post_id: fbPostId,
           error_message: null,
         })
         .eq('id', socialPostId)
 
+      // Facebook post IDs are in format "pageId_postId"
+      const postUrl = `https://www.facebook.com/${fbPostId.replace('_', '/posts/')}`
+
       return NextResponse.json({
         success: true,
-        tweetId: tweet.id,
-        tweetText: tweet.text,
-        url: `https://twitter.com/i/web/status/${tweet.id}`,
+        postId: fbPostId,
+        url: postUrl,
+        pageName: credentials.pageName,
       })
-    } catch (twitterError: unknown) {
-      console.error('Twitter API error:', twitterError)
+    } catch (facebookError: unknown) {
+      console.error('Facebook API error:', facebookError)
 
-      let errorMessage = 'Failed to post to Twitter'
+      let errorMessage = 'Failed to post to Facebook'
       let errorDetails = 'Unknown error'
 
-      if (twitterError instanceof Error) {
-        const errorMsg = twitterError.message.toLowerCase()
+      if (facebookError instanceof Error) {
+        const errorMsg = facebookError.message.toLowerCase()
 
-        if (errorMsg.includes('rate limit')) {
+        if (errorMsg.includes('rate limit') || errorMsg.includes('throttl')) {
           errorMessage = 'Rate limit exceeded'
           errorDetails =
-            'You have exceeded Twitter API rate limits. Please wait and try again.'
+            'You have exceeded Facebook API rate limits. Please wait and try again.'
+        } else if (errorMsg.includes('401') || errorMsg.includes('expired')) {
+          errorMessage = 'Authentication failed'
+          errorDetails =
+            'Your Facebook access token has expired. Please reconnect your account.'
+        } else if (
+          errorMsg.includes('403') ||
+          errorMsg.includes('permission')
+        ) {
+          errorMessage = 'Permission denied'
+          errorDetails =
+            'Your Facebook app does not have permission to post. Check your app permissions.'
         } else if (errorMsg.includes('duplicate')) {
           errorMessage = 'Duplicate content'
           errorDetails =
-            'This content was already posted recently. Twitter prevents duplicate posts.'
-        } else if (
-          errorMsg.includes('unauthorized') ||
-          errorMsg.includes('401')
-        ) {
-          errorMessage = 'Authentication failed'
-          errorDetails =
-            'Your Twitter connection has expired. Please reconnect your account.'
-        } else if (errorMsg.includes('forbidden') || errorMsg.includes('403')) {
-          errorMessage = 'Permission denied'
-          errorDetails =
-            'Your Twitter app does not have permission to post tweets.'
+            'This content was already posted recently. Facebook prevents duplicate posts.'
         } else {
-          errorDetails = twitterError.message
+          errorDetails = facebookError.message
         }
       }
 
@@ -324,15 +379,15 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
-    console.error('Twitter post error:', error)
+    console.error('Facebook post error:', error)
 
     if (error instanceof Error) {
       if (error.message.includes('not connected')) {
         return NextResponse.json(
           {
-            error: 'Twitter not connected',
+            error: 'Facebook not connected',
             details:
-              'Please connect your Twitter account in Settings → Connected Accounts',
+              'Please connect your Facebook Page in Settings → Connected Accounts',
           },
           { status: 400 }
         )
@@ -341,8 +396,8 @@ export async function POST(request: NextRequest) {
       if (error.message.includes('inactive')) {
         return NextResponse.json(
           {
-            error: 'Twitter connection inactive',
-            details: 'Please reconnect your Twitter account',
+            error: 'Facebook connection inactive',
+            details: 'Please reconnect your Facebook Page',
           },
           { status: 400 }
         )
