@@ -43,9 +43,15 @@ describe('Pre-Deployment Smoke Tests', () => {
     })
 
     it('should have Tailwind configuration', () => {
-      expect(fs.existsSync('tailwind.config.ts')).toBe(true)
-      const config = fs.readFileSync('tailwind.config.ts', 'utf-8')
-      expect(config).toContain('Config')
+      // Tailwind v4 uses CSS-based config instead of tailwind.config.ts
+      const hasTailwindV4 =
+        fs.existsSync('app/globals.css') &&
+        fs
+          .readFileSync('app/globals.css', 'utf-8')
+          .includes('@import "tailwindcss"')
+      const hasTailwindV3 = fs.existsSync('tailwind.config.ts')
+
+      expect(hasTailwindV4 || hasTailwindV3).toBe(true)
     })
 
     it('should have ESLint configuration', () => {
