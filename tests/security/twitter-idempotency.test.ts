@@ -11,6 +11,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { POST } from '@/app/api/platforms/twitter/post/route'
 import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 
 // Mock Supabase
 vi.mock('@/lib/supabase/server', () => ({
@@ -135,7 +136,7 @@ describe('Twitter Post Idempotency Race Condition', () => {
         }),
       })
 
-      const request1 = new Request(
+      const request1 = new NextRequest(
         'https://example.com/api/platforms/twitter/post',
         {
           method: 'POST',
@@ -187,7 +188,7 @@ describe('Twitter Post Idempotency Race Condition', () => {
         }),
       })
 
-      const request = new Request(
+      const request = new NextRequest(
         'https://example.com/api/platforms/twitter/post',
         {
           method: 'POST',
@@ -239,7 +240,7 @@ describe('Twitter Post Idempotency Race Condition', () => {
         }),
       })
 
-      const request = new Request(
+      const request = new NextRequest(
         'https://example.com/api/platforms/twitter/post',
         {
           method: 'POST',
@@ -296,7 +297,7 @@ describe('Twitter Post Idempotency Race Condition', () => {
         }),
       })
 
-      const request = new Request(
+      const request = new NextRequest(
         'https://example.com/api/platforms/twitter/post',
         {
           method: 'POST',
@@ -349,7 +350,7 @@ describe('Twitter Post Idempotency Race Condition', () => {
         }),
       })
 
-      const request = new Request(
+      const request = new NextRequest(
         'https://example.com/api/platforms/twitter/post',
         {
           method: 'POST',
@@ -430,7 +431,7 @@ describe('Twitter Post Idempotency Race Condition', () => {
         }),
       })
 
-      const request = new Request(
+      const request = new NextRequest(
         'https://example.com/api/platforms/twitter/post',
         {
           method: 'POST',

@@ -362,7 +362,7 @@ describe('Facebook Post - Credentials', () => {
       oauth_token: 'encrypted-fallback-token',
       metadata: {
         pageId: '123456789',
-      },
+      } as { pageId: string; pageAccessToken?: string },
     }
 
     const pageAccessToken =

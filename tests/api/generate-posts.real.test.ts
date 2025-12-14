@@ -79,8 +79,8 @@ describe('/api/generate-posts - Real API Tests', () => {
     it('should reject unauthenticated requests', async () => {
       mockSupabase.auth.getUser.mockResolvedValueOnce({
         data: { user: null },
-        error: new Error('Not authenticated'),
-      })
+        error: { message: 'Not authenticated', status: 401 },
+      } as any)
 
       const request = new NextRequest('http://localhost/api/generate-posts', {
         method: 'POST',

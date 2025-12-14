@@ -222,7 +222,7 @@ describe('lib/supabase/middleware', () => {
 
         await updateSession(mockRequest)
 
-        const cookieConfig = mockCreateServerClient.mock.calls[0][2]
+        const cookieConfig = mockCreateServerClient.mock.calls[0][2] as any
 
         // Call setAll with test cookies
         const cookiesToSet = [

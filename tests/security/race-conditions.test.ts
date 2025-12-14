@@ -199,7 +199,7 @@ describe('Race Condition Security Tests', () => {
       const originalNodeEnv = process.env.NODE_ENV
 
       process.env.NEXT_TRUST_PROXY = 'true'
-      process.env.NODE_ENV = 'production' // Ensure not development mode
+      ;(process.env as any).NODE_ENV = 'production' // Ensure not development mode
 
       const mockRequest = new Request('https://example.com', {
         headers: {
@@ -211,7 +211,7 @@ describe('Race Condition Security Tests', () => {
       expect(ip).toBe('8.8.8.8')
 
       process.env.NEXT_TRUST_PROXY = originalEnv
-      process.env.NODE_ENV = originalNodeEnv
+      ;(process.env as any).NODE_ENV = originalNodeEnv
     })
 
     it('should extract IP from x-real-ip header when cf-connecting-ip missing', () => {
@@ -219,7 +219,7 @@ describe('Race Condition Security Tests', () => {
       const originalNodeEnv = process.env.NODE_ENV
 
       process.env.NEXT_TRUST_PROXY = 'true'
-      process.env.NODE_ENV = 'production'
+      ;(process.env as any).NODE_ENV = 'production'
 
       const mockRequest = new Request('https://example.com', {
         headers: {
@@ -231,7 +231,7 @@ describe('Race Condition Security Tests', () => {
       expect(ip).toBe('1.1.1.1')
 
       process.env.NEXT_TRUST_PROXY = originalEnv
-      process.env.NODE_ENV = originalNodeEnv
+      ;(process.env as any).NODE_ENV = originalNodeEnv
     })
 
     it('should extract leftmost IP from x-forwarded-for', () => {
@@ -239,7 +239,7 @@ describe('Race Condition Security Tests', () => {
       const originalNodeEnv = process.env.NODE_ENV
 
       process.env.NEXT_TRUST_PROXY = 'true'
-      process.env.NODE_ENV = 'production'
+      ;(process.env as any).NODE_ENV = 'production'
 
       const mockRequest = new Request('https://example.com', {
         headers: {
@@ -251,7 +251,7 @@ describe('Race Condition Security Tests', () => {
       expect(ip).toBe('9.9.9.9')
 
       process.env.NEXT_TRUST_PROXY = originalEnv
-      process.env.NODE_ENV = originalNodeEnv
+      ;(process.env as any).NODE_ENV = originalNodeEnv
     })
 
     it('should reject private IPs in x-forwarded-for and find public IP', () => {
@@ -259,7 +259,7 @@ describe('Race Condition Security Tests', () => {
       const originalNodeEnv = process.env.NODE_ENV
 
       process.env.NEXT_TRUST_PROXY = 'true'
-      process.env.NODE_ENV = 'production'
+      ;(process.env as any).NODE_ENV = 'production'
 
       const mockRequest = new Request('https://example.com', {
         headers: {
@@ -272,22 +272,21 @@ describe('Race Condition Security Tests', () => {
       expect(ip).toBe('8.8.4.4')
 
       process.env.NEXT_TRUST_PROXY = originalEnv
-      process.env.NODE_ENV = originalNodeEnv
+      ;(process.env as any).NODE_ENV = originalNodeEnv
     })
 
     it('should return 127.0.0.1 in development mode', () => {
       const originalEnv = process.env.NODE_ENV
       const originalTrustProxy = process.env.NEXT_TRUST_PROXY
 
-      process.env.NODE_ENV = 'development'
+      ;(process.env as any).NODE_ENV = 'development'
       process.env.NEXT_TRUST_PROXY = 'false'
 
       const mockRequest = new Request('https://example.com')
       const ip = ssrfProtection.getClientIP(mockRequest)
 
       expect(ip).toBe('127.0.0.1')
-
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
       process.env.NEXT_TRUST_PROXY = originalTrustProxy
     })
 
@@ -295,7 +294,7 @@ describe('Race Condition Security Tests', () => {
       const originalEnv = process.env.NODE_ENV
       const originalTrustProxy = process.env.NEXT_TRUST_PROXY
 
-      process.env.NODE_ENV = 'production'
+      ;(process.env as any).NODE_ENV = 'production'
       process.env.NEXT_TRUST_PROXY = 'false'
 
       const mockRequest = new Request('https://example.com')
@@ -303,8 +302,7 @@ describe('Race Condition Security Tests', () => {
 
       // SECURITY FIX: No longer returns 127.0.0.1 in production
       expect(ip).toBe('unknown')
-
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
       process.env.NEXT_TRUST_PROXY = originalTrustProxy
     })
 

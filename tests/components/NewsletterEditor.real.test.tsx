@@ -27,11 +27,11 @@ vi.mock('@tiptap/extension-placeholder', () => ({
 }))
 
 import { NewsletterEditor } from '@/components/newsletter-editor'
-import { useEditor } from '@tiptap/react'
+import { useEditor, Editor } from '@tiptap/react'
 
 const mockUseEditor = vi.mocked(useEditor)
 
-// Mock editor instance
+// Mock editor instance - cast to Editor to satisfy type checker
 const mockEditor = {
   commands: {
     setContent: vi.fn(),
@@ -40,6 +40,12 @@ const mockEditor = {
   getText: vi.fn(() => 'Test newsletter content'),
   on: vi.fn(),
   destroy: vi.fn(),
+} as unknown as Editor & {
+  commands: { setContent: ReturnType<typeof vi.fn> }
+  setEditable: ReturnType<typeof vi.fn>
+  getText: ReturnType<typeof vi.fn>
+  on: ReturnType<typeof vi.fn>
+  destroy: ReturnType<typeof vi.fn>
 }
 
 describe('NewsletterEditor - Real Tests', () => {
@@ -59,7 +65,7 @@ describe('NewsletterEditor - Real Tests', () => {
     })
 
     it('should show loading skeleton when editor is not ready', () => {
-      mockUseEditor.mockReturnValue(null)
+      mockUseEditor.mockReturnValue(null as unknown as Editor)
 
       const { container } = render(
         <NewsletterEditor content="" onChange={mockOnChange} />
@@ -114,8 +120,8 @@ describe('NewsletterEditor - Real Tests', () => {
     it('should set placeholder text', () => {
       render(<NewsletterEditor content="" onChange={mockOnChange} />)
 
-      const call = mockUseEditor.mock.calls[0][0]
-      const placeholderExt = call.extensions.find(
+      const call = mockUseEditor.mock.calls[0][0] as any
+      const placeholderExt = call.extensions?.find(
         (ext: any) => ext.name === 'placeholder'
       )
 
@@ -150,11 +156,11 @@ describe('NewsletterEditor - Real Tests', () => {
     it('should call onChange when editor content updates', () => {
       render(<NewsletterEditor content="" onChange={mockOnChange} />)
 
-      const config = mockUseEditor.mock.calls[0][0]
+      const config = mockUseEditor.mock.calls[0][0] as any
       const mockEditorForUpdate = {
         getText: vi.fn(() => 'Updated content'),
       }
-      config.onUpdate({ editor: mockEditorForUpdate })
+      config.onUpdate?.({ editor: mockEditorForUpdate })
 
       expect(mockOnChange).toHaveBeenCalledWith('Updated content')
     })
@@ -213,8 +219,8 @@ describe('NewsletterEditor - Real Tests', () => {
     it('should configure editor with proper CSS classes', () => {
       render(<NewsletterEditor content="" onChange={mockOnChange} />)
 
-      const config = mockUseEditor.mock.calls[0][0]
-      const classes = config.editorProps.attributes.class
+      const config = mockUseEditor.mock.calls[0][0] as any
+      const classes = config.editorProps?.attributes?.class as string
 
       expect(classes).toContain('prose')
       expect(classes).toContain('min-h-[300px]')

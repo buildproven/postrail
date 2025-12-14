@@ -160,8 +160,8 @@ describe('RBAC Integration - API Routes', () => {
       vi.mocked(ssrfProtection.getClientIP).mockReturnValue('127.0.0.1')
       vi.mocked(ssrfProtection.checkRateLimit).mockResolvedValue({
         allowed: true,
-        retryAfter: null,
-        reason: null,
+        retryAfter: undefined,
+        reason: undefined,
       })
 
       // Non-admin user
@@ -198,18 +198,18 @@ describe('RBAC Integration - API Routes', () => {
       vi.mocked(ssrfProtection.getClientIP).mockReturnValue('127.0.0.1')
       vi.mocked(ssrfProtection.checkRateLimit).mockResolvedValue({
         allowed: true,
-        retryAfter: null,
-        reason: null,
+        retryAfter: undefined,
+        reason: undefined,
       })
 
       vi.mocked(ssrfProtection.getStats).mockReturnValue({
         activeUserLimits: 30,
         activeIPLimits: 25,
         allowedPorts: [80, 443],
-        blockedDomains: ['example.com'],
+        blockedDomains: 5,
         rateLimits: {
-          requestsPerMinute: 5,
-          requestsPerHour: 20,
+          userRequestsPerMinute: 5,
+          ipRequestsPerMinute: 10,
         },
         timestamp: Date.now(),
       })

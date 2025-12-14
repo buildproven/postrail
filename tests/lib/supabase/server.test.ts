@@ -78,7 +78,7 @@ describe('lib/supabase/server', () => {
 
       await createClient()
 
-      const cookieConfig = mockCreateServerClient.mock.calls[0][2]
+      const cookieConfig = mockCreateServerClient.mock.calls[0][2] as any
 
       // Test setAll
       const cookiesToSet = [
@@ -102,7 +102,7 @@ describe('lib/supabase/server', () => {
 
       await createClient()
 
-      const cookieConfig = mockCreateServerClient.mock.calls[0][2]
+      const cookieConfig = mockCreateServerClient.mock.calls[0][2] as any
 
       // Should not throw when setAll fails
       expect(() => {
