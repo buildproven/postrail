@@ -8,17 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Docs refresh (stack, API surface, architecture, deployment, testing, agent guide)
-- Platform integrations: LinkedIn/Facebook OAuth + posting; Twitter BYOK maintained
-- Scheduling/publish via QStash (posts/schedule + queues/publish)
-- Stripe billing (checkout, portal, status, webhook) with feature gating + service keys
-- Supabase service APIs for client metrics and bulk posts (Growth Autopilot)
-- Zod schemas for request validation; rate limiter and SSRF hardening
+- ROADMAP.md for strategic direction
+- Updated CLAUDE.md with improved commands and architecture docs
+
+## [0.2.0] - 2025-12-13
+
+### Added
+
+- **Stripe Billing System**
+  - BillingService wrapper class (`lib/billing.ts`)
+  - Multi-tier subscriptions (Standard $29/mo, Growth $59/mo)
+  - Stripe webhook handler (`app/api/webhooks/stripe/route.ts`)
+  - Billing portal and status endpoints
+  - Feature gating by subscription tier (`lib/feature-gate.ts`)
+  - Comprehensive Zod validation schemas (`lib/schemas.ts`)
+  - Billing database migration
 
 ### Changed
 
-- Upgraded to Next.js 16 + Tailwind v4; Turbopack for dev
-- Tech stack docs now reflect Redis-backed rate limiting and Sentry gating
+- RBAC now integrated with subscription tiers
+- Sentry SDK installed and configured
 
 ## [0.1.0] - 2025-11-29
 

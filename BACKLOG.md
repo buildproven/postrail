@@ -1,8 +1,8 @@
 # postrail - Priority Actions
 
-**Audit Date:** 2025-12-15  
-**Status:** Aligned | **Priority:** HIGH  
-**Key Gaps:** Production readiness (billing + scheduling), observability config
+**Audit Date:** 2025-12-15
+**Status:** Billing Ready | **Priority:** REVENUE
+**Key Gap:** Production activation + retention emails
 
 ## Recent Work
 
@@ -10,26 +10,64 @@
 - **2025-12-13**: Stripe billing (checkout/portal/status + webhook), feature gating, Zod schemas
 - **2025-12-12**: Platform integrations (LinkedIn/Facebook OAuth + posting), QStash scheduling + publish webhook, service-key auth for Growth Autopilot
 
-## Critical (Do First)
+---
 
-- [ ] Run billing migrations in prod (`supabase/migrations/20251213_billing_columns.sql`)
-- [ ] Configure Stripe products/prices + webhook endpoint (portal/checkout/status live)
-- [ ] Configure QStash URLs + signing keys in prod (`/api/generate-posts/process`, `/api/queues/publish`)
-- [ ] Set Sentry DSN/ENV per stage (server + browser) and validate error capture
-- [ ] Verify Redis-backed rate limiting in prod (`RATE_LIMIT_MODE=redis`, Upstash creds)
+## Prioritized by Value
 
-## High Priority
+### 1. Revenue Activation (Manual - Dashboard Work)
 
-- [ ] Add service-key audit dashboard (usage, rate limits, client scopes)
-- [ ] Add usage analytics dashboard (posts generated/scheduled/published per platform)
-- [ ] Email alerts for trial expiry and billing failures
-- [ ] Harden publish idempotency (double-submit + QStash retry paths)
+> Blocking all paid conversions. Do these first.
 
-## Medium Priority
+- [ ] Run SQL migration in Supabase Dashboard
+- [ ] Create Stripe products (Standard $29/mo, Growth $59/mo)
+- [ ] Copy price IDs to env vars (`STRIPE_PRICE_STANDARD`, `STRIPE_PRICE_GROWTH`)
+- [ ] Set up Stripe webhook → `https://postrail.com/api/webhooks/stripe`
+- [ ] Set `SENTRY_DSN` in Vercel
 
-- [ ] Subscription renewal reminders + receipts
-- [ ] Improve Sentry breadcrumbs on API routes (platform/billing)
-- [ ] Add smoke E2E for import → generate → schedule → publish (Playwright)
+### 2. Trial Conversion Emails (High Value - Reduces Churn)
+
+> Users who don't know trial is expiring = lost revenue
+
+- [ ] Trial expiry warning (3 days before) - Email via Resend
+- [ ] Trial expired notification - Prompt to upgrade
+- [ ] Welcome email with quick-start guide
+
+### 3. Usage Analytics Dashboard (Medium-High Value)
+
+> Shows users their ROI, increases upgrade likelihood
+
+- [ ] Generation history with platform breakdown
+- [ ] Posts published vs scheduled
+- [ ] Usage vs limits visualization (trial/paid)
+
+### 4. Post-Purchase Retention (Medium Value)
+
+> Stripe handles basics, but proactive = lower churn
+
+- [ ] Subscription renewal reminder (7 days before)
+- [ ] Payment failed recovery email
+- [ ] Upgrade prompts when hitting limits
+
+### 5. Developer Experience (Low Priority)
+
+> Only if debugging becomes painful
+
+- [ ] Service layer abstraction (refactor)
+- [ ] Sentry breadcrumbs for error context
+
+---
+
+## Completed
+
+- [x] Trial system (3/day, 10 total, 14-day)
+- [x] Usage tracking and rate limiting
+- [x] Public demo route (3/month per IP)
+- [x] Stripe billing infrastructure
+- [x] Subscription-based feature gating
+- [x] BillingService wrapper class
+- [x] Webhook handler `/api/webhooks/stripe`
+- [x] Sentry SDK installed
+- [x] Zod request/response validation
 
 ## Notes
 
