@@ -1,44 +1,35 @@
 # Repository Guidelines
 
-## Project Structure & Modules
+## Stack & Runtime
 
-- `app/` Next.js App Router pages, layouts, and server actions; keep route-level components colocated with page-specific styles.
-- `components/` shared React components; prefer feature folders to avoid a single mega-index.
-- `lib/` domain helpers (Supabase, AI, schedulers), `data/` static seeds/config, `scripts/` automation, `middleware.ts` edge guards, `next.config.ts` build settings.
-- `tests/` unit/integration (Vitest), `e2e/` Playwright specs; `docs/` architecture/testing/deploy notes; design tokens live in `components.json`.
+- Next.js 16 (App Router) with TypeScript strict, Tailwind v4 + shadcn/ui, Supabase (Postgres + Auth), Stripe billing, Upstash QStash + Redis for scheduling, Sentry telemetry (client/edge/server configs).
+- Node 20+ required (Volta pinned to 20.11.1); npm 10+. Keep `next.config.ts` and middleware intact for routing, headers, and observability.
 
-## Build, Test, and Development Commands
+## Project Structure
 
-- `npm run dev` start Next.js with Turbopack.
-- `npm run build` production build; `npm start` serves the build.
-- `npm run lint` ESLint; `npm run type-check` TS without emit.
-- `npm test` Vitest suite; `npm run test:fast|medium|slow` tiered subsets; `npm run test:coverage` generates coverage.
-- `npm run test:e2e` Playwright; add `:ui` or `:headed` to debug.
-- `npm run security:audit` dependency audit; `npm run security:secrets` quick secret scan.
-- Pre-push: `npm run validate:pre-push` (lint + stylelint + format check + tests + smoke).
+- `app/` routes and API handlers: billing (`api/billing/*`), platform OAuth/posting for Twitter/LinkedIn/Facebook, post generation/scheduling (`api/posts/*`, `api/queues/publish`), and dashboard pages (platforms, settings, newsletters).
+- `components/` shared UI (setup guides, scheduler, shadcn `ui/dialog`); keep feature-specific pieces colocated with their routes.
+- `lib/` domain helpers: Supabase clients (`supabase/{client,server,service}.ts`), `billing.ts`, `service-auth.ts`, `feature-gate.ts`, `schemas.ts`, `trial-guard.ts`, rate limiters (`rate-limiter.ts`, `redis-rate-limiter.ts`), `platforms/qstash.ts`, `ssrf-protection.ts`, `crypto.ts`, logging/observability.
+- `supabase/` migrations and full schema; `tests/` Vitest suites (API/platform real tests, contracts, security, smoke); `e2e/` Playwright specs; `docs/` API/testing/architecture notes.
 
-## Coding Style & Naming Conventions
+## Commands
 
-- TypeScript-first; React components in `.tsx`. Use Prettier + ESLint; run `npm run lint:fix` before pushing.
-- Components/contexts/providers: `PascalCase`; hooks: `useCamelCase`; utilities/constants: `camelCase`/`SCREAMING_SNAKE_CASE`.
-- Keep server/client boundaries explicit with `\"use client\"` where needed; avoid mixing in shared modules.
-- Tailwind for styling; favor composition (`class-variance-authority`, `tailwind-merge`) over ad-hoc inline styles.
+- Dev/build: `npm run dev` (Turbopack), `npm run build`, `npm start`.
+- Quality: `npm run lint`, `npm run type-check` (+ `type-check:tests`), `npm run lint:fix`, `npm run format[:check]`.
+- Tests (Vitest): `npm test`, tiered `test:fast|medium|slow`, `test:smoke`, `test:contracts` (ENABLE_CONTRACT_TESTS), `test:coverage`, `test:smart` (strategy helper). E2E: `npm run test:e2e` (`:ui`/`:headed` variants).
+- Security/validation: `npm run security:audit`, `npm run security:secrets`, `npm run validate:pre-push` (lint + stylelint + format check + tests + smoke), `npm run quality:ci`.
 
-## Testing Guidelines
+## Coding & Testing Conventions
 
-- Vitest for units/integration (`*.test.tsx?/ts`); prefer colocating near source or under `tests/`.
-- Use Playwright for user flows in `e2e/`; align fixtures with `playwright.config.ts`.
-- Aim for coverage on new code; add contract tests under `tests/contracts` when touching integrations.
-- Run `npm run test:smart` on PRs to pick the right subset when iterating.
-
-## Commit & Pull Request Guidelines
-
-- Commit messages are short and action-oriented (e.g., `fix:`, `chore:`, `feat:`) as seen in history; batch related changes.
-- PRs should describe scope, risks, and validation; link issues/cards; include screenshots for UI and logs for backend changes.
-- Ensure `npm run validate:pre-push` is green; mention any skipped checks and why.
+- TypeScript-first; components `PascalCase`, hooks `useCamelCase`, utilities/constants `camelCase`/`SCREAMING_SNAKE_CASE`. Preserve `use client` boundaries and avoid sharing client-only code with server modules.
+- Tailwind + `class-variance-authority`/`tailwind-merge` for composition; keep styling colocated with route/feature components.
+- Prefer Vitest + MSW for unit/integration; reserve `*.real.test.ts` for intentional integration cases and gate external calls via envs/mocks when possible. Add contract tests for integrations and smoke coverage for deploy risks.
 
 ## Security & Configuration
 
-- Copy `.env.local.example` to `.env.local`; never commit secrets. Keep API keys out of logs.
-- Sentry configs (`sentry.*.config.ts`) and middleware enforce observability/edge rules—preserve them when refactoring.
-- Use `npm run security:audit` before releases and when bumping dependencies; prefer minimal surface changes in `next.config.ts`.
+- Use `.env.local` (copy from `.env.local.example`); never commit secrets. Keep encryption for platform credentials (`crypto.ts`), rate limiting (`rate-limiter.ts`/`redis-rate-limiter.ts`), SSRF protection (`ssrf-protection.ts`), and trial/feature gating intact on API routes.
+- Sentry configs (`sentry.*.config.ts`) and logging should remain wired when refactoring. Prefer QStash for scheduled/publish flows instead of ad-hoc cron/queues.
+
+## Commits & PRs
+
+- Short, action-oriented commit messages (`feat:`, `fix:`, `chore:`). Describe scope/risks/validation in PRs; include screenshots for UI and logs for backend changes. Ensure `npm run validate:pre-push` passes or note any intentional skips.

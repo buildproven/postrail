@@ -2,7 +2,7 @@
 
 ## Overview
 
-PostRail uses a comprehensive multi-layer testing strategy to ensure quality, security, and reliability. The test suite includes unit tests, integration tests, E2E tests, and security-focused tests.
+Tests cover unit, integration, contract, security, and E2E flows across API routes, platform integrations, scheduling, and billing.
 
 ## Test Stack
 
@@ -13,251 +13,54 @@ PostRail uses a comprehensive multi-layer testing strategy to ensure quality, se
 | **MSW**             | API mocking              |
 | **Testing Library** | React component testing  |
 
-## Running Tests
+## Commands
 
 ```bash
-# All unit/integration tests
-npm test
-
-# Watch mode for development
-npm run test:watch
-
-# E2E tests (requires build)
-npm run test:e2e
-
-# Security-focused tests
-npm run test:security
-
-# Full test suite with coverage
-npm run test:all
-
-# Type checking
-npm run type-check
+npm test                        # Vitest (all)
+npm run test:fast|medium|slow   # Tiered Vitest subsets
+npm run test:smoke              # Smoke subset
+npm run test:contracts          # Contract tests (ENABLE_CONTRACT_TESTS=true)
+npm run test:coverage           # Coverage
+npm run test:e2e                # Playwright
+npm run test:e2e:ui|:headed     # E2E debug modes
+npm run test:smart              # Chooses subset based on git diff
+npm run lint && npm run type-check && npm run type-check:tests
+npm run validate:pre-push       # Lint + stylelint + format check + tests + smoke
 ```
 
-## Test Structure
+## Test Layout
 
 ```
 tests/
-├── api/                    # API route tests
-│   ├── generate-posts.real.test.ts
-│   ├── twitter-connect.real.test.ts
-│   ├── facebook-post.test.ts
-│   └── rbac-integration.test.ts
-├── components/             # React component tests
-│   └── NewsletterEditor.real.test.tsx
-├── lib/                    # Library/utility tests
-│   ├── supabase/          # Supabase client tests
-│   ├── rate-limiter.test.ts
-│   └── ssrf-protection.test.ts
-├── security/               # Security-focused tests
-│   ├── race-conditions.test.ts
-│   └── twitter-idempotency.test.ts
-├── smoke/                  # Deployment smoke tests
-│   └── deployment.test.ts
-├── e2e/                    # Playwright E2E tests
-│   └── critical-path.spec.ts
-├── mocks/                  # Shared test mocks
-│   ├── supabase.ts
-│   └── twitter-api.ts
-└── setup.ts               # Global test setup
+├── api/          # API routes: generate-posts, scrape, twitter/linkedin/facebook OAuth+post, RBAC, bulk
+├── components/   # UI tests (e.g., NewsletterEditor)
+├── contracts/    # Contract tests (gated by ENABLE_CONTRACT_TESTS)
+├── lib/          # Supabase clients, rate limiters, SSRF protection, middleware, service auth
+├── security/     # Race conditions, idempotency
+├── smoke/        # Deployment smoke checks
+├── mocks/        # Shared mocks (supabase, twitter, etc.)
+└── setup.ts
+e2e/
+├── critical-path.spec.ts
+└── api-integration.spec.ts
 ```
 
-## Test Categories
+## Categories & Patterns
 
-### Unit Tests
+- **Unit/Integration (Vitest)**: Default `*.test.ts` with MSW/mocks; avoid real network. Use `vi.stubEnv` for envs.
+- **Real/External (`*.real.test.ts`)**: Intentional external calls; require valid OAuth/Upstash credentials. Skip or guard in CI unless configured.
+- **Contracts**: Enable with `ENABLE_CONTRACT_TESTS=true` when validating integration contracts.
+- **E2E (Playwright)**: Requires built app and seeded auth session. Run `npm run test:e2e[:ui|:headed]`.
+- **Coverage Targets**: >80% statements/functions/lines; >75% branches. `npm run test:coverage`.
 
-Test individual functions and modules in isolation.
+## Environment Notes
 
-```typescript
-// Example: Rate limiter test
-describe('RateLimiter', () => {
-  it('should enforce per-user limits', async () => {
-    const result = await rateLimiter.checkRateLimit('user-123')
-    expect(result.allowed).toBe(true)
-  })
-})
-```
-
-### Integration Tests
-
-Test API routes with mocked external dependencies.
-
-```typescript
-// Example: API route test
-describe('/api/generate-posts', () => {
-  it('should generate posts for authenticated users', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue(mockUser)
-    const response = await POST(request)
-    expect(response.status).toBe(200)
-  })
-})
-```
-
-### Security Tests
-
-Verify security controls work under adversarial conditions.
-
-```typescript
-// Example: Race condition test
-describe('Race Condition Security', () => {
-  it('should prevent concurrent rate limit bypass', async () => {
-    const promises = Array(50)
-      .fill(null)
-      .map(() => ssrfProtection.checkRateLimit(userId, clientIP))
-    const results = await Promise.all(promises)
-    const allowed = results.filter(r => r.allowed).length
-    expect(allowed).toBeLessThanOrEqual(5)
-  })
-})
-```
-
-### E2E Tests
-
-Test critical user flows in real browser.
-
-```typescript
-// Example: Playwright test
-test('newsletter creation flow', async ({ page }) => {
-  await page.goto('/dashboard')
-  await page.fill('[data-testid="newsletter-title"]', 'Test')
-  await page.click('[data-testid="generate-button"]')
-  await expect(page.locator('[data-testid="posts-list"]')).toBeVisible()
-})
-```
-
-### Smoke Tests
-
-Verify deployment configuration is correct.
-
-```typescript
-// Example: Config validation
-describe('Deployment Config', () => {
-  it('should have valid package.json', () => {
-    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'))
-    expect(pkg.scripts.build).toBeDefined()
-  })
-})
-```
-
-## Mocking Patterns
-
-### Supabase Mock
-
-```typescript
-import {
-  createMockSupabaseClient,
-  mockSupabaseAuthUser,
-} from '../mocks/supabase'
-
-const mockSupabase = createMockSupabaseClient()
-mockSupabase.auth.getUser.mockResolvedValue(
-  mockSupabaseAuthUser('user-123', 'test@example.com')
-)
-vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
-```
-
-### Twitter API Mock
-
-```typescript
-import { createMockTwitterClient } from '../mocks/twitter-api'
-
-mockTwitterClientInstance = createMockTwitterClient()
-mockTwitterClientInstance.v2.tweet.mockResolvedValue({
-  data: { id: '123', text: 'Posted!' },
-})
-```
-
-### Environment Variables
-
-```typescript
-// Use vi.stubEnv for environment mocking
-vi.stubEnv('NODE_ENV', 'production')
-vi.stubEnv('NEXT_TRUST_PROXY', 'true')
-
-// Clean up after test
-vi.unstubAllEnvs()
-```
-
-## Coverage Requirements
-
-| Category   | Target |
-| ---------- | ------ |
-| Statements | >80%   |
-| Branches   | >75%   |
-| Functions  | >80%   |
-| Lines      | >80%   |
-
-Run coverage report:
-
-```bash
-npm run test:coverage
-```
-
-## CI/CD Integration
-
-Tests run automatically on:
-
-- Pull request creation/update
-- Push to main branch
-- Scheduled security audits (weekly)
-
-### GitHub Actions Workflow
-
-```yaml
-- name: Run Tests
-  run: |
-    npm run lint
-    npm run type-check
-    npm test
-    npm run test:e2e
-```
-
-## Writing New Tests
-
-### Best Practices
-
-1. **Test behavior, not implementation** - Focus on what the code does, not how
-2. **Use descriptive names** - Test names should document expected behavior
-3. **Isolate tests** - Each test should be independent
-4. **Mock external dependencies** - Don't call real APIs in unit tests
-5. **Test edge cases** - Include error paths and boundary conditions
-
-### Test File Naming
-
-- Unit tests: `*.test.ts`
-- Integration tests: `*.real.test.ts`
-- E2E tests: `*.spec.ts`
-- Security tests: Place in `tests/security/`
-
-### Security Test Requirements
-
-Security-critical code must have tests for:
-
-- Race conditions under concurrent load
-- Input validation edge cases
-- Authentication bypass attempts
-- Rate limit enforcement
-- SSRF protection
+- Rate limiter tests can use memory mode; set `RATE_LIMIT_MODE=memory` locally if Redis is unavailable.
+- Platform real tests require platform credentials and Supabase service role keys.
+- QStash publish/schedule flows require `QSTASH_*` vars; Stripe webhook tests require `STRIPE_WEBHOOK_SECRET`.
 
 ## Troubleshooting
 
-### Common Issues
-
-**Tests timeout**: Increase timeout in vitest.config.ts or use `timeout` option
-
-**Mock not working**: Ensure mocks are defined before imports with `vi.mock()`
-
-**Async issues**: Always `await` async operations and use proper assertions
-
-**Environment conflicts**: Use `vi.stubEnv()` instead of direct `process.env` assignment
-
-### Debug Mode
-
-```bash
-# Run single test file with verbose output
-npm test -- tests/api/generate-posts.real.test.ts --verbose
-
-# Run with debug logs
-DEBUG=* npm test
-```
+- **Timeouts**: Increase timeouts in Vitest/Playwright config or narrow test selection.
+- **Mocks not applied**: Ensure `vi.mock` is defined before imports; clear mocks between tests.
+- **Flaky network**: Skip `.real.test.ts` when credentials are absent; favor mocks for CI.

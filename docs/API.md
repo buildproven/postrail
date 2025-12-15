@@ -2,377 +2,75 @@
 
 ## Overview
 
-PostRail exposes RESTful API endpoints for newsletter management, AI content generation, and social media publishing. All endpoints require authentication unless noted.
+PostRail exposes RESTful endpoints for AI post generation, newsletter ingestion, scheduling, and platform publishing. User-facing endpoints require a Supabase session; service endpoints use scoped service keys.
 
 ## Authentication
 
-All API requests require a valid Supabase session. The session is automatically managed via cookies after login.
-
-```typescript
-// Session is validated via Supabase Auth
-const supabase = await createClient()
-const {
-  data: { user },
-  error,
-} = await supabase.auth.getUser()
-```
+- **Supabase session (default)**: Cookie-based session for all user APIs.
+- **Service API keys**: `Authorization: Bearer vbl_sk_*` for Growth Autopilot endpoints (`/api/posts/bulk`, `/api/clients/[clientId]/metrics`). Keys are hashed and permission-scoped.
+- **Webhooks**: Stripe webhooks verify `STRIPE_WEBHOOK_SECRET`; QStash callbacks verify `Upstash-Signature`.
 
 ## Rate Limits
 
-| Endpoint Category       | Limit       | Window     |
-| ----------------------- | ----------- | ---------- |
-| AI Generation           | 3 requests  | per minute |
-| AI Generation           | 10 requests | per hour   |
-| URL Scraping (per user) | 5 requests  | per minute |
-| URL Scraping (per IP)   | 10 requests | per minute |
-
----
+| Endpoint Category       | Limit                | Notes                                |
+| ----------------------- | -------------------- | ------------------------------------ |
+| AI Generation           | 3/min, 10/hour       | Redis-backed with in-memory fallback |
+| URL Scraping (per user) | 5/min                | SSRF protection + IP throttling      |
+| URL Scraping (per IP)   | 10/min               |                                      |
+| Service API keys        | Per-key (DB defined) | Enforced via `service_keys` limits   |
 
 ## Core Endpoints
 
-### POST /api/generate-posts
-
-Generate AI-powered social media posts from newsletter content.
+### AI Generation
 
-**Request Body:**
+- `POST /api/generate-posts` – Generate posts for a newsletter (title/content/url, platform list). Returns newsletter + post drafts.
+- `POST /api/generate-posts/queue` / `POST /api/generate-posts/process` – Internal queue + QStash worker.
+- `GET /api/generate-posts/status?jobId=...` – Check queued job status.
 
-```json
-{
-  "title": "Newsletter Title",
-  "content": "Newsletter content text...",
-  "platforms": ["linkedin", "twitter", "threads", "facebook"],
-  "url": "https://example.com/newsletter" // optional, for scraping
-}
-```
+### Scraping
 
-**Response (200):**
+- `POST /api/scrape` – Fetch newsletter content with SSRF protection. Auth required. Enforces per-user/IP limits.
 
-```json
-{
-  "success": true,
-  "newsletterId": "uuid",
-  "posts": [
-    {
-      "id": "uuid",
-      "platform": "linkedin",
-      "post_type": "pre_cta",
-      "content": "Generated post content...",
-      "character_count": 280,
-      "status": "draft"
-    }
-  ]
-}
-```
+### Posts & Scheduling
 
-**Errors:**
+- `POST /api/posts/schedule` – Schedule a single post (`postId`, `scheduledTime`) or bulk schedule all posts for a newsletter (`newsletterId`, `newsletterPublishDate`). Uses QStash when configured.
+- `POST /api/posts/bulk` – Service-only bulk post creation for Growth Autopilot clients (max 50 posts/request, `clientId`, array of posts). Requires `create_post` permission.
+- `POST /api/queues/publish` – QStash webhook to publish scheduled posts to connected platforms; requires `Upstash-Signature`.
 
-- `401` - Unauthorized
-- `422` - Validation error (missing content)
-- `429` - Rate limit exceeded
+### Platform Connections & Posting
 
----
+**Twitter/X**
 
-### POST /api/scrape
+- `GET /api/platforms/twitter/auth` → `GET /api/platforms/twitter/callback` – OAuth flow.
+- `POST /api/platforms/twitter/connect` – BYOK credentials (app key/secret, access token/secret).
+- `GET /api/platforms/twitter/connect` – Connection status.
+- `POST /api/platforms/twitter/post` – Publish a post (uses stored credentials).
 
-Extract content from a URL with SSRF protection.
+**LinkedIn**
 
-**Request Body:**
+- `GET /api/platforms/linkedin/auth` → `GET /api/platforms/linkedin/callback` – OAuth flow.
+- `GET /api/platforms/linkedin/connect` – Connection status.
+- `POST /api/platforms/linkedin/post` – Publish post.
 
-```json
-{
-  "url": "https://example.com/article"
-}
-```
+**Facebook**
 
-**Response (200):**
+- `GET /api/platforms/facebook/auth` → `GET /api/platforms/facebook/callback` – OAuth flow for Pages.
+- `GET /api/platforms/facebook/connect` – Page connection status.
+- `POST /api/platforms/facebook/post` – Publish Page post.
 
-```json
-{
-  "success": true,
-  "title": "Article Title",
-  "content": "Extracted article content...",
-  "excerpt": "Brief summary..."
-}
-```
+### Billing
 
-**Errors:**
+- `POST /api/billing/checkout` – Create Stripe checkout session for `standard` or `growth` tiers.
+- `POST /api/billing/portal` – Customer portal session.
+- `GET /api/billing/status` – Current subscription status for authenticated user.
+- `POST /api/webhooks/stripe` – Stripe webhook (requires `STRIPE_WEBHOOK_SECRET`).
 
-- `400` - Invalid URL or blocked domain
-- `429` - Rate limit exceeded
-- `403` - SSRF protection triggered
+### Metrics & Admin
 
----
-
-## Platform Connection Endpoints
-
-### Twitter/X
-
-#### POST /api/platforms/twitter/connect
-
-Connect Twitter account using API credentials (BYOK).
-
-**Request Body:**
-
-```json
-{
-  "apiKey": "your-api-key",
-  "apiSecret": "your-api-secret",
-  "accessToken": "your-access-token",
-  "accessTokenSecret": "your-access-token-secret"
-}
-```
-
-**Response (200):**
-
-```json
-{
-  "success": true,
-  "username": "@handle",
-  "name": "Display Name"
-}
-```
-
-#### GET /api/platforms/twitter/connect
-
-Check Twitter connection status.
-
-**Response (200):**
-
-```json
-{
-  "connected": true,
-  "username": "@handle"
-}
-```
-
-#### DELETE /api/platforms/twitter/connect
-
-Disconnect Twitter account.
-
-#### POST /api/platforms/twitter/post
-
-Publish post to Twitter.
-
-**Request Body:**
-
-```json
-{
-  "socialPostId": "uuid",
-  "content": "Tweet content"
-}
-```
-
-**Response (200):**
-
-```json
-{
-  "success": true,
-  "tweetId": "1234567890",
-  "url": "https://twitter.com/user/status/1234567890"
-}
-```
-
----
-
-### LinkedIn
-
-#### GET /api/platforms/linkedin/auth
-
-Initiate LinkedIn OAuth flow. Redirects to LinkedIn authorization.
-
-#### GET /api/platforms/linkedin/callback
-
-OAuth callback handler. Exchanges code for tokens.
-
-#### GET /api/platforms/linkedin/connect
-
-Check LinkedIn connection status.
-
-#### DELETE /api/platforms/linkedin/connect
-
-Disconnect LinkedIn account.
-
-#### POST /api/platforms/linkedin/post
-
-Publish post to LinkedIn.
-
-**Request Body:**
-
-```json
-{
-  "socialPostId": "uuid",
-  "content": "Post content"
-}
-```
-
----
-
-### Facebook
-
-#### GET /api/platforms/facebook/auth
-
-Initiate Facebook OAuth flow.
-
-#### GET /api/platforms/facebook/callback
-
-OAuth callback handler.
-
-#### GET /api/platforms/facebook/connect
-
-Check Facebook Page connection status.
-
-#### DELETE /api/platforms/facebook/connect
-
-Disconnect Facebook Page.
-
-#### POST /api/platforms/facebook/post
-
-Publish post to Facebook Page.
-
-**Request Body:**
-
-```json
-{
-  "socialPostId": "uuid",
-  "content": "Post content"
-}
-```
-
----
-
-## Queue & Scheduling
-
-### POST /api/posts/schedule
-
-Schedule a post for future publishing.
-
-**Request Body:**
-
-```json
-{
-  "socialPostId": "uuid",
-  "scheduledTime": "2024-01-15T10:00:00Z"
-}
-```
-
-### POST /api/queues/publish
-
-QStash webhook endpoint for processing scheduled posts. (Internal use)
-
----
-
-## Billing
-
-### POST /api/billing/checkout
-
-Create Stripe checkout session.
-
-**Request Body:**
-
-```json
-{
-  "priceId": "price_xxx",
-  "successUrl": "/dashboard?success=true",
-  "cancelUrl": "/pricing"
-}
-```
-
-**Response (200):**
-
-```json
-{
-  "url": "https://checkout.stripe.com/..."
-}
-```
-
----
-
-## Monitoring & Status
-
-### GET /api/health
-
-System health check.
-
-**Response (200):**
-
-```json
-{
-  "status": "healthy",
-  "timestamp": "2024-01-15T10:00:00Z",
-  "checks": {
-    "database": "ok",
-    "redis": "ok"
-  }
-}
-```
-
-### GET /api/monitoring
-
-System metrics and observability data. (Admin only)
-
-### GET /api/rate-limit-status
-
-Current rate limit status for authenticated user.
-
-**Response (200):**
-
-```json
-{
-  "aiGeneration": {
-    "remaining": 2,
-    "resetAt": "2024-01-15T10:01:00Z"
-  }
-}
-```
-
-### GET /api/ssrf-status
-
-SSRF protection status and statistics. (Admin only)
-
-### GET /api/trial-status
-
-Trial usage status for current user.
-
-**Response (200):**
-
-```json
-{
-  "isTrialing": true,
-  "daysRemaining": 10,
-  "generationsToday": 2,
-  "generationsTotal": 5,
-  "limits": {
-    "perDay": 3,
-    "total": 10
-  }
-}
-```
-
-### GET /api/twitter-status
-
-Twitter API connection health check.
-
----
-
-## Generation Queue (Internal)
-
-### GET /api/generate-posts/status
-
-Check generation job status.
-
-**Query Parameters:**
-
-- `jobId` - Generation job ID
-
-### POST /api/generate-posts/queue
-
-Queue a generation job. (Internal use)
-
-### POST /api/generate-posts/process
-
-Process queued generation job. (QStash callback)
-
----
+- `GET /api/clients/[clientId]/metrics` – Service-only aggregated metrics; requires `read_metrics` and client access.
+- `GET /api/health` – Health probe.
+- `GET /api/monitoring` – Observability snapshot.
+- `GET /api/rate-limit-status`, `/api/ssrf-status`, `/api/trial-status`, `/api/twitter-status` – Diagnostics/status endpoints (auth required).
 
 ## Error Response Format
 
@@ -382,7 +80,7 @@ All errors follow a consistent format:
 {
   "error": "Error message",
   "code": "ERROR_CODE",
-  "details": {} // optional additional context
+  "details": {}
 }
 ```
 

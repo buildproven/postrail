@@ -2,10 +2,10 @@
 
 [![CI](https://github.com/vibebuildlab/postrail/actions/workflows/ci.yml/badge.svg)](https://github.com/vibebuildlab/postrail/actions/workflows/ci.yml)
 [![Node.js 20+](https://img.shields.io/badge/node-20%2B-brightgreen)](https://nodejs.org)
-[![Next.js 15](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org)
 
-AI-powered social media automation for newsletter creators. Automatically generate and schedule social media posts to promote your newsletters across LinkedIn, Threads, Facebook, and Twitter.
+AI-powered social media automation for newsletter creators. Automatically generate and schedule social media posts to promote your newsletters across LinkedIn, Facebook, and Twitter/X.
 
 ---
 
@@ -18,12 +18,13 @@ AI-powered social media automation for newsletter creators. Automatically genera
 ## Features
 
 - **AI Post Generation** - Automatically create optimized posts for each platform using Claude AI
-- **Smart Scheduling** - Pre-CTA (before newsletter) and Post-CTA (after newsletter) posting strategy with QStash
+- **Smart Scheduling** - Pre-CTA (before newsletter) and Post-CTA (after newsletter) posting strategy with QStash delivery
 - **Multi-Platform Posting** - Full support for Twitter/X, LinkedIn, and Facebook
-  - OAuth 1-click connect or BYOK (Bring Your Own Keys)
-  - Automated posting via Upstash QStash
+  - OAuth 1-click connect or BYOK (Twitter)
+  - Automated posting and queueing via Upstash QStash
 - **Newsletter Scraping** - Import from beehiiv, Substack, or custom URLs
 - **Character Limit Enforcement** - Never exceed platform limits
+- **Billing Ready** - Stripe checkout, portal, and subscription status APIs
 - **Enterprise Security** - Rate limiting, SSRF protection, comprehensive monitoring
 - **Production-Ready** - Structured logging, metrics collection, health checks, CI/CD
 - **Idempotent Operations** - Prevent duplicate posts and ensure data consistency
@@ -59,12 +60,12 @@ Commercial License - see [LICENSE](LICENSE) for details.
 
 | Layer         | Technology                                    |
 | ------------- | --------------------------------------------- |
-| **Framework** | Next.js 15 (App Router)                       |
+| **Framework** | Next.js 16 (App Router)                       |
 | **Language**  | TypeScript                                    |
 | **Database**  | Supabase (PostgreSQL)                         |
 | **Auth**      | Supabase Auth                                 |
 | **AI**        | Anthropic Claude API                          |
-| **Queue**     | Upstash Redis + QStash                        |
+| **Queue**     | Upstash Redis + QStash (scheduling/publish)   |
 | **Styling**   | Tailwind CSS + shadcn/ui                      |
 | **Testing**   | Vitest + Playwright                           |
 | **Security**  | Rate limiting, SSRF protection, observability |
@@ -104,13 +105,22 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role (server-side tasks)
 - `ANTHROPIC_API_KEY` - Claude API key
+- `STRIPE_SECRET_KEY` - Stripe secret (billing)
+- `STRIPE_PRICE_STANDARD` / `STRIPE_PRICE_GROWTH` - Stripe price IDs
+- `STRIPE_WEBHOOK_SECRET` - Stripe webhook signature secret
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` - Rate limiter backend
+- `QSTASH_TOKEN` / `QSTASH_PROCESS_URL` / `QSTASH_CURRENT_SIGNING_KEY` - Scheduling/publish webhooks
+- `SENTRY_DSN` (or `NEXT_PUBLIC_SENTRY_DSN`) - Observability
 
 **Optional:**
 
 - `LINKEDIN_CLIENT_ID/SECRET` - LinkedIn OAuth
-- `META_APP_ID/SECRET` - Facebook/Threads OAuth
-- `UPSTASH_REDIS_*` - Queue system
+- `META_APP_ID/SECRET` - Facebook OAuth
+- `RATE_LIMIT_MODE` - `auto` (default) | `redis` | `memory` | `disabled`
+- `QSTASH_NEXT_SIGNING_KEY` - Key rotation support
+- `SENTRY_ORG` / `SENTRY_PROJECT` - Sentry upload configuration
 
 ## Usage Example
 
@@ -164,19 +174,19 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 ### Phase 3: Platform Integration
 
 - [x] Twitter/X OAuth + posting (BYOK)
-- [ ] LinkedIn OAuth + posting
+- [x] LinkedIn OAuth + posting
 - [ ] Threads OAuth + posting
-- [ ] Facebook OAuth + posting
+- [x] Facebook OAuth + posting
 
 ### Phase 4: Scheduling
 
-- [ ] Queue system setup
-- [ ] Automated scheduling
-- [ ] Background job processing
+- [x] Queue system setup (QStash)
+- [x] Automated scheduling + publish webhooks
+- [ ] Background job processing hardening
 
 ### Phase 5: Analytics & Polish
 
-- [ ] Analytics dashboard
+- [ ] Analytics dashboard (platform + client views)
 - [ ] Performance tracking
 - [ ] PWA setup
 

@@ -1,213 +1,70 @@
-# Postrail Architecture & Data Flow
+# Postrail Architecture
 
 ## System Overview
 
-Postrail is a secure newsletter-to-social-media automation platform with comprehensive security controls, rate limiting, and observability.
+Postrail turns newsletters into platform-ready social posts with scheduling and billing baked in. Stack: Next.js 16 (App Router) + TypeScript, Supabase (Postgres + Auth), Anthropic for generation, Upstash Redis + QStash for rate limiting and scheduled publishing, Stripe for subscriptions, and Sentry for observability.
 
-## Data Flow Architecture
+## Data Flow
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   User Input    │    │   URL Scraping   │    │ Content Storage │
-│                 │    │                  │    │                 │
-│ • Newsletter URL│────▶│ • SSRF Protection│────▶│ • Supabase DB   │
-│ • Manual Text   │    │ • Rate Limiting  │    │ • Readability   │
-│ • Title/Content │    │ • Port Filtering │    │ • Validation    │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                        │                        │
-         │                        │                        │
-         └────────────────────────┼────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    AI Content Generation                        │
-│                                                                 │
-│ • Rate Limiting (3/min per user, 10/hour per user)            │
-│ • Request Deduplication (content-based hashing)                │
-│ • Queue Management (concurrent request handling)               │
-│ • Claude API Integration (Anthropic)                          │
-│ • Platform-specific tone and formatting                        │
-│ • Character limit optimization                                  │
-└─────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      Content Processing                         │
-│                                                                 │
-│ • Newsletter creation (Supabase transaction)                   │
-│ • Post generation (6 posts: 3 platforms × 2 types)           │
-│ • Database persistence (social_posts table)                    │
-│ • Unique constraints (newsletter_id, platform, post_type)      │
-│ • Status tracking (draft → publishing → published/failed)      │
-└─────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Platform Publishing                          │
-│                                                                 │
-│ • Idempotency Protection (status-based + optimistic locking)   │
-│ • BYOK Credential Management (encrypted in metadata)           │
-│ • Platform APIs (Twitter v2, LinkedIn, Facebook, Threads)      │
-│ • Retry Logic with backoff                                     │
-│ • Duplicate Prevention                                          │
-└─────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              Monitoring & Observability                        │
-│                                                                 │
-│ • Structured Logging (request IDs, user tracking)              │
-│ • Metrics Collection (performance, errors, security events)    │
-│ • Health Checks (error rates, response times, memory usage)    │
-│ • Alerting (rate limit abuse, high error rates, stuck posts)   │
-│ • Status Dashboards (/api/monitoring, /api/*-status)          │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. **Ingest** – User submits newsletter content or URL → `/api/scrape` (SSRF protection + rate limits) → Supabase persists newsletter + posts.
+2. **Generate** – `/api/generate-posts` applies character limits and post-type strategy → drafts stored in `social_posts`.
+3. **Connect** – Users link platforms (Twitter BYOK, LinkedIn/Facebook OAuth) → encrypted credentials in `platform_connections`.
+4. **Schedule** – `/api/posts/schedule` sets `scheduled_time`; QStash queues publish jobs (immediate or delayed).
+5. **Publish** – QStash hits `/api/queues/publish` → posts go to platform APIs → status/idempotency updates.
+6. **Billing & Access** – Stripe checkout/portal + `/api/billing/status`; feature gating via subscription tier and service keys for Growth Autopilot.
 
 ## Security Architecture
 
-### Multi-Layer Protection
+- **Input/Config**: `lib/env-validator.ts` fail-fast config; request schemas in `lib/schemas.ts`.
+- **Auth**: Supabase session for user APIs; service keys (`vbl_sk_*`) for Growth Autopilot (`lib/service-auth.ts`).
+- **Rate Limiting**: Redis-backed (Upstash) with memory fallback; 3/min & 10/hour for AI, SSRF limits 5/min user & 10/min IP.
+- **SSRF Protection**: `lib/ssrf-protection.ts` (DNS resolution, private IP block, port filtering, blocklists).
+- **Idempotency & Integrity**: Content hashing/dedup in rate limiter; DB unique constraints; status-based publish guards.
+- **Observability**: Structured logging + Sentry configs (client/edge/server); status endpoints (`/api/monitoring`, `/api/rate-limit-status`, `/api/ssrf-status`, `/api/twitter-status`, `/api/trial-status`, `/api/health`).
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Security Layers                            │
-│                                                                 │
-│ 1. Input Validation & Environment Protection                   │
-│    • Environment variable validation at startup                │
-│    • Request schema validation                                 │
-│    • Authentication middleware (Supabase Auth)                 │
-│                                                                │
-│ 2. Rate Limiting & Abuse Prevention                           │
-│    • Per-user AI generation limits (3/min, 10/hour)          │
-│    • Per-user + per-IP scraping limits (5/min user, 10/min IP)│
-│    • Request deduplication and queue management               │
-│                                                                │
-│ 3. SSRF Protection (Server-Side Request Forgery)              │
-│    • DNS resolution validation                                │
-│    • Private IP range blocking (RFC1918, cloud metadata)      │
-│    • Port filtering (only 80/443 allowed)                     │
-│    • Domain blocklist (AWS/GCP/Azure metadata endpoints)      │
-│                                                                │
-│ 4. Idempotency & Data Integrity                              │
-│    • Content-based request deduplication                      │
-│    • Database unique constraints                              │
-│    • Optimistic locking for concurrent operations             │
-│    • Status-based replay protection                           │
-│                                                                │
-│ 5. Observability & Incident Response                          │
-│    • Structured logging with request correlation              │
-│    • Security event monitoring and alerting                   │
-│    • Performance metrics and health checks                    │
-│    • Failed operation tracking and debugging                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+## Core Modules
 
-## Component Architecture
+| Module                                          | Purpose                                                                        |
+| ----------------------------------------------- | ------------------------------------------------------------------------------ |
+| `lib/rate-limiter.ts` / `redis-rate-limiter.ts` | AI request limiting, dedup, health checks                                      |
+| `lib/ssrf-protection.ts`                        | URL validation, IP/port blocking, scrape throttling                            |
+| `lib/platforms/qstash.ts`                       | QStash client, scheduling, signature verification                              |
+| `lib/billing.ts`                                | Stripe checkout/portal/status + tier metadata                                  |
+| `lib/service-auth.ts`                           | Scoped service keys + permissions                                              |
+| `lib/feature-gate.ts` / `lib/schemas.ts`        | Feature flags + request validation                                             |
+| `lib/supabase/{client,server,service}.ts`       | Supabase clients (browser, server, service)                                    |
+| `lib/crypto.ts`                                 | Credential encryption/decryption, hashing                                      |
+| `app/api/...`                                   | Route handlers for generation, scrape, billing, scheduling, platform auth/post |
 
-### Core Modules
+## API Surface (high level)
 
-| Module                                             | Purpose                          | Key Features                                             |
-| -------------------------------------------------- | -------------------------------- | -------------------------------------------------------- |
-| **Rate Limiter** (`lib/rate-limiter.ts`)           | Prevents API abuse               | Per-user limits, content deduplication, queue management |
-| **SSRF Protection** (`lib/ssrf-protection.ts`)     | Prevents internal network access | DNS validation, port filtering, IP blocking              |
-| **Observability** (`lib/observability.ts`)         | System monitoring                | Structured logging, metrics, health checks               |
-| **Environment Validator** (`lib/env-validator.ts`) | Configuration validation         | Startup validation, clear error messages                 |
+- **Generation**: `/api/generate-posts`, `/api/generate-posts/{queue,process,status}`
+- **Scrape**: `/api/scrape`
+- **Scheduling**: `/api/posts/schedule`, `/api/queues/publish` (QStash webhook)
+- **Platform Connect/Post**: `/api/platforms/{twitter,linkedin,facebook}/{auth,callback,connect,post}`, BYOK connect for Twitter
+- **Service APIs**: `/api/posts/bulk`, `/api/clients/[clientId]/metrics` (service keys)
+- **Billing**: `/api/billing/{checkout,portal}`, `/api/billing/status`, `/api/webhooks/stripe`
+- **Diagnostics**: `/api/health`, `/api/monitoring`, `/api/rate-limit-status`, `/api/ssrf-status`, `/api/trial-status`, `/api/twitter-status`
 
-### API Architecture
+## Data Model (simplified)
 
-| Endpoint                      | Purpose                 | Security Features                           |
-| ----------------------------- | ----------------------- | ------------------------------------------- |
-| `/api/generate-posts`         | AI content generation   | Rate limiting, deduplication, observability |
-| `/api/scrape`                 | URL content extraction  | SSRF protection, rate limiting              |
-| `/api/platforms/twitter/post` | Social media publishing | Idempotency, optimistic locking             |
-| `/api/monitoring`             | System observability    | Health checks, metrics, alerting            |
-| `/api/*-status`               | Component status        | Debugging, monitoring, transparency         |
-
-### Database Schema
-
-```sql
--- Core entities
-newsletters (id, user_id, title, content, status, created_at, updated_at)
-social_posts (id, newsletter_id, platform, post_type, content, character_count,
-              status, platform_post_id, published_at, scheduled_time,
-              error_message, created_at, updated_at)
-
--- Security constraints
-UNIQUE(newsletter_id, platform, post_type)  -- Prevents duplicate generation
-
--- Platform connections
-platform_connections (id, user_id, platform, oauth_token, oauth_refresh_token,
-                      metadata, is_active, created_at, updated_at)
-```
+- `newsletters`: id, user_id, title/content, status, created_at/updated_at
+- `social_posts`: id, newsletter_id, platform, post_type, content, character_count, status, platform_post_id, scheduled_time, published_at, error_message
+- `platform_connections`: id, user_id, platform, oauth_token/refresh, metadata (encrypted), is_active, connected_at, platform_user_id/username
+- `service_keys`: service_id/name, key_hash, permissions, rate limits, allowed_client_ids, active, last_used_at
+- `growth_autopilot_clients`: client metadata for service APIs
+- `user_profiles`: includes Stripe customer + subscription linkage
 
 ## Technology Stack
 
-### Frontend
+- **Frontend**: Next.js 16, React, Tailwind v4, shadcn/ui, Radix primitives
+- **Backend**: Next.js API routes, Supabase PG + Auth, Stripe, Anthropic Claude
+- **Queues**: Upstash QStash (publish/schedule), Upstash Redis (rate limiting)
+- **Observability**: Sentry (DSN gated), structured logs
+- **CI/CD**: GitHub Actions (lint, type-check, tests, Playwright, audits)
 
-- **Next.js 15** - React framework with App Router
-- **TypeScript** - Type safety and developer experience
-- **Tailwind CSS** - Utility-first styling
-- **shadcn/ui** - Component library with Radix UI primitives
+## Deployment Notes
 
-### Backend
-
-- **Next.js API Routes** - Serverless functions
-- **Supabase** - PostgreSQL database with auth
-- **Anthropic Claude** - AI content generation
-- **Twitter API v2** - Social media publishing
-
-### Security & Infrastructure
-
-- **Environment Validation** - Startup configuration checks
-- **Rate Limiting** - In-memory with cleanup and persistence
-- **SSRF Protection** - Multi-layer network security
-- **Structured Logging** - Request tracing and metrics
-- **GitHub Actions** - CI/CD with security testing
-
-### Monitoring & Observability
-
-- **Health Checks** - System status and alerting
-- **Metrics Collection** - Performance and security events
-- **Request Tracing** - End-to-end operation tracking
-- **Error Monitoring** - Structured error handling and reporting
-
-## Deployment Architecture
-
-### Development
-
-- Local development with hot reloading
-- Environment validation on startup
-- Local testing with security checks
-- Git hooks for code quality
-
-### CI/CD Pipeline
-
-- Automated testing (unit, smoke, E2E)
-- Security scanning (ESLint, gitleaks)
-- TypeScript compilation validation
-- Deployment to staging/production
-
-### Production (Vercel)
-
-- Serverless function deployment
-- Environment variable management
-- SSL termination and CDN
-- Monitoring and logging integration
-
-## Security Considerations
-
-### Threat Model
-
-- **SSRF Attacks**: Mitigated by comprehensive URL validation
-- **Rate Limit Abuse**: Prevented by multi-layer rate limiting
-- **API Key Compromise**: Minimized by proper secret management
-- **Duplicate Operations**: Prevented by idempotency controls
-- **Data Injection**: Mitigated by input validation and prepared statements
-
-### Security Best Practices
-
-- Principle of least privilege for API access
-- Environment-based configuration management
-- Comprehensive logging for audit trails
-- Regular security testing and validation
-- Fail-fast validation at system boundaries
+- Vercel serverless functions; QStash webhooks must point to deployed `/api/queues/publish`.
+- Stripe webhook requires `STRIPE_WEBHOOK_SECRET`.
+- Environment validation runs at build; missing critical vars will fail fast.
