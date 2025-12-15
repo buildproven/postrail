@@ -7,11 +7,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- Standardized documentation structure
+
+- Docs refresh (stack, API surface, architecture, deployment, testing, agent guide)
+- Platform integrations: LinkedIn/Facebook OAuth + posting; Twitter BYOK maintained
+- Scheduling/publish via QStash (posts/schedule + queues/publish)
+- Stripe billing (checkout, portal, status, webhook) with feature gating + service keys
+- Supabase service APIs for client metrics and bulk posts (Growth Autopilot)
+- Zod schemas for request validation; rate limiter and SSRF hardening
+
+### Changed
+
+- Upgraded to Next.js 16 + Tailwind v4; Turbopack for dev
+- Tech stack docs now reflect Redis-backed rate limiting and Sentry gating
 
 ## [0.1.0] - 2025-11-29
 
 ### Added
+
 - Initial release
 - Next.js 15 App Router setup
 - Supabase authentication
@@ -23,9 +35,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 393+ test suite with 75%+ coverage
 
 ### Tech Stack
-- Next.js 15, TypeScript
+
+- Next.js 16, TypeScript
 - Supabase (PostgreSQL + Auth)
 - Anthropic Claude API
 - Vitest + Playwright for testing
 - Tailwind CSS + shadcn/ui
-

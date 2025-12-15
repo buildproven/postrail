@@ -1,32 +1,11 @@
 # Security Policy
 
-## Automated Security Scanning
+## Automated Security Controls
 
-This project uses multiple layers of automated security scanning:
-
-### Secret Detection
-- **Tool**: Gitleaks
-- **Configuration**: `.gitleaks.toml`
-- **Coverage**: API keys, passwords, tokens, certificates
-- **Pre-commit**: Blocks commits containing secrets
-- **CI/CD**: Scans all pull requests
-
-### Dependency Scanning
-- **Tool**: npm audit
-- **Level**: High and critical vulnerabilities only
-- **Auto-fix**: Enabled for compatible updates
-- **CI/CD**: Fails builds on high/critical vulnerabilities
-
-### Code Security Scanning
-- **Tool**: ESLint security plugin
-- **Configuration**: `eslint-security.config.js`
-- **Coverage**: Injection attacks, unsafe patterns, crypto issues
-- **Pre-commit**: Blocks commits with security violations
-
-### Workflow Security
-- **Tool**: actionlint
-- **Coverage**: GitHub Actions workflow security issues
-- **CI/CD**: Validates workflow syntax and security
+- **ESLint (security plugin)**: Runs via lint-staged on commits and in CI (`npm run lint`) to flag injection/unsafe patterns.
+- **Dependency scanning**: `npm run security:audit` (npm audit high/critical) and Dependabot alerts on the default branch.
+- **Secret detection**: `.gitleaks.toml` present; run manually or in CI when configured.
+- **Husky hooks**: Pre-commit runs lint-staged (ESLint/Prettier); pre-push runs smart test strategy unless disabled.
 
 ## Manual Security Commands
 
@@ -39,6 +18,9 @@ npm run security:secrets
 
 # Validate security configuration
 npm run security:config
+
+# Optional: gitleaks scan (requires gitleaks installed)
+gitleaks detect --source .
 ```
 
 ## Reporting Security Issues
@@ -48,6 +30,7 @@ npm run security:config
 Instead, please report them via email to: **security@vibebuildlab.com**
 
 Include:
+
 - Description of the vulnerability
 - Steps to reproduce
 - Potential impact
@@ -58,13 +41,15 @@ You should receive a response within 48 hours.
 ## Security Best Practices
 
 ### For Developers
+
 - Never commit secrets, API keys, or passwords
 - Use environment variables for sensitive configuration
-- Run `npm run security:audit` before pushing
-- Keep dependencies updated
-- Review security scanner output carefully
+- Run `npm run security:audit` before releases and dependency bumps
+- Keep dependencies updated; prefer minimal change surface on infra files
+- Review scanner output and fix/annotate findings before merging
 
 ### For CI/CD
+
 - All security checks must pass before merge
 - Dependency updates require security review
 - Secrets stored in secure environment variables

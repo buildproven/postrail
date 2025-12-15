@@ -1,68 +1,42 @@
 # postrail - Priority Actions
 
-**Audit Date:** 2025-12-13
-**Status:** Aligned | **Priority:** MEDIUM
-**Key Gap:** Production deployment readiness
+**Audit Date:** 2025-12-15  
+**Status:** Aligned | **Priority:** HIGH  
+**Key Gaps:** Production readiness (billing + scheduling), observability config
 
 ## Recent Work
 
-- **2025-12-13**: feat: implement full Stripe billing system with multi-tier subscriptions
-  - Created BillingService wrapper class (`lib/billing.ts`)
-  - Added Stripe webhook handler (`app/api/webhooks/stripe/route.ts`)
-  - Added multi-tier checkout (Standard $29, Growth $59)
-  - Added billing portal and status endpoints
-  - Created feature gating system (`lib/feature-gate.ts`)
-  - Added comprehensive Zod validation schemas (`lib/schemas.ts`)
-  - Created billing migration (`supabase/migrations/20251213_billing_columns.sql`)
-- **2025-11-29**: feat: implement trial system with usage limits and abuse protection
+- **2025-12-14**: Docs refresh (stack, API surface, architecture, deployment, testing, agent guidance)
+- **2025-12-13**: Stripe billing (checkout/portal/status + webhook), feature gating, Zod schemas
+- **2025-12-12**: Platform integrations (LinkedIn/Facebook OAuth + posting), QStash scheduling + publish webhook, service-key auth for Growth Autopilot
 
 ## Critical (Do First)
 
-- [x] Implement trial system (3/day, 10 total, 14-day trial)
-- [x] Add usage tracking and rate limiting for trials
-- [x] Add public demo route (3/month per IP)
-- [x] Implement Stripe billing (Standard $29, Growth $59)
-- [x] Add subscription-based feature gating
-- [x] Create BillingService wrapper class
-- [x] Add webhook handler `/api/webhooks/stripe`
-- [ ] Run SQL migration for billing columns in production
-- [ ] Configure Stripe products and price IDs in Stripe Dashboard
-- [ ] Set up Stripe webhook endpoint in Stripe Dashboard
+- [ ] Run billing migrations in prod (`supabase/migrations/20251213_billing_columns.sql`)
+- [ ] Configure Stripe products/prices + webhook endpoint (portal/checkout/status live)
+- [ ] Configure QStash URLs + signing keys in prod (`/api/generate-posts/process`, `/api/queues/publish`)
+- [ ] Set Sentry DSN/ENV per stage (server + browser) and validate error capture
+- [ ] Verify Redis-backed rate limiting in prod (`RATE_LIMIT_MODE=redis`, Upstash creds)
 
 ## High Priority
 
-- [x] Add Sentry error tracking (already configured, needs DSN)
-- [x] Add Zod request/response validation
-- [ ] Implement service layer abstraction
-- [ ] Set up Sentry DSN in production
+- [ ] Add service-key audit dashboard (usage, rate limits, client scopes)
+- [ ] Add usage analytics dashboard (posts generated/scheduled/published per platform)
+- [ ] Email alerts for trial expiry and billing failures
+- [ ] Harden publish idempotency (double-submit + QStash retry paths)
 
 ## Medium Priority
 
-- [ ] Add usage analytics dashboard
-- [ ] Add email notifications for trial expiry
-- [ ] Add subscription renewal reminders
-- [ ] Improve error handling with Sentry breadcrumbs
+- [ ] Subscription renewal reminders + receipts
+- [ ] Improve Sentry breadcrumbs on API routes (platform/billing)
+- [ ] Add smoke E2E for import → generate → schedule → publish (Playwright)
 
 ## Notes
 
-- Billing infrastructure complete and type-checked
-- 393+ tests, 90% coverage target
-- RBAC implemented and integrated with subscription tiers
-- Sentry SDK installed and configured (needs production DSN)
-- Zod schemas ready for all API endpoints
-
-## New Files Added
-
-| File                                               | Description                                 |
-| -------------------------------------------------- | ------------------------------------------- |
-| `lib/billing.ts`                                   | BillingService class for Stripe integration |
-| `lib/feature-gate.ts`                              | Subscription-based feature access control   |
-| `lib/schemas.ts`                                   | Zod validation schemas for API              |
-| `app/api/webhooks/stripe/route.ts`                 | Stripe webhook handler                      |
-| `app/api/billing/portal/route.ts`                  | Customer portal session endpoint            |
-| `app/api/billing/status/route.ts`                  | Subscription status endpoint                |
-| `supabase/migrations/20251213_billing_columns.sql` | Billing database columns                    |
+- Billing + scheduling infrastructure shipped; production requires env/config and migration activation.
+- LinkedIn/Facebook/Twitter posting live; Threads pending.
+- Redis limiter falls back to memory; ensure prod has Upstash configured.
 
 ---
 
-_Updated: 2025-12-13_
+_Updated: 2025-12-15_
