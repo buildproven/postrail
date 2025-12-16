@@ -203,6 +203,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!newsletter) {
+      console.error('Newsletter creation returned no record')
+      return NextResponse.json(
+        { error: 'Failed to create newsletter' },
+        { status: 500 }
+      )
+    }
+
     // Generate all posts in parallel with timeout protection
     const postPromises = PLATFORMS.flatMap(platform =>
       POST_TYPES.map(postType =>
