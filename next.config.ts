@@ -7,10 +7,9 @@ import { validateEnvironmentOrThrow } from './lib/env-validator'
 if (!process.env.VERCEL) {
   dotenv.config({ path: '.env.local', override: true })
   dotenv.config({ path: '.env.production.local', override: true })
+  // Only validate locally - Vercel validates at runtime
+  validateEnvironmentOrThrow()
 }
-
-// Validate environment variables at build time - fail fast with clear errors
-validateEnvironmentOrThrow()
 
 const nextConfig: NextConfig = {
   // Skip static generation for error pages (known Next.js 16 + Sentry issue)
