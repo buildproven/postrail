@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { verifyQStashSignature } from '@/lib/platforms/qstash'
 import { TwitterApi } from 'twitter-api-v2'
 import { decrypt } from '@/lib/crypto'
@@ -15,7 +15,7 @@ type SocialPost = {
 async function publishToTwitter(
   post: SocialPost,
   userId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ) {
   const { data: connection } = await supabase
     .from('platform_connections')
@@ -41,11 +41,11 @@ async function publishToTwitter(
 async function publishToLinkedIn(
   post: SocialPost,
   userId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ) {
   const { data: connection } = await supabase
     .from('platform_connections')
-    .select('metadata, oauth_token')
+    .select('metadata, oauth_token, platform_user_id')
     .eq('user_id', userId)
     .eq('platform', 'linkedin')
     .single()
@@ -55,10 +55,15 @@ async function publishToLinkedIn(
   const metadata = connection.metadata as Record<string, string>
   const accessToken = decrypt(metadata.accessToken || connection.oauth_token)
   const organizationId = metadata.organizationId
+  const memberId = connection.platform_user_id
+
+  if (!organizationId && !memberId) {
+    throw new Error('LinkedIn member ID missing; reconnect account')
+  }
 
   const author = organizationId
     ? `urn:li:organization:${organizationId}`
-    : `urn:li:person:${userId}`
+    : `urn:li:person:${memberId}`
 
   const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
     method: 'POST',
@@ -93,7 +98,7 @@ async function publishToLinkedIn(
 async function publishToFacebook(
   post: SocialPost,
   userId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ) {
   const { data: connection } = await supabase
     .from('platform_connections')
@@ -171,7 +176,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing jobId' }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = createServiceClient()
 
     // Fetch the post to publish
     const { data: post, error: fetchError } = await supabase
