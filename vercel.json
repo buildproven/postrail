@@ -1,4 +1,5 @@
 {
-  "buildCommand": "npm run build",
-  "framework": "nextjs"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "regions": ["iad1"]
 }
