@@ -84,7 +84,7 @@ class BillingService {
     }
 
     this.stripe = new Stripe(secretKey, {
-      apiVersion: '2023-10-16',
+      apiVersion: '2025-11-17.clover',
     })
 
     return this.stripe
@@ -298,8 +298,9 @@ class BillingService {
       paused: 'cancelled',
     }
 
-    // Get current period end from subscription
-    const currentPeriodEnd = subscription.current_period_end
+    // Get current period end from first subscription item (Stripe API 2025-11-17+)
+    const firstItem = subscription.items?.data?.[0]
+    const currentPeriodEnd = firstItem?.current_period_end
 
     await supabase
       .from('user_profiles')
