@@ -1,12 +1,13 @@
 # postrail - Priority Actions
 
-**Audit Date:** 2025-12-15
-**Status:** Billing Ready | **Priority:** REVENUE
-**Key Gap:** Production activation + retention emails
+**Audit Date:** 2025-12-16
+**Status:** Deployed | **Priority:** REVENUE
+**Key Gap:** Production activation (Stripe products, migrations, Sentry DSN)
 
 ## Recent Work
 
-- **2025-12-14**: Docs refresh (stack, API surface, architecture, deployment, testing, agent guidance)
+- **2025-12-16**: Vercel deployment fixed (next.config.ts → .js), Stripe SDK v20 compatibility
+- **2025-12-15**: Docs refresh (stack, API surface, architecture, deployment, testing, agent guidance)
 - **2025-12-13**: Stripe billing (checkout/portal/status + webhook), feature gating, Zod schemas
 - **2025-12-12**: Platform integrations (LinkedIn/Facebook OAuth + posting), QStash scheduling + publish webhook, service-key auth for Growth Autopilot
 
@@ -68,13 +69,16 @@
 - [x] Webhook handler `/api/webhooks/stripe`
 - [x] Sentry SDK installed
 - [x] Zod request/response validation
+- [x] Vercel deployment working (https://postrail.vercel.app)
+- [x] Stripe SDK v20 compatibility
 
 ## Notes
 
+- **Deployed to Vercel** - https://postrail.vercel.app
 - Billing + scheduling infrastructure shipped; production requires env/config and migration activation.
 - LinkedIn/Facebook/Twitter posting live; Threads pending.
 - Redis limiter falls back to memory; ensure prod has Upstash configured.
 
 ---
 
-_Updated: 2025-12-15_
+_Updated: 2025-12-16_

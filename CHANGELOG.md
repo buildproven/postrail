@@ -6,7 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-### Added
+### Fixed
+
+- Vercel deployment (converted next.config.ts → next.config.js)
+- Stripe SDK updated to API version 2025-11-17.clover
+- Build-time env validation moved to runtime
+- Queue publishing and Stripe config hardening
+- Missing newsletter record guard
+
+### Changed
 
 - ROADMAP.md for strategic direction
 - Updated CLAUDE.md with improved commands and architecture docs
