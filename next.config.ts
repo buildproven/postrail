@@ -24,6 +24,5 @@ const sentryWebpackPluginOptions = {
   project: process.env.SENTRY_PROJECT,
 }
 
-export default process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN
-  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
-  : nextConfig
+// Temporarily disable Sentry to debug Vercel build issue
+export default nextConfig
