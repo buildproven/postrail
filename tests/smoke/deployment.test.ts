@@ -37,9 +37,15 @@ describe('Pre-Deployment Smoke Tests', () => {
     })
 
     it('should have Next.js configuration', () => {
-      expect(fs.existsSync('next.config.ts')).toBe(true)
-      const config = fs.readFileSync('next.config.ts', 'utf-8')
-      expect(config).toContain('NextConfig')
+      // Support both .js and .ts config files
+      const hasJsConfig = fs.existsSync('next.config.js')
+      const hasTsConfig = fs.existsSync('next.config.ts')
+      expect(hasJsConfig || hasTsConfig).toBe(true)
+
+      const configFile = hasJsConfig ? 'next.config.js' : 'next.config.ts'
+      const config = fs.readFileSync(configFile, 'utf-8')
+      // Check for valid Next.js config export
+      expect(config).toMatch(/module\.exports|export default|NextConfig/)
     })
 
     it('should have Tailwind configuration', () => {
