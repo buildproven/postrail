@@ -6,6 +6,7 @@
 
 ## Recent Work
 
+- **2025-12-17**: Landing page rewrite (sales copy, pricing tiers, how-it-works), settings page upgrade UI, README roadmap update
 - **2025-12-16**: Vercel deployment fixed (next.config.ts → .js), Stripe SDK v20 compatibility
 - **2025-12-15**: Docs refresh (stack, API surface, architecture, deployment, testing, agent guidance)
 - **2025-12-13**: Stripe billing (checkout/portal/status + webhook), feature gating, Zod schemas
@@ -60,6 +61,8 @@
 
 ## Completed
 
+- [x] Landing page with sales copy and pricing tiers
+- [x] Settings page with Standard/Growth upgrade options
 - [x] Trial system (3/day, 10 total, 14-day)
 - [x] Usage tracking and rate limiting
 - [x] Public demo route (3/month per IP)
@@ -81,4 +84,4 @@
 
 ---
 
-_Updated: 2025-12-16_
+_Updated: 2025-12-17_
