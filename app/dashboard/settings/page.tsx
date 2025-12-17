@@ -1,15 +1,42 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+'use client'
 
-export default async function SettingsPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import type { User } from '@supabase/supabase-js'
+
+export default function SettingsPage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const supabase = createClient()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/auth/login')
+      } else {
+        setUser(user)
+      }
+      setLoading(false)
+    }
+    getUser()
+  }, [supabase, router])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    )
+  }
 
   if (!user) {
-    redirect('/auth/login')
+    return null
   }
 
   return (
@@ -66,20 +93,39 @@ export default async function SettingsPage() {
         <div className="border rounded-lg p-6 bg-white">
           <h2 className="text-lg font-semibold mb-4">Subscription</h2>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border rounded bg-gray-50">
-              <div>
-                <p className="font-medium">Free Trial</p>
-                <p className="text-sm text-gray-600">
-                  10 posts total • 3 posts/day
-                </p>
-              </div>
-              <form action="/api/billing/checkout" method="POST">
+            {/* Current Plan */}
+            <div className="p-4 border rounded bg-gray-50">
+              <p className="font-medium">Free Trial</p>
+              <p className="text-sm text-gray-600">
+                10 generations total | 3 generations/day | 14 days
+              </p>
+            </div>
+
+            {/* Upgrade Options */}
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="p-4 border rounded hover:border-blue-300 transition-colors">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="font-medium">Standard</p>
+                    <p className="text-2xl font-bold">
+                      $29<span className="text-sm font-normal">/mo</span>
+                    </p>
+                  </div>
+                </div>
+                <ul className="text-sm text-gray-600 space-y-1 mb-3">
+                  <li>50 generations/day</li>
+                  <li>Scheduling</li>
+                  <li>Basic analytics</li>
+                </ul>
                 <Button
-                  type="button"
+                  className="w-full"
+                  variant="outline"
                   onClick={async () => {
                     try {
                       const res = await fetch('/api/billing/checkout', {
                         method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tier: 'standard' }),
                       })
                       const data = await res.json()
                       if (data.url) window.location.href = data.url
@@ -90,14 +136,49 @@ export default async function SettingsPage() {
                     }
                   }}
                 >
-                  Upgrade to Pro
+                  Upgrade to Standard
                 </Button>
-              </form>
+              </div>
+
+              <div className="p-4 border-2 border-blue-500 rounded">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="font-medium">Growth</p>
+                    <p className="text-2xl font-bold">
+                      $59<span className="text-sm font-normal">/mo</span>
+                    </p>
+                  </div>
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                    BEST VALUE
+                  </span>
+                </div>
+                <ul className="text-sm text-gray-600 space-y-1 mb-3">
+                  <li>200 generations/day</li>
+                  <li>Advanced analytics</li>
+                  <li>API access + priority support</li>
+                </ul>
+                <Button
+                  className="w-full"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/billing/checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tier: 'growth' }),
+                      })
+                      const data = await res.json()
+                      if (data.url) window.location.href = data.url
+                      else alert('Failed to start checkout')
+                    } catch (e) {
+                      console.error(e)
+                      alert('Error starting checkout')
+                    }
+                  }}
+                >
+                  Upgrade to Growth
+                </Button>
+              </div>
             </div>
-            <p className="text-xs text-gray-500">
-              Pro plan includes unlimited posts, advanced scheduling, and
-              priority support.
-            </p>
           </div>
         </div>
 

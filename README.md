@@ -36,21 +36,15 @@ AI-powered social media automation for newsletter creators. Automatically genera
 - **Solopreneurs** who need to automate repetitive posting tasks
 - **Agencies** managing multiple newsletter clients
 
-## Pricing & Licensing
+## Pricing
 
-| Tier         | Price             | Features                                           |
-| ------------ | ----------------- | -------------------------------------------------- |
-| **Standard** | $29/mo or $290/yr | Core features, 4 platforms                         |
-| **Growth**   | $59/mo or $590/yr | Unlimited newsletters, analytics, priority support |
+| Tier         | Price  | Limits          | Features                                         |
+| ------------ | ------ | --------------- | ------------------------------------------------ |
+| **Trial**    | Free   | 3/day, 10 total | All platforms, manual posting                    |
+| **Standard** | $29/mo | 50/day          | Scheduling, basic analytics                      |
+| **Growth**   | $59/mo | 200/day         | API access, advanced analytics, priority support |
 
-**Trial**: 14-day free trial (no credit card required)
-
-> **Note**: Postrail is a standalone product and is **not** included in Vibe Lab Pro. VLP members receive a **25% discount** on all tiers.
-
-- 3 generations per day
-- 10 generations total during trial
-
-**Lifetime Deal**: $199 (limited to first 100 users)
+**Free Trial**: 14 days, no credit card required.
 
 ### License
 
@@ -165,30 +159,31 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 - [x] Basic authentication
 - [x] Database schema
 
-### Phase 2: AI Generation (Current)
+### Phase 2: AI Generation ✅
 
 - [x] Newsletter input module
 - [x] Claude AI integration
 - [x] Post generation for 4 platforms
 
-### Phase 3: Platform Integration
+### Phase 3: Platform Integration ✅
 
-- [x] Twitter/X OAuth + posting (BYOK)
+- [x] Twitter/X OAuth + posting
 - [x] LinkedIn OAuth + posting
-- [ ] Threads OAuth + posting
 - [x] Facebook OAuth + posting
+- [ ] Threads OAuth + posting (pending API access)
 
-### Phase 4: Scheduling
+### Phase 4: Scheduling & Billing ✅
 
 - [x] Queue system setup (QStash)
 - [x] Automated scheduling + publish webhooks
-- [ ] Background job processing hardening
+- [x] Stripe billing (checkout, portal, webhooks)
+- [x] Multi-tier subscriptions (Standard $29, Growth $59)
 
-### Phase 5: Analytics & Polish
+### Phase 5: Analytics & Polish (Current)
 
-- [ ] Analytics dashboard (platform + client views)
-- [ ] Performance tracking
-- [ ] PWA setup
+- [ ] Analytics dashboard
+- [ ] Usage metrics visualization
+- [ ] Trial conversion emails
 
 ## Documentation
 
