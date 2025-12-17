@@ -50,7 +50,16 @@
 - [ ] Payment failed recovery email
 - [ ] Upgrade prompts when hitting limits
 
-### 5. Developer Experience (Low Priority)
+### 5. Security Hardening (Medium Priority)
+
+> Supabase security audit findings - schema vulnerabilities
+
+- [ ] Fix `update_updated_at_column()` function - add `SET search_path = ''` to prevent schema injection
+- [ ] Fix `handle_new_user()` function - add `SET search_path = ''` to prevent schema injection
+- [ ] Enable RLS on `blocked_email_domains` table - currently publicly accessible without RLS
+- [ ] Enable RLS on `system_limits` table - currently publicly accessible without RLS
+
+### 6. Developer Experience (Low Priority)
 
 > Only if debugging becomes painful
 
