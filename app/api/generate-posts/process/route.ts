@@ -16,14 +16,20 @@ export async function POST(request: NextRequest) {
       const url = request.url
       const qstashConfigured = Boolean(process.env.QSTASH_CURRENT_SIGNING_KEY)
       if (qstashConfigured && !verifyQStashSignature(signature, rawBody, url)) {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+        return NextResponse.json(
+          { error: 'Invalid signature' },
+          { status: 401 }
+        )
       }
 
       const supabase = createServiceClient()
 
       const { jobId } = JSON.parse(rawBody)
       if (!jobId) {
-        return NextResponse.json({ error: 'jobId is required' }, { status: 400 })
+        return NextResponse.json(
+          { error: 'jobId is required' },
+          { status: 400 }
+        )
       }
 
       // Fetch job
@@ -41,17 +47,33 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ status: job.status, jobId })
       }
 
+      await supabase
+        .from('generation_jobs')
+        .update({
+          status: 'processing',
+          started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', jobId)
+
       // Build a NextRequest-like object for the main handler
-      const body = JSON.stringify({ title: job.title, content: job.content })
-      const handlerRequest = new Request(process.env.QSTASH_PROCESS_URL || 'http://localhost/api/generate-posts', {
-        method: 'POST',
-        body,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-worker-token': process.env.INTERNAL_WORKER_TOKEN || '',
-          'x-service-user-id': job.user_id,
-        },
-      }) as unknown as NextRequest
+      const body = JSON.stringify({
+        title: job.title,
+        content: job.content,
+        newsletterDate: job.newsletter_date,
+      })
+      const handlerRequest = new Request(
+        process.env.QSTASH_PROCESS_URL || 'http://localhost/api/generate-posts',
+        {
+          method: 'POST',
+          body,
+          headers: {
+            'Content-Type': 'application/json',
+            'x-worker-token': process.env.INTERNAL_WORKER_TOKEN || '',
+            'x-service-user-id': job.user_id,
+          },
+        }
+      ) as unknown as NextRequest
 
       // Execute main generation handler
       const response = await generatePostsHandler(handlerRequest)
@@ -63,7 +85,10 @@ export async function POST(request: NextRequest) {
         .update({
           status: response.ok ? 'completed' : 'failed',
           result: json,
-          error: response.ok ? null : json?.error,
+          error_message: response.ok ? null : json?.error,
+          newsletter_id: response.ok ? json?.newsletterId : null,
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq('id', jobId)
 
@@ -75,7 +100,10 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      return NextResponse.json({ jobId, status: response.ok ? 'completed' : 'failed' }, { status: response.status })
+      return NextResponse.json(
+        { jobId, status: response.ok ? 'completed' : 'failed' },
+        { status: response.status }
+      )
     } catch (error) {
       observability.error('AI generation worker error', {
         requestId,

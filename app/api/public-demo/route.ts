@@ -5,6 +5,7 @@ import {
   recordPublicDemoGeneration,
 } from '@/lib/trial-guard'
 import { observability, withObservability } from '@/lib/observability'
+import { ssrfProtection } from '@/lib/ssrf-protection'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || 'missing-key',
@@ -12,31 +13,6 @@ const anthropic = new Anthropic({
 
 const ANTHROPIC_MODEL =
   process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-latest'
-
-/**
- * Extract client IP from request headers
- */
-function getClientIp(request: NextRequest): string {
-  // Check various headers for client IP
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) {
-    return forwarded.split(',')[0].trim()
-  }
-
-  const realIp = request.headers.get('x-real-ip')
-  if (realIp) {
-    return realIp
-  }
-
-  // Vercel-specific header
-  const vercelIp = request.headers.get('x-vercel-forwarded-for')
-  if (vercelIp) {
-    return vercelIp.split(',')[0].trim()
-  }
-
-  // Fallback - shouldn't happen in production
-  return '127.0.0.1'
-}
 
 /**
  * Generate a single demo hook/teaser post
@@ -85,7 +61,13 @@ REQUIREMENTS:
 export async function POST(request: NextRequest) {
   return withObservability.trace('public_demo', async (requestId: string) => {
     try {
-      const ipAddress = getClientIp(request)
+      const ipAddress = ssrfProtection.getClientIP(request)
+      if (ipAddress === 'unknown') {
+        return NextResponse.json(
+          { error: 'Unable to determine client IP' },
+          { status: 400 }
+        )
+      }
       const userAgent = request.headers.get('user-agent') || undefined
 
       // Check demo access
@@ -182,7 +164,13 @@ export async function POST(request: NextRequest) {
  * GET /api/public-demo - Check demo availability for IP
  */
 export async function GET(request: NextRequest) {
-  const ipAddress = getClientIp(request)
+  const ipAddress = ssrfProtection.getClientIP(request)
+  if (ipAddress === 'unknown') {
+    return NextResponse.json(
+      { available: false, remaining: '0' },
+      { status: 400 }
+    )
+  }
   const accessResult = await checkPublicDemoAccess(ipAddress)
 
   return NextResponse.json(

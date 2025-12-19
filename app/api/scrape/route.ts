@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Readability } from '@mozilla/readability'
 import { JSDOM } from 'jsdom'
 import axios from 'axios'
+import dns from 'dns'
+import http from 'http'
+import https from 'https'
+import net from 'net'
 import { createClient } from '@/lib/supabase/server'
 import { ssrfProtection } from '@/lib/ssrf-protection'
 
@@ -106,7 +110,9 @@ export async function POST(request: NextRequest) {
           `SSRF protection blocked request to ${hostname}: ${urlValidation.error}`
         )
       } catch {
-        console.log(`SSRF protection blocked invalid URL request: ${urlValidation.error}`)
+        console.log(
+          `SSRF protection blocked invalid URL request: ${urlValidation.error}`
+        )
       }
       return NextResponse.json(
         {
@@ -119,6 +125,44 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!urlValidation.ip) {
+      return NextResponse.json(
+        { error: 'URL validation failed', details: 'No resolved IP address' },
+        { status: 403 }
+      )
+    }
+
+    const urlObject = new URL(url)
+    const resolvedIp = urlValidation.ip
+    const ipFamily = net.isIP(resolvedIp) || 4
+
+    // Custom lookup function to use pre-validated IP, bypassing DNS rebinding attacks
+    const lookup = (
+      hostname: string,
+      options: dns.LookupOptions,
+      callback: (err: Error | null, address: string, family: number) => void
+    ) => {
+      if (hostname === urlObject.hostname) {
+        // Use the pre-validated IP address
+        callback(null, resolvedIp, ipFamily)
+        return
+      }
+      // Fallback to normal DNS for other hostnames (shouldn't happen)
+      dns.lookup(hostname, options, (err, addr, fam) => {
+        callback(
+          err,
+          typeof addr === 'string' ? addr : addr[0]?.address || '',
+          fam as number
+        )
+      })
+    }
+
+    const httpAgent = new http.Agent({ lookup })
+    const httpsAgent = new https.Agent({
+      lookup,
+      servername: urlObject.hostname,
+    })
+
     // Fetch the page with security limits
     // CRITICAL: Disable redirects to prevent SSRF bypass via 302 to private IP
     const response = await axios.get(url, {
@@ -130,6 +174,8 @@ export async function POST(request: NextRequest) {
       maxContentLength: MAX_RESPONSE_SIZE,
       maxBodyLength: MAX_RESPONSE_SIZE,
       maxRedirects: 0, // Prevent redirect-based SSRF bypass
+      httpAgent,
+      httpsAgent,
     })
 
     let html = response.data

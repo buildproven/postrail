@@ -67,6 +67,40 @@ export default function NewNewsletterPage() {
     }
   }
 
+  const pollJobStatus = async (jobId: string) => {
+    const startTime = Date.now()
+    const timeoutMs = 2 * 60 * 1000
+
+    while (true) {
+      const statusResponse = await fetch(
+        `/api/generate-posts/status?jobId=${encodeURIComponent(jobId)}`
+      )
+
+      if (!statusResponse.ok) {
+        const data = await statusResponse.json()
+        throw new Error(data.error || 'Failed to check job status')
+      }
+
+      const job = await statusResponse.json()
+
+      if (job.status === 'completed') {
+        return job
+      }
+
+      if (job.status === 'failed') {
+        throw new Error(job.error || 'Post generation failed')
+      }
+
+      if (Date.now() - startTime > timeoutMs) {
+        throw new Error(
+          'Generation is taking longer than expected. Please try again in a minute.'
+        )
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 2000))
+    }
+  }
+
   const handleGenerate = async () => {
     if (!content) {
       setError('Please enter newsletter content')
@@ -77,7 +111,7 @@ export default function NewNewsletterPage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/generate-posts', {
+      const response = await fetch('/api/generate-posts/queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -103,13 +137,16 @@ export default function NewNewsletterPage() {
       }
 
       const data = await response.json()
+      const job = await pollJobStatus(data.jobId)
+      const newsletterId =
+        job.result?.newsletterId || job.newsletterId || data.newsletterId
 
-      console.log('✅ Posts generated successfully:', data)
-      console.log(`   Newsletter ID: ${data.newsletterId}`)
-      console.log(`   Posts count: ${data.postsGenerated}`)
+      if (!newsletterId) {
+        throw new Error('Generation completed without a newsletter ID')
+      }
 
       // Redirect to preview page with generated posts
-      router.push(`/dashboard/newsletters/${data.newsletterId}/preview`)
+      router.push(`/dashboard/newsletters/${newsletterId}/preview`)
     } catch (err) {
       console.error('❌ Post generation failed:', err)
       setError(err instanceof Error ? err.message : 'Failed to generate posts')

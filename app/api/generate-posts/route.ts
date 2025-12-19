@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
+import { redisRateLimiter } from '@/lib/redis-rate-limiter'
+import { checkFeatureAccess, checkUsageLimits } from '@/lib/feature-gate'
+import { checkTrialAccess, recordTrialGeneration } from '@/lib/trial-guard'
 
 // Validate API key at module load - fail fast with clear error
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -158,15 +162,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const workerToken = request.headers.get('x-worker-token')
+    const serviceUserId = request.headers.get('x-service-user-id')
+    const isWorkerRequest = Boolean(workerToken || serviceUserId)
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    let supabase:
+      | Awaited<ReturnType<typeof createClient>>
+      | ReturnType<typeof createServiceClient>
+    let userId: string
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (isWorkerRequest) {
+      if (
+        !process.env.INTERNAL_WORKER_TOKEN ||
+        workerToken !== process.env.INTERNAL_WORKER_TOKEN ||
+        !serviceUserId
+      ) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      supabase = createServiceClient()
+      userId = serviceUserId
+    } else {
+      supabase = await createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      userId = user.id
     }
 
     const { title, content, newsletterDate } = await request.json()
@@ -178,8 +202,65 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const featureCheck = await checkFeatureAccess(userId, 'basic_generation')
+    if (!featureCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Feature not available',
+          message: featureCheck.message,
+          requiredTier: featureCheck.requiredTier,
+          currentTier: featureCheck.tier,
+        },
+        { status: 403 }
+      )
+    }
+
+    const usage = await checkUsageLimits(userId)
+    if (!usage.allowed) {
+      let message = 'Daily usage limit reached. Please try again later.'
+      if (usage.tier === 'trial') {
+        const trialCheck = await checkTrialAccess(userId)
+        message = trialCheck.error || message
+      }
+
+      return NextResponse.json(
+        {
+          error: message,
+          limit: usage.limit,
+          remaining: usage.remaining,
+          tier: usage.tier,
+        },
+        { status: 429 }
+      )
+    }
+
+    const rateLimitResult = await redisRateLimiter.checkRateLimit(userId)
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          retryAfter: rateLimitResult.retryAfter,
+          requestsRemaining: rateLimitResult.requestsRemaining,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitResult.retryAfter || 60),
+            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
+            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
+          },
+        }
+      )
+    }
+
     // Calculate scheduled times based on newsletter date
     const pubDate = newsletterDate ? new Date(newsletterDate) : new Date()
+    if (Number.isNaN(pubDate.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid newsletterDate format' },
+        { status: 400 }
+      )
+    }
     const preCtaTime = new Date(pubDate.getTime() - 24 * 60 * 60 * 1000) // 24h before
     const postCtaTime = new Date(pubDate.getTime() + 48 * 60 * 60 * 1000) // 48h after
 
@@ -187,7 +268,7 @@ export async function POST(request: NextRequest) {
     const { data: newsletter, error: newsletterError } = await supabase
       .from('newsletters')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         title: title || 'Untitled Newsletter',
         content,
         status: 'draft',
@@ -279,6 +360,25 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to save generated posts' },
         { status: 500 }
       )
+    }
+
+    try {
+      if (usage.tier === 'trial') {
+        await recordTrialGeneration(userId, {
+          newsletterId: newsletter.id,
+          postsCount: posts.length,
+        })
+      } else {
+        await supabase.from('generation_events').insert({
+          user_id: userId,
+          event_type: 'generation',
+          newsletter_id: newsletter.id,
+          posts_count: posts.length,
+          tokens_used: 0,
+        })
+      }
+    } catch (recordError) {
+      console.error('Failed to record generation event:', recordError)
     }
 
     return NextResponse.json({

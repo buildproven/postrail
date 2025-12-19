@@ -89,7 +89,9 @@ async function getSystemLimits() {
 /**
  * Check if a trial user can perform a generation
  */
-export async function checkTrialAccess(userId: string): Promise<TrialCheckResult> {
+export async function checkTrialAccess(
+  userId: string
+): Promise<TrialCheckResult> {
   const supabase = createServiceClient()
   const limits = await getSystemLimits()
 
@@ -211,7 +213,7 @@ async function checkTrialAccessWithProfile(
     .from('generation_events')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', profile.user_id)
-    .eq('type', 'trial')
+    .eq('event_type', 'trial')
     .gte('created_at', startOfDay.toISOString())
 
   if (countError) {
@@ -245,7 +247,7 @@ async function checkTrialAccessWithProfile(
   const { count: globalCount } = await supabase
     .from('generation_events')
     .select('*', { count: 'exact', head: true })
-    .eq('type', 'trial')
+    .eq('event_type', 'trial')
     .gte('created_at', startOfDay.toISOString())
 
   if ((globalCount || 0) >= limits.trialDailyCapGlobal) {
@@ -306,7 +308,8 @@ export async function recordTrialGeneration(
   userId: string,
   options?: {
     tokensUsed?: number
-    contentHash?: string
+    newsletterId?: string
+    postsCount?: number
     ipAddress?: string
     userAgent?: string
   }
@@ -316,9 +319,10 @@ export async function recordTrialGeneration(
   // Insert generation event
   await supabase.from('generation_events').insert({
     user_id: userId,
-    type: 'trial',
+    event_type: 'trial',
+    newsletter_id: options?.newsletterId,
+    posts_count: options?.postsCount || 0,
     tokens_used: options?.tokensUsed || 0,
-    content_hash: options?.contentHash,
     ip_address: options?.ipAddress,
     user_agent: options?.userAgent,
   })
@@ -344,7 +348,7 @@ export async function checkPublicDemoAccess(
   const { count: monthlyCount } = await supabase
     .from('generation_events')
     .select('*', { count: 'exact', head: true })
-    .eq('type', 'public_demo')
+    .eq('event_type', 'public_demo')
     .eq('ip_address', ipAddress)
     .gte('created_at', startOfMonth.toISOString())
 
@@ -362,7 +366,7 @@ export async function checkPublicDemoAccess(
   const { count: globalCount } = await supabase
     .from('generation_events')
     .select('*', { count: 'exact', head: true })
-    .eq('type', 'public_demo')
+    .eq('event_type', 'public_demo')
     .gte('created_at', startOfDay.toISOString())
 
   if ((globalCount || 0) >= limits.publicDemoCapGlobal) {
@@ -389,7 +393,6 @@ export async function recordPublicDemoGeneration(
   ipAddress: string,
   options?: {
     tokensUsed?: number
-    contentHash?: string
     userAgent?: string
   }
 ): Promise<void> {
@@ -397,9 +400,8 @@ export async function recordPublicDemoGeneration(
 
   await supabase.from('generation_events').insert({
     user_id: null,
-    type: 'public_demo',
+    event_type: 'public_demo',
     tokens_used: options?.tokensUsed || 0,
-    content_hash: options?.contentHash,
     ip_address: ipAddress,
     user_agent: options?.userAgent,
   })

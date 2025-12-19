@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { publishGenerationJob } from '@/lib/platforms/qstash'
+import { checkFeatureAccess, checkUsageLimits } from '@/lib/feature-gate'
+import { checkTrialAccess } from '@/lib/trial-guard'
 
 // Lightweight enqueue endpoint: accepts a request, records a pending job, and publishes to QStash.
 // A separate worker endpoint (process) will consume.
@@ -17,9 +19,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { title, content } = await request.json()
+    const { title, content, newsletterDate } = await request.json()
     if (!content) {
-      return NextResponse.json({ error: 'Newsletter content is required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Newsletter content is required' },
+        { status: 400 }
+      )
+    }
+
+    if (newsletterDate && Number.isNaN(new Date(newsletterDate).getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid newsletterDate format' },
+        { status: 400 }
+      )
+    }
+
+    const featureCheck = await checkFeatureAccess(user.id, 'basic_generation')
+    if (!featureCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Feature not available',
+          message: featureCheck.message,
+          requiredTier: featureCheck.requiredTier,
+          currentTier: featureCheck.tier,
+        },
+        { status: 403 }
+      )
+    }
+
+    const usage = await checkUsageLimits(user.id)
+    if (!usage.allowed) {
+      let message = 'Daily usage limit reached. Please try again later.'
+      if (usage.tier === 'trial') {
+        const trialCheck = await checkTrialAccess(user.id)
+        message = trialCheck.error || message
+      }
+      return NextResponse.json(
+        { error: message, limit: usage.limit, remaining: usage.remaining },
+        { status: 429 }
+      )
     }
 
     // Rate limit before enqueue
@@ -29,10 +67,17 @@ export async function POST(request: NextRequest) {
       user.id
     )
 
-    const rateLimit = await redisRateLimiter.checkRateLimit(user.id, contentHash)
+    const rateLimit = await redisRateLimiter.checkRateLimit(
+      user.id,
+      contentHash
+    )
     if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: 'Rate limit exceeded', reason: rateLimit.reason, retryAfter: rateLimit.retryAfter },
+        {
+          error: 'Rate limit exceeded',
+          reason: rateLimit.reason,
+          retryAfter: rateLimit.retryAfter,
+        },
         { status: 429 }
       )
     }
@@ -46,15 +91,25 @@ export async function POST(request: NextRequest) {
         content,
         status: 'pending',
         content_hash: contentHash,
+        newsletter_date: newsletterDate
+          ? new Date(newsletterDate).toISOString()
+          : null,
       })
       .select()
       .single()
 
     if (jobError) {
-      return NextResponse.json({ error: 'Failed to enqueue job' }, { status: 500 })
+      return NextResponse.json(
+        { error: 'Failed to enqueue job' },
+        { status: 500 }
+      )
     }
 
-    if (!process.env.QSTASH_TOKEN || !process.env.QSTASH_PROCESS_URL || !process.env.QSTASH_CURRENT_SIGNING_KEY) {
+    if (
+      !process.env.QSTASH_TOKEN ||
+      !process.env.QSTASH_PROCESS_URL ||
+      !process.env.QSTASH_CURRENT_SIGNING_KEY
+    ) {
       return NextResponse.json(
         { error: 'Queue not configured (missing QStash env vars)' },
         { status: 500 }
@@ -66,6 +121,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ jobId: job.id, status: 'queued' })
   } catch (error) {
     console.error('Queue enqueue error:', error)
-    return NextResponse.json({ error: 'Failed to enqueue generation' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to enqueue generation' },
+      { status: 500 }
+    )
   }
 }

@@ -257,9 +257,15 @@ export class RedisRateLimiter {
       )
       if (!this.degradedNotified) {
         this.degradedNotified = true
-        observability.warn('Rate limiter degraded - redis unavailable, using memory fallback', {
-          metadata: { backend: 'redis', error: error instanceof Error ? error.message : 'unknown' },
-        })
+        observability.warn(
+          'Rate limiter degraded - redis unavailable, using memory fallback',
+          {
+            metadata: {
+              backend: 'redis',
+              error: error instanceof Error ? error.message : 'unknown',
+            },
+          }
+        )
       }
       // Fail-open with clear degraded signal instead of self‑DOSing the API
       return {
@@ -301,7 +307,12 @@ export class RedisRateLimiter {
     if (contentHash) {
       const dedupKey = `dedup:${userId}:${contentHash}`
       const cached = this.memoryStore.get(dedupKey)
-      if (cached && typeof cached === 'object' && 'timestamp' in cached && now - cached.timestamp < 10 * 60 * 1000) {
+      if (
+        cached &&
+        typeof cached === 'object' &&
+        'timestamp' in cached &&
+        now - cached.timestamp < 10 * 60 * 1000
+      ) {
         // 10 minute cache
         return {
           allowed: true,
@@ -401,7 +412,12 @@ export class RedisRateLimiter {
       }
     } else {
       const cached = this.memoryStore.get(dedupKey)
-      if (cached && typeof cached === 'object' && 'timestamp' in cached && 'result' in cached) {
+      if (
+        cached &&
+        typeof cached === 'object' &&
+        'timestamp' in cached &&
+        'result' in cached
+      ) {
         if (Date.now() - cached.timestamp < 10 * 60 * 1000) {
           return cached.result
         }
@@ -513,7 +529,7 @@ export class RedisRateLimiter {
     for (const [key, value] of this.memoryStore.entries()) {
       // Remove keys older than 1 hour
       if (
-        key.includes(':dedup:') &&
+        key.startsWith('dedup:') &&
         typeof value === 'object' &&
         'timestamp' in value &&
         now - value.timestamp > 60 * 60 * 1000
@@ -584,7 +600,11 @@ export class RedisRateLimiter {
       return {
         healthy: true,
         backend: 'memory',
-        details: { timestamp, memoryKeys: this.memoryStore.size, redisConfigured: false },
+        details: {
+          timestamp,
+          memoryKeys: this.memoryStore.size,
+          redisConfigured: false,
+        },
       }
     }
   }

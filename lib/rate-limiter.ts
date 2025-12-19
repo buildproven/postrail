@@ -14,6 +14,8 @@ interface RateLimitRecord {
   count: number
   resetTime: number
   lastRequest: number
+  hourCount: number
+  hourResetTime: number
   locked: boolean // Mutex flag for atomic operations
 }
 
@@ -171,6 +173,8 @@ class RateLimiter {
           count: 1,
           resetTime: now + 60 * 1000, // 1 minute window
           lastRequest: now,
+          hourCount: 1,
+          hourResetTime: now + 60 * 60 * 1000, // 1 hour window
           locked: false,
         }
         this.userLimits.set(userKey, record)
@@ -182,12 +186,20 @@ class RateLimiter {
         record.count = 1
         record.resetTime = now + 60 * 1000
         record.lastRequest = now
-        this.userLimits.set(userKey, record)
-        return { allowed: true }
+      } else {
+        record.count++
+      }
+
+      // Check hour window reset
+      if (now >= record.hourResetTime) {
+        record.hourCount = 1
+        record.hourResetTime = now + 60 * 60 * 1000
+      } else {
+        record.hourCount++
       }
 
       // Check minute limit
-      if (record.count >= this.AI_REQUESTS_PER_MINUTE) {
+      if (record.count > this.AI_REQUESTS_PER_MINUTE) {
         const retryAfter = Math.ceil((record.resetTime - now) / 1000)
         return {
           allowed: false,
@@ -196,12 +208,8 @@ class RateLimiter {
         }
       }
 
-      // Check hourly limit (simplified - just check last hour of requests)
-      const hourAgo = now - 60 * 60 * 1000
-      if (
-        record.lastRequest > hourAgo &&
-        record.count >= this.AI_REQUESTS_PER_HOUR
-      ) {
+      // Check hourly limit
+      if (record.hourCount > this.AI_REQUESTS_PER_HOUR) {
         return {
           allowed: false,
           retryAfter: 3600, // 1 hour
@@ -209,8 +217,7 @@ class RateLimiter {
         }
       }
 
-      // Allow request and increment counter
-      record.count++
+      // Allow request and update last request
       record.lastRequest = now
       this.userLimits.set(userKey, record)
 
