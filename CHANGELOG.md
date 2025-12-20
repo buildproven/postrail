@@ -6,8 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Queue-First Generation Flow**
+  - Async job processing via QStash worker (`/api/generate-posts/queue`)
+  - Job status polling endpoint (`/api/generate-posts/status`)
+  - Frontend polling UI with progress indicators
+  - Worker authentication with internal tokens
+  - Generation event logging for audit trail
+
 ### Fixed
 
+- SSRF DNS-rebinding mitigation in scrape endpoint
+- Redis rate limiter cleanup bug and hourly window correctness
 - Vercel deployment (converted next.config.ts → next.config.js)
 - Stripe SDK updated to API version 2025-11-17.clover
 - Build-time env validation moved to runtime
