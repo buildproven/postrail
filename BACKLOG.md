@@ -20,11 +20,11 @@
 
 > Blocking all paid conversions. Do these first.
 
-- [ ] Run SQL migration in Supabase Dashboard
-- [ ] Create Stripe products (Standard $29/mo, Growth $59/mo)
-- [ ] Copy price IDs to env vars (`STRIPE_PRICE_STANDARD`, `STRIPE_PRICE_GROWTH`)
-- [ ] Set up Stripe webhook → `https://postrail.com/api/webhooks/stripe`
-- [ ] Set `SENTRY_DSN` in Vercel
+- [ ] Run SQL migration in Supabase Dashboard _(verify in Supabase)_
+- [x] Create Stripe products (Standard $29/mo, Growth $59/mo)
+- [x] Copy price IDs to env vars (`STRIPE_PRICE_STANDARD`, `STRIPE_PRICE_GROWTH`)
+- [x] Set up Stripe webhook secret in Vercel
+- [x] Set `SENTRY_DSN` in Vercel
 
 ### 2. Trial Conversion Emails (High Value - Reduces Churn)
 
@@ -93,4 +93,4 @@
 
 ---
 
-_Updated: 2025-12-17_
+_Updated: 2025-12-22_
