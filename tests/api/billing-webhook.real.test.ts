@@ -16,7 +16,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import type Stripe from 'stripe'
 import {
-  createCheckoutCompletedEvent,
+  createCheckoutEvent,
   createSubscriptionCreatedEvent,
   createSubscriptionUpdatedEvent,
   createSubscriptionDeletedEvent,
@@ -190,7 +190,7 @@ describe('/api/webhooks/stripe', () => {
 
   describe('checkout.session.completed', () => {
     it('should handle successful checkout completion', async () => {
-      const event = createCheckoutCompletedEvent({
+      const event = createCheckoutEvent({
         userId: 'user-123',
         customerId: 'cus_checkout_123',
         tier: 'standard',
@@ -225,7 +225,7 @@ describe('/api/webhooks/stripe', () => {
     })
 
     it('should skip non-subscription checkout sessions', async () => {
-      const event = createCheckoutCompletedEvent()
+      const event = createCheckoutEvent()
       ;(event.data.object as Stripe.Checkout.Session).mode = 'payment'
       ;(event.data.object as Stripe.Checkout.Session).subscription = null
 

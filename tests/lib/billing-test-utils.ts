@@ -1,313 +1,74 @@
 /**
- * Reusable Stripe Billing Test Utilities
+ * PostRail Billing Test Utilities
  *
- * Copy this file to any project that uses Stripe billing.
- * Provides mocks, factories, and helpers for testing:
- * - Checkout sessions
- * - Webhooks
- * - Subscriptions
- * - Customer portal
+ * Re-exports shared Stripe testing utilities from @vbl/shared
+ * and adds PostRail-specific helpers (Supabase mocks, tier pricing).
  *
  * @example
- * import { createMockStripe, createStripeEvent } from '@/tests/lib/billing-test-utils'
+ * import { createCheckoutEvent, createMockSupabase, TIER_PRICES } from '@/tests/lib/billing-test-utils'
  */
 
 import { vi } from 'vitest'
 import type Stripe from 'stripe'
 
 // ============================================================================
-// STRIPE MOCK FACTORY
+// RE-EXPORT SHARED STRIPE UTILITIES
 // ============================================================================
 
-export interface MockStripeOptions {
-  checkoutSession?: Partial<Stripe.Checkout.Session>
-  subscription?: Partial<Stripe.Subscription>
-  customer?: Partial<Stripe.Customer>
-  portalSession?: Partial<Stripe.BillingPortal.Session>
-}
+export {
+  // Mock factories
+  createStripeMock,
+  type StripeMock,
 
-/**
- * Creates a fully mocked Stripe client for testing
- */
-export function createMockStripe(options: MockStripeOptions = {}) {
-  const mockCheckoutSession = {
-    id: 'cs_test_123',
-    url: 'https://checkout.stripe.com/test',
-    mode: 'subscription',
-    customer: 'cus_test_123',
-    subscription: 'sub_test_123',
-    metadata: { userId: 'user-123', tier: 'standard' },
-    ...options.checkoutSession,
-  }
+  // Event factories
+  createCheckoutEvent,
+  createSubscriptionCreatedEvent,
+  createSubscriptionUpdatedEvent,
+  createSubscriptionDeletedEvent,
+  createSubscriptionEvent,
+  createPaymentSucceededEvent,
+  createPaymentFailedEvent,
+  createInvoiceEvent,
 
-  const mockSubscription = {
-    id: 'sub_test_123',
-    customer: 'cus_test_123',
-    status: 'active' as Stripe.Subscription.Status,
-    cancel_at_period_end: false,
-    items: {
-      data: [
-        {
-          id: 'si_test_123',
-          price: { id: 'price_standard_29' },
-          current_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-        },
-      ],
-    },
-    metadata: { userId: 'user-123', tier: 'standard' },
-    ...options.subscription,
-  }
+  // Test helpers
+  createWebhookRequest,
+  generateTestSignature,
+  assertCheckoutCreated,
 
-  const mockCustomer = {
-    id: 'cus_test_123',
-    email: 'test@example.com',
-    metadata: { userId: 'user-123' },
-    ...options.customer,
-  }
+  // Status mapping
+  STRIPE_STATUS_MAP,
 
-  const mockPortalSession = {
-    id: 'bps_test_123',
-    url: 'https://billing.stripe.com/test',
-    ...options.portalSession,
-  }
+  // Test data
+  TEST_CARDS,
+  TEST_CUSTOMERS,
+  TEST_PRICES as SHARED_TEST_PRICES,
 
-  return {
-    checkout: {
-      sessions: {
-        create: vi.fn().mockResolvedValue(mockCheckoutSession),
-        retrieve: vi.fn().mockResolvedValue(mockCheckoutSession),
-      },
-    },
-    subscriptions: {
-      retrieve: vi.fn().mockResolvedValue(mockSubscription),
-      update: vi.fn().mockResolvedValue(mockSubscription),
-      cancel: vi
-        .fn()
-        .mockResolvedValue({ ...mockSubscription, status: 'canceled' }),
-    },
-    customers: {
-      create: vi.fn().mockResolvedValue(mockCustomer),
-      retrieve: vi.fn().mockResolvedValue(mockCustomer),
-    },
-    billingPortal: {
-      sessions: {
-        create: vi.fn().mockResolvedValue(mockPortalSession),
-      },
-    },
-    webhooks: {
-      constructEvent: vi.fn(),
-    },
-  }
-}
+  // Types
+  type EventFactoryOptions,
+} from '@vbl/shared'
 
 // ============================================================================
-// STRIPE EVENT FACTORIES
+// POSTRAIL-SPECIFIC: TIER PRICING
 // ============================================================================
 
-export interface EventFactoryOptions {
-  userId?: string
-  customerId?: string
-  subscriptionId?: string
-  tier?: 'standard' | 'growth'
-  priceId?: string
-  status?: Stripe.Subscription.Status
-}
-
-const defaultOptions: EventFactoryOptions = {
-  userId: 'user-123',
-  customerId: 'cus_test_123',
-  subscriptionId: 'sub_test_123',
-  tier: 'standard',
-  priceId: 'price_standard_29',
-  status: 'active',
-}
-
 /**
- * Creates a checkout.session.completed event
+ * PostRail tier pricing constants
  */
-export function createCheckoutCompletedEvent(
-  options: EventFactoryOptions = {}
-): Stripe.Event {
-  const opts = { ...defaultOptions, ...options }
-  return {
-    id: 'evt_checkout_completed',
-    type: 'checkout.session.completed',
-    data: {
-      object: {
-        id: 'cs_test_123',
-        mode: 'subscription',
-        customer: opts.customerId,
-        subscription: opts.subscriptionId,
-        metadata: {
-          userId: opts.userId,
-          tier: opts.tier,
-        },
-      } as Stripe.Checkout.Session,
-    },
-    created: Math.floor(Date.now() / 1000),
-    livemode: false,
-    pending_webhooks: 0,
-    request: null,
-    api_version: '2025-11-17.clover',
-    object: 'event',
-  }
-}
-
-/**
- * Creates a customer.subscription.created event
- */
-export function createSubscriptionCreatedEvent(
-  options: EventFactoryOptions = {}
-): Stripe.Event {
-  const opts = { ...defaultOptions, ...options }
-  return {
-    id: 'evt_subscription_created',
-    type: 'customer.subscription.created',
-    data: {
-      object: createMockSubscriptionObject(opts),
-    },
-    created: Math.floor(Date.now() / 1000),
-    livemode: false,
-    pending_webhooks: 0,
-    request: null,
-    api_version: '2025-11-17.clover',
-    object: 'event',
-  }
-}
-
-/**
- * Creates a customer.subscription.updated event
- */
-export function createSubscriptionUpdatedEvent(
-  options: EventFactoryOptions = {}
-): Stripe.Event {
-  const opts = { ...defaultOptions, ...options }
-  return {
-    id: 'evt_subscription_updated',
-    type: 'customer.subscription.updated',
-    data: {
-      object: createMockSubscriptionObject(opts),
-      previous_attributes: {},
-    },
-    created: Math.floor(Date.now() / 1000),
-    livemode: false,
-    pending_webhooks: 0,
-    request: null,
-    api_version: '2025-11-17.clover',
-    object: 'event',
-  }
-}
-
-/**
- * Creates a customer.subscription.deleted event
- */
-export function createSubscriptionDeletedEvent(
-  options: EventFactoryOptions = {}
-): Stripe.Event {
-  const opts = { ...defaultOptions, ...options }
-  return {
-    id: 'evt_subscription_deleted',
-    type: 'customer.subscription.deleted',
-    data: {
-      object: createMockSubscriptionObject({ ...opts, status: 'canceled' }),
-    },
-    created: Math.floor(Date.now() / 1000),
-    livemode: false,
-    pending_webhooks: 0,
-    request: null,
-    api_version: '2025-11-17.clover',
-    object: 'event',
-  }
-}
-
-/**
- * Creates an invoice.payment_succeeded event
- */
-export function createPaymentSucceededEvent(
-  options: EventFactoryOptions = {}
-): Stripe.Event {
-  const opts = { ...defaultOptions, ...options }
-  return {
-    id: 'evt_payment_succeeded',
-    type: 'invoice.payment_succeeded',
-    data: {
-      object: {
-        id: 'in_test_123',
-        customer: opts.customerId,
-        subscription: opts.subscriptionId,
-        status: 'paid',
-        amount_paid: opts.tier === 'growth' ? 5900 : 2900,
-      } as unknown as Stripe.Invoice,
-    },
-    created: Math.floor(Date.now() / 1000),
-    livemode: false,
-    pending_webhooks: 0,
-    request: null,
-    api_version: '2025-11-17.clover',
-    object: 'event',
-  }
-}
-
-/**
- * Creates an invoice.payment_failed event
- */
-export function createPaymentFailedEvent(
-  options: EventFactoryOptions & { attemptCount?: number } = {}
-): Stripe.Event {
-  const opts = { ...defaultOptions, ...options }
-  return {
-    id: 'evt_payment_failed',
-    type: 'invoice.payment_failed',
-    data: {
-      object: {
-        id: 'in_test_123',
-        customer: opts.customerId,
-        subscription: opts.subscriptionId,
-        status: 'open',
-        attempt_count: options.attemptCount || 1,
-      } as unknown as Stripe.Invoice,
-    },
-    created: Math.floor(Date.now() / 1000),
-    livemode: false,
-    pending_webhooks: 0,
-    request: null,
-    api_version: '2025-11-17.clover',
-    object: 'event',
-  }
-}
-
-/**
- * Helper to create a mock subscription object
- */
-function createMockSubscriptionObject(
-  options: EventFactoryOptions
-): Stripe.Subscription {
-  return {
-    id: options.subscriptionId || 'sub_test_123',
-    customer: options.customerId || 'cus_test_123',
-    status: options.status || 'active',
-    cancel_at_period_end: false,
-    items: {
-      data: [
-        {
-          id: 'si_test_123',
-          price: { id: options.priceId || 'price_standard_29' },
-          current_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-        },
-      ],
-      object: 'list',
-      has_more: false,
-      url: '/v1/subscription_items',
-    },
-    metadata: {
-      userId: options.userId || 'user-123',
-      tier: options.tier || 'standard',
-    },
-  } as unknown as Stripe.Subscription
-}
+export const TIER_PRICES = {
+  standard: {
+    priceId: 'price_standard_29',
+    amount: 2900,
+    name: 'Standard',
+  },
+  growth: {
+    priceId: 'price_growth_59',
+    amount: 5900,
+    name: 'Growth',
+  },
+} as const
 
 // ============================================================================
-// SUPABASE MOCK FACTORY
+// POSTRAIL-SPECIFIC: SUPABASE MOCKS
 // ============================================================================
 
 export interface MockUserProfile {
@@ -363,21 +124,8 @@ export function createMockSupabase(profile: MockUserProfile | null = null) {
 }
 
 // ============================================================================
-// TEST HELPERS
+// POSTRAIL-SPECIFIC: ADDITIONAL HELPERS
 // ============================================================================
-
-/**
- * Creates a valid webhook signature header for testing
- */
-export function createWebhookSignature(
-  payload: string,
-  secret: string = 'whsec_test_secret'
-): string {
-  const timestamp = Math.floor(Date.now() / 1000)
-  // In real tests, you'd compute the actual HMAC
-  // For mocking, we just return a formatted string
-  return `t=${timestamp},v1=mock_signature_${secret}`
-}
 
 /**
  * Creates a mock Request object for route testing
@@ -400,23 +148,19 @@ export function createMockRequest(options: {
 }
 
 /**
- * Tier pricing constants - update these per project
+ * Creates a valid webhook signature header for testing
  */
-export const TIER_PRICES = {
-  standard: {
-    priceId: 'price_standard_29',
-    amount: 2900,
-    name: 'Standard',
-  },
-  growth: {
-    priceId: 'price_growth_59',
-    amount: 5900,
-    name: 'Growth',
-  },
-} as const
+export function createWebhookSignature(
+  payload: string,
+  secret: string = 'whsec_test_secret'
+): string {
+  const timestamp = Math.floor(Date.now() / 1000)
+  return `t=${timestamp},v1=mock_signature_${secret}`
+}
 
 /**
- * Status mapping from Stripe to app
+ * Status mapping from Stripe to PostRail app status
+ * Re-export with PostRail-specific name for clarity
  */
 export const STATUS_MAP: Record<
   Stripe.Subscription.Status,
@@ -433,7 +177,7 @@ export const STATUS_MAP: Record<
 }
 
 /**
- * Validates that a tier is valid
+ * Validates that a tier is valid for PostRail
  */
 export function isValidTier(tier: string): tier is 'standard' | 'growth' {
   return tier === 'standard' || tier === 'growth'
