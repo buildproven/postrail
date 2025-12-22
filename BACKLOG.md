@@ -20,7 +20,7 @@
 
 > Blocking all paid conversions. Do these first.
 
-- [ ] Run SQL migration in Supabase Dashboard _(verify in Supabase)_
+- [x] Run SQL migration in Supabase Dashboard
 - [x] Create Stripe products (Standard $29/mo, Growth $59/mo)
 - [x] Copy price IDs to env vars (`STRIPE_PRICE_STANDARD`, `STRIPE_PRICE_GROWTH`)
 - [x] Set up Stripe webhook secret in Vercel
