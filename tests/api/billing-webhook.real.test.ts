@@ -193,7 +193,7 @@ describe('/api/webhooks/stripe', () => {
       const event = createCheckoutEvent({
         userId: 'user-123',
         customerId: 'cus_checkout_123',
-        tier: 'standard',
+        metadata: { tier: 'standard' },
       })
 
       mockStripe.webhooks.constructEvent.mockReturnValue(event)
@@ -253,7 +253,7 @@ describe('/api/webhooks/stripe', () => {
     it('should handle new subscription', async () => {
       const event = createSubscriptionCreatedEvent({
         customerId: 'cus_new_123',
-        tier: 'standard',
+        metadata: { tier: 'standard' },
       })
 
       mockStripe.webhooks.constructEvent.mockReturnValue(event)
@@ -285,7 +285,7 @@ describe('/api/webhooks/stripe', () => {
     it('should handle subscription upgrade', async () => {
       const event = createSubscriptionUpdatedEvent({
         customerId: 'cus_upgrade_123',
-        tier: 'growth',
+        metadata: { tier: 'growth' },
         priceId: TIER_PRICES.growth.priceId,
       })
 
@@ -311,7 +311,7 @@ describe('/api/webhooks/stripe', () => {
     it('should handle subscription downgrade', async () => {
       const event = createSubscriptionUpdatedEvent({
         customerId: 'cus_downgrade_123',
-        tier: 'standard',
+        metadata: { tier: 'standard' },
         priceId: TIER_PRICES.standard.priceId,
       })
 

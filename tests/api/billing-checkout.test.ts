@@ -111,7 +111,9 @@ describe('/api/billing/checkout', () => {
 
       expect(getTierFeatures('standard').price).toBe(29)
       expect(getTierFeatures('growth').price).toBe(59)
-      expect(getTierFeatures('growth').apiAccess).toBe(true)
+      expect(
+        (getTierFeatures('growth') as { apiAccess: boolean }).apiAccess
+      ).toBe(true)
     })
   })
 
