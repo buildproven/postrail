@@ -1,6 +1,17 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy-initialize Resend to avoid build-time errors when API key is missing
+let resendClient: Resend | null = null
+
+function getResend(): Resend {
+  if (!resendClient) {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY environment variable is not set')
+    }
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+  }
+  return resendClient
+}
 
 const FROM_EMAIL = 'PostRail <noreply@vibebuildlab.com>'
 
@@ -19,7 +30,7 @@ export async function sendTrialExpiryWarning(
   daysRemaining: number
 ): Promise<EmailResult> {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: `Your PostRail trial expires in ${daysRemaining} days`,
@@ -70,7 +81,7 @@ export async function sendTrialExpired(
   name: string | null
 ): Promise<EmailResult> {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: 'Your PostRail trial has ended',
@@ -121,7 +132,7 @@ export async function sendWelcomeEmail(
   name: string | null
 ): Promise<EmailResult> {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: 'Welcome to PostRail! 🚀',

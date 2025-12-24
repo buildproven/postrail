@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -16,11 +17,81 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Fetch real data
+  const { count: newsletterCount } = await supabase
+    .from('newsletters')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user?.id)
+
+  const { data: connections } = await supabase
+    .from('platform_connections')
+    .select('platform, is_active')
+    .eq('user_id', user?.id)
+
+  const connectedPlatforms = new Map(
+    connections?.map(c => [c.platform, c.is_active]) || []
+  )
+
+  const { data: userProfile } = await supabase
+    .from('user_profiles')
+    .select(
+      'generations_today, generations_total, subscription_status, trial_ends_at'
+    )
+    .eq('id', user?.id)
+    .single()
+
+  const now = new Date()
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+  const { data: recentPosts } = await supabase
+    .from('social_posts')
+    .select('status, impressions, newsletters!inner(user_id)')
+    .eq('newsletters.user_id', user?.id)
+    .gte('created_at', thirtyDaysAgo.toISOString())
+
+  const publishedCount =
+    recentPosts?.filter(p => p.status === 'published').length || 0
+  const scheduledCount =
+    recentPosts?.filter(p => p.status === 'scheduled').length || 0
+  const totalImpressions =
+    recentPosts?.reduce((sum, p) => sum + (p.impressions || 0), 0) || 0
+
+  const isTrial = userProfile?.subscription_status === 'trial'
+  const trialEndsAt = userProfile?.trial_ends_at
+    ? new Date(userProfile.trial_ends_at)
+    : null
+  const trialDaysRemaining =
+    trialEndsAt && isTrial
+      ? Math.max(
+          0,
+          Math.ceil(
+            (trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+          )
+        )
+      : null
+
+  const platformStatus = (platform: string) => {
+    const isActive = connectedPlatforms.get(platform)
+    if (isActive) return { text: 'Connected', color: 'text-green-600' }
+    if (connectedPlatforms.has(platform))
+      return { text: 'Inactive', color: 'text-yellow-600' }
+    return { text: 'Not connected', color: 'text-muted-foreground' }
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back, {user?.email}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back, {user?.email}</p>
+        </div>
+        {isTrial && trialDaysRemaining !== null && (
+          <Badge
+            variant={trialDaysRemaining <= 3 ? 'destructive' : 'secondary'}
+          >
+            {trialDaysRemaining} days left in trial
+          </Badge>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -32,25 +103,10 @@ export default async function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Dynamic Count */}
-            {(() => {
-              // Only way to do async inside here is a self-invoking async function or Suspense
-              // But since this is a Server Component, we can just fetch above.
-              // Let's fetch count in the component body.
-              return (
-                <>
-                  <div className="text-2xl font-bold">
-                    {/* Placeholder for simplicity, in real app we fetch count */}
-                    {/* We'll just use a static label for now as async in JSX is tricky without major refactor */}
-                    View All
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Manage your campaigns
-                  </p>
-                </>
-              )
-            })()}
-
+            <div className="text-2xl font-bold">{newsletterCount || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {newsletterCount === 1 ? 'newsletter' : 'newsletters'} created
+            </p>
             <Button asChild className="mt-4 w-full">
               <Link href="/dashboard/newsletters/new">
                 Create Newsletter Post
@@ -68,24 +124,22 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">LinkedIn</span>
-                <span className="text-xs text-muted-foreground">
-                  Not connected
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Threads</span>
-                <span className="text-xs text-muted-foreground">
-                  Not connected
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Facebook</span>
-                <span className="text-xs text-muted-foreground">
-                  Not connected
-                </span>
-              </div>
+              {['twitter', 'linkedin', 'facebook', 'threads'].map(platform => {
+                const status = platformStatus(platform)
+                return (
+                  <div
+                    key={platform}
+                    className="flex items-center justify-between"
+                  >
+                    <span className="text-sm capitalize">
+                      {platform === 'twitter' ? 'Twitter/X' : platform}
+                    </span>
+                    <span className={`text-xs ${status.color}`}>
+                      {status.text}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
             <Button asChild className="mt-4 w-full" variant="outline">
               <Link href="/dashboard/platforms">Connect Platforms</Link>
@@ -101,8 +155,21 @@ export default async function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">total impressions</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <div className="text-2xl font-bold">{publishedCount}</div>
+                <p className="text-xs text-muted-foreground">published</p>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{scheduledCount}</div>
+                <p className="text-xs text-muted-foreground">scheduled</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {totalImpressions > 0
+                ? `${totalImpressions.toLocaleString()} impressions`
+                : 'Impressions tracked with OAuth'}
+            </p>
             <Button asChild className="mt-4 w-full" variant="outline">
               <Link href="/dashboard/analytics">View Analytics</Link>
             </Button>
@@ -119,13 +186,23 @@ export default async function DashboardPage() {
         </CardHeader>
         <CardContent>
           <ol className="list-decimal list-inside space-y-2 text-sm">
-            <li>
+            <li className={connectedPlatforms.size > 0 ? 'text-green-600' : ''}>
               Connect your social media platforms (LinkedIn, Threads, Facebook)
+              {connectedPlatforms.size > 0 && ' ✓'}
             </li>
-            <li>Create your first newsletter post by pasting content or URL</li>
+            <li className={(newsletterCount || 0) > 0 ? 'text-green-600' : ''}>
+              Create your first newsletter post by pasting content or URL
+              {(newsletterCount || 0) > 0 && ' ✓'}
+            </li>
             <li>Review AI-generated posts for each platform</li>
-            <li>Schedule posts to publish before and after your newsletter</li>
-            <li>Track performance with built-in analytics</li>
+            <li className={scheduledCount > 0 ? 'text-green-600' : ''}>
+              Schedule posts to publish before and after your newsletter
+              {scheduledCount > 0 && ' ✓'}
+            </li>
+            <li className={publishedCount > 0 ? 'text-green-600' : ''}>
+              Track performance with built-in analytics
+              {publishedCount > 0 && ' ✓'}
+            </li>
           </ol>
         </CardContent>
       </Card>

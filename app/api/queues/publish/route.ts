@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { verifyQStashSignature } from '@/lib/platforms/qstash'
+import { verifyQStashSignature, schedulePost } from '@/lib/platforms/qstash'
 import { TwitterApi } from 'twitter-api-v2'
 import { decrypt } from '@/lib/crypto'
+
+// Exponential backoff delays in seconds: 1min, 5min, 30min
+const RETRY_DELAYS = [60, 300, 1800] as const
+const MAX_RETRIES = 3
 
 type SocialPost = {
   id: string
   content: string
   platform: string
   status: string
+  retry_count: number
+  max_retries: number
   newsletters: { user_id: string }
 }
 
@@ -196,6 +202,17 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Check if max retries exceeded - don't process further
+    const retryCount = post.retry_count ?? 0
+    const maxRetries = post.max_retries ?? MAX_RETRIES
+    if (post.status === 'failed' && retryCount >= maxRetries) {
+      return NextResponse.json({
+        message: 'Max retries exceeded',
+        retryCount,
+        maxRetries,
+      })
+    }
+
     // Mark as publishing
     await supabase
       .from('social_posts')
@@ -243,19 +260,74 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ success: true, ...result })
     } catch (publishError) {
-      // Update DB with failure
       const errorMessage =
         publishError instanceof Error ? publishError.message : 'Unknown error'
-      await supabase
-        .from('social_posts')
-        .update({
-          status: 'failed',
-          error_message: errorMessage,
-        })
-        .eq('id', post.id)
+      const newRetryCount = retryCount + 1
+      const canRetry = newRetryCount < maxRetries
 
-      console.error(`Failed to publish ${post.platform} post:`, publishError)
-      return NextResponse.json({ error: errorMessage }, { status: 500 })
+      console.error(
+        `Failed to publish ${post.platform} post (attempt ${newRetryCount}/${maxRetries}):`,
+        publishError
+      )
+
+      if (canRetry) {
+        // Schedule retry with exponential backoff
+        const delaySeconds =
+          RETRY_DELAYS[retryCount] ?? RETRY_DELAYS[RETRY_DELAYS.length - 1]
+        const retryTime = new Date(Date.now() + delaySeconds * 1000)
+
+        await supabase
+          .from('social_posts')
+          .update({
+            status: 'scheduled', // Keep as scheduled for retry
+            retry_count: newRetryCount,
+            last_retry_at: new Date().toISOString(),
+            error_message: `Retry ${newRetryCount}/${maxRetries}: ${errorMessage}`,
+          })
+          .eq('id', post.id)
+
+        // Schedule retry via QStash
+        try {
+          const retryResult = await schedulePost(post.id, retryTime)
+          console.log(
+            `Scheduled retry ${newRetryCount} for post ${post.id} in ${delaySeconds}s`,
+            retryResult.messageId
+          )
+
+          // Store the QStash message ID for potential cancellation
+          await supabase
+            .from('social_posts')
+            .update({ qstash_message_id: retryResult.messageId })
+            .eq('id', post.id)
+        } catch (qstashError) {
+          console.error('Failed to schedule retry via QStash:', qstashError)
+        }
+
+        return NextResponse.json({
+          error: errorMessage,
+          retry: true,
+          retryCount: newRetryCount,
+          nextRetryAt: retryTime.toISOString(),
+        })
+      } else {
+        // Max retries exceeded - mark as permanently failed
+        await supabase
+          .from('social_posts')
+          .update({
+            status: 'failed',
+            retry_count: newRetryCount,
+            last_retry_at: new Date().toISOString(),
+            error_message: `Failed after ${maxRetries} attempts: ${errorMessage}`,
+          })
+          .eq('id', post.id)
+
+        return NextResponse.json({
+          error: errorMessage,
+          retry: false,
+          retryCount: newRetryCount,
+          message: 'Max retries exceeded',
+        })
+      }
     }
   } catch (error) {
     console.error('Queue processing error:', error)
