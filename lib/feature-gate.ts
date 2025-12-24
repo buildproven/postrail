@@ -23,6 +23,7 @@ export type Feature =
   | 'bulk_generation'
   | 'priority_support'
   | 'api_access'
+  | 'ab_variants'
 
 export interface FeatureCheckResult {
   allowed: boolean
@@ -207,6 +208,7 @@ export function getTierFeatures(tier: SubscriptionTier): {
     'bulk_generation',
     'priority_support',
     'api_access',
+    'ab_variants',
   ]
 
   const tierConfig = SUBSCRIPTION_TIERS[tier]

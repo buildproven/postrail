@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { AiToneSettings } from '@/components/ai-tone-settings'
+import { TimezoneSettings } from '@/components/timezone-settings'
 import type { User } from '@supabase/supabase-js'
 
 export default function SettingsPage() {
@@ -78,16 +80,11 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Preferences */}
-        <div className="border rounded-lg p-6 bg-white">
-          <h2 className="text-lg font-semibold mb-4">Preferences</h2>
-          <div className="bg-blue-50 border border-blue-200 rounded p-4">
-            <p className="text-sm text-blue-800">
-              User preferences and customization options will be available in a
-              future update.
-            </p>
-          </div>
-        </div>
+        {/* AI Writing Style */}
+        <AiToneSettings />
+
+        {/* Timezone Settings */}
+        <TimezoneSettings />
 
         {/* Subscription */}
         <div className="border rounded-lg p-6 bg-white">

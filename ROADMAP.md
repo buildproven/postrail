@@ -45,27 +45,29 @@ Become the go-to tool for newsletter creators to amplify their reach across soci
 - [ ] Facebook OAuth + posting
 - [ ] Threads OAuth + posting
 
-## Phase 5: Scheduling & Automation
+## Phase 5: Scheduling & Automation ✅
 
-- [ ] QStash queue integration
-- [ ] Pre-CTA scheduling (24-8h before newsletter)
-- [ ] Post-CTA scheduling (48-72h after newsletter)
-- [ ] Timezone-aware scheduling
-- [ ] Retry logic for failed posts
+- [x] QStash queue integration
+- [x] Pre-CTA scheduling (8-24h before newsletter)
+- [x] Post-CTA scheduling (48-72h after newsletter)
+- [x] Timezone-aware scheduling (auto-detect + manual override)
+- [x] Retry logic for failed posts (exponential backoff: 1m → 5m → 30m)
+- [x] Smart timing by platform (optimal posting hours)
+- [x] Manual retry API for failed posts
 
-## Phase 6: Analytics & Growth
+## Phase 6: Analytics & Growth ✅
 
-- [ ] Post performance tracking
-- [ ] Platform engagement metrics
-- [ ] Usage analytics dashboard
-- [ ] ROI visualization
-- [ ] A/B testing for post variants
+- [x] Post performance tracking (by status, platform)
+- [x] Platform engagement metrics (placeholder for OAuth)
+- [x] Usage analytics dashboard
+- [x] Publishing velocity metrics
+- [x] A/B testing for post variants
 
 ## Phase 7: Scale & Polish
 
 - [ ] Team/agency accounts
 - [ ] Bulk newsletter import
-- [ ] Custom AI tone/voice settings
+- [x] Custom AI tone/voice settings
 - [ ] API for power users
 - [ ] Mobile app (PWA)
 
@@ -80,4 +82,4 @@ Become the go-to tool for newsletter creators to amplify their reach across soci
 
 ---
 
-_Updated: 2025-12-14_
+_Updated: 2025-12-24_

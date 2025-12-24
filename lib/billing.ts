@@ -33,6 +33,7 @@ export const SUBSCRIPTION_TIERS = {
       'manual_posting',
       'scheduling',
       'analytics_basic',
+      'ab_variants',
     ],
   },
   growth: {
@@ -51,6 +52,7 @@ export const SUBSCRIPTION_TIERS = {
       'bulk_generation',
       'priority_support',
       'api_access',
+      'ab_variants',
     ],
   },
 } as const
