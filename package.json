@@ -86,7 +86,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
-    "@lhci/cli": "^0.14.0",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
@@ -153,5 +153,8 @@
   "volta": {
     "node": "20.11.1",
     "npm": "10.2.4"
+  },
+  "overrides": {
+    "tmp": "^0.2.4"
   }
 }
