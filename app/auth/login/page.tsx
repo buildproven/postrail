@@ -64,6 +64,7 @@ export default function LoginPage() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 disabled={loading}
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -84,9 +85,14 @@ export default function LoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 required
                 disabled={loading}
+                autoComplete="current-password"
               />
             </div>
-            {error && <div className="text-sm text-destructive">{error}</div>}
+            {error && (
+              <div role="alert" className="text-sm text-destructive">
+                {error}
+              </div>
+            )}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={loading}>

@@ -68,6 +68,7 @@ export default function SignUpPage() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 disabled={loading}
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -81,6 +82,7 @@ export default function SignUpPage() {
                 required
                 minLength={6}
                 disabled={loading}
+                autoComplete="new-password"
               />
               <p className="text-xs text-muted-foreground">
                 Must be at least 6 characters
@@ -88,6 +90,7 @@ export default function SignUpPage() {
             </div>
             {error && (
               <div
+                role="alert"
                 className={`text-sm ${error.includes('Check your email') ? 'text-green-600' : 'text-destructive'}`}
               >
                 {error}

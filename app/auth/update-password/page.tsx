@@ -72,6 +72,7 @@ export default function UpdatePasswordPage() {
               onChange={e => setPassword(e.target.value)}
               placeholder="Enter new password"
               className="mt-1"
+              autoComplete="new-password"
             />
           </div>
 
@@ -85,11 +86,15 @@ export default function UpdatePasswordPage() {
               onChange={e => setConfirmPassword(e.target.value)}
               placeholder="Confirm new password"
               className="mt-1"
+              autoComplete="new-password"
             />
           </div>
 
           {error && (
-            <div className="p-3 rounded bg-red-50 text-red-800 text-sm">
+            <div
+              role="alert"
+              className="p-3 rounded bg-red-50 text-red-800 text-sm"
+            >
               {error}
             </div>
           )}

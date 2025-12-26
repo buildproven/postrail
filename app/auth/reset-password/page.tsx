@@ -63,11 +63,13 @@ export default function ResetPasswordPage() {
               onChange={e => setEmail(e.target.value)}
               placeholder="you@example.com"
               className="mt-1"
+              autoComplete="email"
             />
           </div>
 
           {message && (
             <div
+              role="alert"
               className={`p-3 rounded ${
                 message.type === 'success'
                   ? 'bg-green-50 text-green-800'
