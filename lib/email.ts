@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { logger, logError } from '@/lib/logger'
 
 // Lazy-initialize Resend to avoid build-time errors when API key is missing
 let resendClient: Resend | null = null
@@ -62,13 +63,24 @@ export async function sendTrialExpiryWarning(
     })
 
     if (error) {
-      console.error('Failed to send trial expiry warning:', error)
+      logger.error({
+        type: 'email.trial_expiry_warning.failed',
+        email,
+        error: error.message,
+      })
       return { success: false, error: error.message }
     }
 
+    logger.info({
+      type: 'email.trial_expiry_warning.sent',
+      email,
+      id: data?.id,
+    })
     return { success: true, id: data?.id }
   } catch (err) {
-    console.error('Email send error:', err)
+    logError(err instanceof Error ? err : new Error(String(err)), {
+      context: 'trial_expiry_email',
+    })
     return { success: false, error: String(err) }
   }
 }
@@ -113,13 +125,20 @@ export async function sendTrialExpired(
     })
 
     if (error) {
-      console.error('Failed to send trial expired:', error)
+      logger.error({
+        type: 'email.trial_expired.failed',
+        email,
+        error: error.message,
+      })
       return { success: false, error: error.message }
     }
 
+    logger.info({ type: 'email.trial_expired.sent', email, id: data?.id })
     return { success: true, id: data?.id }
   } catch (err) {
-    console.error('Email send error:', err)
+    logError(err instanceof Error ? err : new Error(String(err)), {
+      context: 'trial_expired_email',
+    })
     return { success: false, error: String(err) }
   }
 }
@@ -169,13 +188,20 @@ export async function sendWelcomeEmail(
     })
 
     if (error) {
-      console.error('Failed to send welcome email:', error)
+      logger.error({
+        type: 'email.welcome.failed',
+        email,
+        error: error.message,
+      })
       return { success: false, error: error.message }
     }
 
+    logger.info({ type: 'email.welcome.sent', email, id: data?.id })
     return { success: true, id: data?.id }
   } catch (err) {
-    console.error('Email send error:', err)
+    logError(err instanceof Error ? err : new Error(String(err)), {
+      context: 'welcome_email',
+    })
     return { success: false, error: String(err) }
   }
 }

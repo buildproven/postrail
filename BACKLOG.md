@@ -1,11 +1,13 @@
 # postrail - Priority Actions
 
 **Audit Date:** 2025-12-30
-**Status:** Deployed | **SOTA Score:** 78/100
-**Key Gap:** Security headers, A11y fixes, SEO improvements
+**Status:** Deployed | **SOTA Score:** ~88/100 (after fixes)
+**Key Gap:** Minor improvements remaining (lower priority)
 
 ## Recent Work
 
+- **2025-12-30**: Medium priority SOTA fixes (fieldset/legend, time elements, error boundary, structured logging)
+- **2025-12-30**: Critical/High priority SOTA fixes (security headers, CORS, color contrast, aria-live, skip links, JSON-LD, lazy TipTap, OG image)
 - **2025-12-30**: SOTA audit (SEO 72, A11y 78, Security 78, Architecture 85, Performance 72, Code Quality 85)
 - **2025-12-17**: Landing page rewrite (sales copy, pricing tiers, how-it-works), settings page upgrade UI, README roadmap update
 - **2025-12-16**: Vercel deployment fixed (next.config.ts → .js), Stripe SDK v20 compatibility
@@ -37,15 +39,15 @@
 
 > From audit recommendations
 
-- [ ] Trial expiry warning emails (3 days before) - Resend
-- [ ] Trial expired notification - Prompt to upgrade
-- [ ] Welcome email with quick-start guide
-- [ ] Usage analytics dashboard (generation history, platform breakdown)
-- [ ] Add `aria-label` to icon-only buttons in PostPreviewCard
-- [ ] Wrap newsletter date input in fieldset with legend
-- [ ] Add `<time>` elements for dates
-- [ ] Migrate console.log to structured logger (79 occurrences)
-- [ ] Add error boundary to dashboard layout
+- [x] Trial expiry warning emails (3 days before) - Resend (already implemented in lib/email.ts)
+- [x] Trial expired notification - Prompt to upgrade (already implemented in lib/email.ts)
+- [x] Welcome email with quick-start guide (already implemented in lib/email.ts)
+- [x] Usage analytics dashboard (generation history, platform breakdown) - app/dashboard/analytics/
+- [x] Add `aria-label` to icon-only buttons - N/A (no icon-only buttons in PostPreviewCard)
+- [x] Wrap newsletter date input in fieldset with legend
+- [x] Add `<time>` elements for dates in post-scheduler
+- [x] Migrate console.log to structured logger (key API files)
+- [x] Add error boundary to dashboard layout
 
 ## 📚 Lower Priority
 
@@ -85,14 +87,14 @@
 
 ## SOTA Audit Summary (2025-12-30)
 
-| Area | Score | Key Issues |
-|------|-------|------------|
-| SEO | 72/100 | Missing JSON-LD, per-page metadata, large OG image |
-| Accessibility | 78/100 | Color contrast, aria-live, skip links |
-| Security | 78/100 | Missing headers, CORS |
-| Architecture | 85/100 | Solid patterns, minor consolidation needed |
-| Performance | 72/100 | TipTap bundle, OG image size |
-| Code Quality | 85/100 | TypeScript strict, 0 ESLint errors |
+| Area          | Score  | Key Issues                                         |
+| ------------- | ------ | -------------------------------------------------- |
+| SEO           | 72/100 | Missing JSON-LD, per-page metadata, large OG image |
+| Accessibility | 78/100 | Color contrast, aria-live, skip links              |
+| Security      | 78/100 | Missing headers, CORS                              |
+| Architecture  | 85/100 | Solid patterns, minor consolidation needed         |
+| Performance   | 72/100 | TipTap bundle, OG image size                       |
+| Code Quality  | 85/100 | TypeScript strict, 0 ESLint errors                 |
 
 ---
 

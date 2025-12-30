@@ -157,8 +157,7 @@ export function PostScheduler({
           text: data.error || 'Failed to schedule posts',
         })
       }
-    } catch (error) {
-      console.error('Scheduling error:', error)
+    } catch {
       setMessage({ type: 'error', text: 'Failed to schedule posts' })
     } finally {
       setScheduling(false)
@@ -186,8 +185,7 @@ export function PostScheduler({
           text: data.error || 'Failed to retry post',
         })
       }
-    } catch (error) {
-      console.error('Retry error:', error)
+    } catch {
       setMessage({ type: 'error', text: 'Failed to retry post' })
     } finally {
       setRetrying(null)
@@ -212,6 +210,20 @@ export function PostScheduler({
       minute: '2-digit',
     })
   }
+
+  const TimeDisplay = ({
+    isoString,
+    format,
+  }: {
+    isoString: string
+    format: 'full' | 'short'
+  }) => (
+    <time dateTime={isoString}>
+      {format === 'full'
+        ? formatDateTime(isoString)
+        : formatShortTime(isoString)}
+    </time>
+  )
 
   const getPostStatus = (post: Post) => {
     const result = results?.find(r => r.postId === post.id)
@@ -327,7 +339,10 @@ export function PostScheduler({
             </li>
           </ul>
 
-          <div className="flex gap-4">
+          <fieldset className="flex gap-4 border-0 p-0 m-0">
+            <legend className="sr-only">
+              Newsletter Publish Date and Time
+            </legend>
             <div className="flex-1">
               <Label htmlFor="publishDate">Date</Label>
               <Input
@@ -347,7 +362,7 @@ export function PostScheduler({
                 onChange={e => setPublishTime(e.target.value)}
               />
             </div>
-          </div>
+          </fieldset>
 
           {publishDate && !useSmartTiming && (
             <div className="bg-gray-50 p-4 rounded-lg text-sm">
@@ -355,21 +370,23 @@ export function PostScheduler({
               <div className="flex gap-8">
                 <div>
                   <span className="text-gray-500">Pre-CTA:</span>{' '}
-                  {formatShortTime(
-                    new Date(
+                  <TimeDisplay
+                    isoString={new Date(
                       new Date(`${publishDate}T${publishTime}`).getTime() -
                         24 * 60 * 60 * 1000
-                    ).toISOString()
-                  )}
+                    ).toISOString()}
+                    format="short"
+                  />
                 </div>
                 <div>
                   <span className="text-gray-500">Post-CTA:</span>{' '}
-                  {formatShortTime(
-                    new Date(
+                  <TimeDisplay
+                    isoString={new Date(
                       new Date(`${publishDate}T${publishTime}`).getTime() +
                         48 * 60 * 60 * 1000
-                    ).toISOString()
-                  )}
+                    ).toISOString()}
+                    format="short"
+                  />
                 </div>
               </div>
             </div>
@@ -573,8 +590,12 @@ export function PostScheduler({
                   {result?.scheduledTime && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-500">
-                        {result.localTime ||
-                          formatDateTime(result.scheduledTime)}
+                        {result.localTime || (
+                          <TimeDisplay
+                            isoString={result.scheduledTime}
+                            format="full"
+                          />
+                        )}
                       </p>
                       {result.reason && result.isOptimal && (
                         <p className="text-xs text-blue-600 flex items-center gap-1 mt-1">
@@ -658,8 +679,12 @@ export function PostScheduler({
                   {result?.scheduledTime && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-500">
-                        {result.localTime ||
-                          formatDateTime(result.scheduledTime)}
+                        {result.localTime || (
+                          <TimeDisplay
+                            isoString={result.scheduledTime}
+                            format="full"
+                          />
+                        )}
                       </p>
                       {result.reason && result.isOptimal && (
                         <p className="text-xs text-blue-600 flex items-center gap-1 mt-1">

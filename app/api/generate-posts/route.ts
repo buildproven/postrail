@@ -5,11 +5,14 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { checkFeatureAccess, checkUsageLimits } from '@/lib/feature-gate'
 import { checkTrialAccess, recordTrialGeneration } from '@/lib/trial-guard'
+import { logger, logError } from '@/lib/logger'
 
 // Validate API key at module load - fail fast with clear error
 if (!process.env.ANTHROPIC_API_KEY) {
-  console.error('FATAL: ANTHROPIC_API_KEY environment variable is not set')
-  console.error('Set it in .env.local: ANTHROPIC_API_KEY=your-key-here')
+  logger.error(
+    { type: 'config.missing', key: 'ANTHROPIC_API_KEY' },
+    'FATAL: ANTHROPIC_API_KEY environment variable is not set'
+  )
 }
 
 // Configurable model name via environment variable
@@ -144,7 +147,12 @@ Generate a ${postType} post for ${platform}.`
 
     throw new Error('Unexpected response format from Claude')
   } catch (error) {
-    console.error(`Error generating ${postType} for ${platform}:`, error)
+    logger.error({
+      type: 'ai.generation.error',
+      platform,
+      postType,
+      error: String(error),
+    })
     throw error
   }
 }
@@ -277,7 +285,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (newsletterError) {
-      console.error('Newsletter creation error:', newsletterError)
+      logger.error({
+        type: 'newsletter.create.error',
+        userId,
+        error: newsletterError.message,
+      })
       return NextResponse.json(
         { error: 'Failed to create newsletter' },
         { status: 500 }
@@ -285,7 +297,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!newsletter) {
-      console.error('Newsletter creation returned no record')
+      logger.error({ type: 'newsletter.create.empty', userId })
       return NextResponse.json(
         { error: 'Failed to create newsletter' },
         { status: 500 }
@@ -311,10 +323,12 @@ export async function POST(request: NextRequest) {
             setTimeout(() => reject(new Error('Timeout after 30s')), 30000)
           ),
         ]).catch(error => {
-          console.error(
-            `Failed to generate ${postType} for ${platform}:`,
-            error
-          )
+          logger.warn({
+            type: 'ai.generation.partial_fail',
+            platform,
+            postType,
+            error: String(error),
+          })
           return null // Return null for failed posts
         })
       )
@@ -353,7 +367,11 @@ export async function POST(request: NextRequest) {
       .insert(socialPostsData)
 
     if (postsError) {
-      console.error('Social posts creation error:', postsError)
+      logger.error({
+        type: 'posts.create.error',
+        newsletterId: newsletter.id,
+        error: postsError.message,
+      })
       // Rollback: delete the newsletter since posts failed to save
       await supabase.from('newsletters').delete().eq('id', newsletter.id)
       return NextResponse.json(
@@ -378,16 +396,26 @@ export async function POST(request: NextRequest) {
         })
       }
     } catch (recordError) {
-      console.error('Failed to record generation event:', recordError)
+      logger.warn({
+        type: 'generation_event.record.error',
+        error: String(recordError),
+      })
     }
 
+    logger.info({
+      type: 'posts.generated',
+      newsletterId: newsletter.id,
+      count: posts.length,
+    })
     return NextResponse.json({
       newsletterId: newsletter.id,
       postsGenerated: posts.length,
       posts,
     })
   } catch (error) {
-    console.error('Post generation error:', error)
+    logError(error instanceof Error ? error : new Error(String(error)), {
+      context: 'generate_posts',
+    })
 
     if (error instanceof Anthropic.APIError) {
       return NextResponse.json(
