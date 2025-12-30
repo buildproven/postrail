@@ -9,6 +9,13 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./tests/setup.ts'],
     exclude: ['**/node_modules/**', '**/e2e/**', '**/*.spec.ts'],
+    // Performance: use threads with max parallelism
+    pool: 'threads',
+    maxConcurrency: 10,
+    minWorkers: 1,
+    maxWorkers: 4,
+    testTimeout: 10000,
+    hookTimeout: 10000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
