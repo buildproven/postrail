@@ -14,8 +14,24 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { NewsletterEditor } from '@/components/newsletter-editor'
+import dynamic from 'next/dynamic'
 import { Loader2 } from 'lucide-react'
+
+// Lazy load TipTap editor to reduce initial bundle size (~150KB savings)
+const NewsletterEditor = dynamic(
+  () =>
+    import('@/components/newsletter-editor').then(mod => ({
+      default: mod.NewsletterEditor,
+    })),
+  {
+    loading: () => (
+      <div className="min-h-[300px] p-4 border rounded-md bg-muted/50 animate-pulse flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    ),
+    ssr: false,
+  }
+)
 
 export default function NewNewsletterPage() {
   const [loading, setLoading] = useState(false)

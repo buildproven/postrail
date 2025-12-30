@@ -1,7 +1,7 @@
 #!/bin/bash
 # Smart Test Strategy - Postrail
 # Generated pattern from create-qa-architect
-# https://www.aibuilderlab.com/cqa
+# https://www.vibebuildlab.com/cqa
 set -e
 
 echo "🧠 Analyzing changes for optimal test strategy..."

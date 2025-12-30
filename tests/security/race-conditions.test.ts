@@ -195,11 +195,8 @@ describe('Race Condition Security Tests', () => {
 
   describe('CRITICAL #4: getClientIP() Detection', () => {
     it('should extract IP from cf-connecting-ip header when NEXT_TRUST_PROXY=true', () => {
-      const originalEnv = process.env.NEXT_TRUST_PROXY
-      const originalNodeEnv = process.env.NODE_ENV
-
-      process.env.NEXT_TRUST_PROXY = 'true'
-      ;(process.env as any).NODE_ENV = 'production' // Ensure not development mode
+      vi.stubEnv('NEXT_TRUST_PROXY', 'true')
+      vi.stubEnv('NODE_ENV', 'production')
 
       const mockRequest = new Request('https://example.com', {
         headers: {
@@ -210,16 +207,12 @@ describe('Race Condition Security Tests', () => {
       const ip = ssrfProtection.getClientIP(mockRequest)
       expect(ip).toBe('8.8.8.8')
 
-      process.env.NEXT_TRUST_PROXY = originalEnv
-      ;(process.env as any).NODE_ENV = originalNodeEnv
+      vi.unstubAllEnvs()
     })
 
     it('should extract IP from x-real-ip header when cf-connecting-ip missing', () => {
-      const originalEnv = process.env.NEXT_TRUST_PROXY
-      const originalNodeEnv = process.env.NODE_ENV
-
-      process.env.NEXT_TRUST_PROXY = 'true'
-      ;(process.env as any).NODE_ENV = 'production'
+      vi.stubEnv('NEXT_TRUST_PROXY', 'true')
+      vi.stubEnv('NODE_ENV', 'production')
 
       const mockRequest = new Request('https://example.com', {
         headers: {
@@ -230,16 +223,12 @@ describe('Race Condition Security Tests', () => {
       const ip = ssrfProtection.getClientIP(mockRequest)
       expect(ip).toBe('1.1.1.1')
 
-      process.env.NEXT_TRUST_PROXY = originalEnv
-      ;(process.env as any).NODE_ENV = originalNodeEnv
+      vi.unstubAllEnvs()
     })
 
     it('should extract leftmost IP from x-forwarded-for', () => {
-      const originalEnv = process.env.NEXT_TRUST_PROXY
-      const originalNodeEnv = process.env.NODE_ENV
-
-      process.env.NEXT_TRUST_PROXY = 'true'
-      ;(process.env as any).NODE_ENV = 'production'
+      vi.stubEnv('NEXT_TRUST_PROXY', 'true')
+      vi.stubEnv('NODE_ENV', 'production')
 
       const mockRequest = new Request('https://example.com', {
         headers: {
@@ -250,16 +239,12 @@ describe('Race Condition Security Tests', () => {
       const ip = ssrfProtection.getClientIP(mockRequest)
       expect(ip).toBe('9.9.9.9')
 
-      process.env.NEXT_TRUST_PROXY = originalEnv
-      ;(process.env as any).NODE_ENV = originalNodeEnv
+      vi.unstubAllEnvs()
     })
 
     it('should reject private IPs in x-forwarded-for and find public IP', () => {
-      const originalEnv = process.env.NEXT_TRUST_PROXY
-      const originalNodeEnv = process.env.NODE_ENV
-
-      process.env.NEXT_TRUST_PROXY = 'true'
-      ;(process.env as any).NODE_ENV = 'production'
+      vi.stubEnv('NEXT_TRUST_PROXY', 'true')
+      vi.stubEnv('NODE_ENV', 'production')
 
       const mockRequest = new Request('https://example.com', {
         headers: {
@@ -271,44 +256,36 @@ describe('Race Condition Security Tests', () => {
       // Should find the public IP, not the private ones
       expect(ip).toBe('8.8.4.4')
 
-      process.env.NEXT_TRUST_PROXY = originalEnv
-      ;(process.env as any).NODE_ENV = originalNodeEnv
+      vi.unstubAllEnvs()
     })
 
     it('should return 127.0.0.1 in development mode', () => {
-      const originalEnv = process.env.NODE_ENV
-      const originalTrustProxy = process.env.NEXT_TRUST_PROXY
-
-      ;(process.env as any).NODE_ENV = 'development'
-      process.env.NEXT_TRUST_PROXY = 'false'
+      vi.stubEnv('NODE_ENV', 'development')
+      vi.stubEnv('NEXT_TRUST_PROXY', 'false')
 
       const mockRequest = new Request('https://example.com')
       const ip = ssrfProtection.getClientIP(mockRequest)
 
       expect(ip).toBe('127.0.0.1')
-      ;(process.env as any).NODE_ENV = originalEnv
-      process.env.NEXT_TRUST_PROXY = originalTrustProxy
+
+      vi.unstubAllEnvs()
     })
 
     it('should return "unknown" in production when IP cannot be determined', () => {
-      const originalEnv = process.env.NODE_ENV
-      const originalTrustProxy = process.env.NEXT_TRUST_PROXY
-
-      ;(process.env as any).NODE_ENV = 'production'
-      process.env.NEXT_TRUST_PROXY = 'false'
+      vi.stubEnv('NODE_ENV', 'production')
+      vi.stubEnv('NEXT_TRUST_PROXY', 'false')
 
       const mockRequest = new Request('https://example.com')
       const ip = ssrfProtection.getClientIP(mockRequest)
 
       // SECURITY FIX: No longer returns 127.0.0.1 in production
       expect(ip).toBe('unknown')
-      ;(process.env as any).NODE_ENV = originalEnv
-      process.env.NEXT_TRUST_PROXY = originalTrustProxy
+
+      vi.unstubAllEnvs()
     })
 
     it('should not trust headers when NEXT_TRUST_PROXY=false', () => {
-      const originalEnv = process.env.NEXT_TRUST_PROXY
-      process.env.NEXT_TRUST_PROXY = 'false'
+      vi.stubEnv('NEXT_TRUST_PROXY', 'false')
 
       const mockRequest = new Request('https://example.com', {
         headers: {
@@ -322,7 +299,7 @@ describe('Race Condition Security Tests', () => {
       expect(ip).not.toBe('203.0.113.42')
       expect(ip).not.toBe('203.0.113.50')
 
-      process.env.NEXT_TRUST_PROXY = originalEnv
+      vi.unstubAllEnvs()
     })
   })
 

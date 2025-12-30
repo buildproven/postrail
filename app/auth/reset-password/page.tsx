@@ -44,7 +44,13 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
+      <a
+        href="#reset-form"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
+      >
+        Skip to reset form
+      </a>
+      <main id="reset-form" className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
         <div>
           <h2 className="text-3xl font-bold text-center">Reset Password</h2>
           <p className="mt-2 text-center text-sm text-gray-600">
@@ -70,6 +76,7 @@ export default function ResetPasswordPage() {
           {message && (
             <div
               role="alert"
+              aria-live="polite"
               className={`p-3 rounded ${
                 message.type === 'success'
                   ? 'bg-green-50 text-green-800'
@@ -90,7 +97,7 @@ export default function ResetPasswordPage() {
             </Link>
           </div>
         </form>
-      </div>
+      </main>
     </div>
   )
 }

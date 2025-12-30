@@ -84,7 +84,7 @@ describe('lib/supabase/server', () => {
       const cookiesToSet = [
         { name: 'session', value: 'new-token', options: { maxAge: 3600 } },
       ]
-      cookieConfig.cookies.setAll(cookiesToSet)
+      cookieConfig.cookies.setAll?.(cookiesToSet)
 
       expect(mockCookieStore.set).toHaveBeenCalledWith('session', 'new-token', {
         maxAge: 3600,
@@ -106,7 +106,7 @@ describe('lib/supabase/server', () => {
 
       // Should not throw when setAll fails
       expect(() => {
-        cookieConfig.cookies.setAll([
+        cookieConfig.cookies.setAll?.([
           { name: 'session', value: 'token', options: {} },
         ])
       }).not.toThrow()

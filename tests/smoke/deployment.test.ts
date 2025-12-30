@@ -37,27 +37,16 @@ describe('Pre-Deployment Smoke Tests', () => {
     })
 
     it('should have Next.js configuration', () => {
-      // Support both .js and .ts config files
-      const hasJsConfig = fs.existsSync('next.config.js')
-      const hasTsConfig = fs.existsSync('next.config.ts')
-      expect(hasJsConfig || hasTsConfig).toBe(true)
-
-      const configFile = hasJsConfig ? 'next.config.js' : 'next.config.ts'
-      const config = fs.readFileSync(configFile, 'utf-8')
-      // Check for valid Next.js config export
-      expect(config).toMatch(/module\.exports|export default|NextConfig/)
+      expect(fs.existsSync('next.config.ts')).toBe(true)
+      const config = fs.readFileSync('next.config.ts', 'utf-8')
+      expect(config).toContain('NextConfig')
     })
 
     it('should have Tailwind configuration', () => {
-      // Tailwind v4 uses CSS-based config instead of tailwind.config.ts
-      const hasTailwindV4 =
-        fs.existsSync('app/globals.css') &&
-        fs
-          .readFileSync('app/globals.css', 'utf-8')
-          .includes('@import "tailwindcss"')
-      const hasTailwindV3 = fs.existsSync('tailwind.config.ts')
-
-      expect(hasTailwindV4 || hasTailwindV3).toBe(true)
+      // Tailwind v4 uses CSS-based configuration instead of tailwind.config.ts
+      const globalsCss = fs.readFileSync('app/globals.css', 'utf-8')
+      expect(globalsCss).toContain('@import "tailwindcss"')
+      expect(globalsCss).toContain('@theme')
     })
 
     it('should have ESLint configuration', () => {

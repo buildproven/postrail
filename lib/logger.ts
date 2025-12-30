@@ -106,18 +106,22 @@ export function logResponse(
   res: { statusCode: number },
   duration: number
 ) {
-  const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info'
+  const logData = {
+    type: 'http.response',
+    method: req.method,
+    url: req.url,
+    statusCode: res.statusCode,
+    duration,
+  }
+  const message = `${req.method} ${req.url} ${res.statusCode} ${duration}ms`
 
-  logger[level](
-    {
-      type: 'http.response',
-      method: req.method,
-      url: req.url,
-      statusCode: res.statusCode,
-      duration,
-    },
-    `${req.method} ${req.url} ${res.statusCode} ${duration}ms`
-  )
+  if (res.statusCode >= 500) {
+    logger.error(logData, message)
+  } else if (res.statusCode >= 400) {
+    logger.warn(logData, message)
+  } else {
+    logger.info(logData, message)
+  }
 }
 
 /**

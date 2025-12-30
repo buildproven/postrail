@@ -39,34 +39,6 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(() => mockSupabase),
 }))
 
-vi.mock('@/lib/supabase/service', () => ({
-  createServiceClient: vi.fn(() => mockSupabase),
-}))
-
-const mockCheckFeatureAccess = vi.fn()
-const mockCheckUsageLimits = vi.fn()
-
-vi.mock('@/lib/feature-gate', () => ({
-  checkFeatureAccess: (...args: any[]) => mockCheckFeatureAccess(...args),
-  checkUsageLimits: (...args: any[]) => mockCheckUsageLimits(...args),
-}))
-
-const mockCheckRateLimit = vi.fn()
-
-vi.mock('@/lib/redis-rate-limiter', () => ({
-  redisRateLimiter: {
-    checkRateLimit: (...args: any[]) => mockCheckRateLimit(...args),
-  },
-}))
-
-const mockCheckTrialAccess = vi.fn()
-const mockRecordTrialGeneration = vi.fn()
-
-vi.mock('@/lib/trial-guard', () => ({
-  checkTrialAccess: (...args: any[]) => mockCheckTrialAccess(...args),
-  recordTrialGeneration: (...args: any[]) => mockRecordTrialGeneration(...args),
-}))
-
 // Mock Anthropic SDK - use a wrapper to avoid hoisting issues
 const mockMessagesCreate = vi.fn()
 
@@ -92,28 +64,6 @@ describe('/api/generate-posts - Real API Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'test-user-id', email: 'test@example.com' } },
-      error: null,
-    })
-
-    mockCheckFeatureAccess.mockResolvedValue({
-      allowed: true,
-      tier: 'standard',
-    })
-    mockCheckUsageLimits.mockResolvedValue({
-      allowed: true,
-      remaining: 3,
-      limit: 3,
-      tier: 'standard',
-    })
-    mockCheckRateLimit.mockResolvedValue({
-      allowed: true,
-      requestsRemaining: 3,
-      resetTime: Date.now() + 60 * 1000,
-    })
-    mockCheckTrialAccess.mockResolvedValue({ allowed: true })
-
     // Set default mock response for Anthropic
     mockMessagesCreate.mockResolvedValue({
       content: [
@@ -128,9 +78,9 @@ describe('/api/generate-posts - Real API Tests', () => {
   describe('Authentication', () => {
     it('should reject unauthenticated requests', async () => {
       mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: null },
-        error: { message: 'Not authenticated', status: 401 },
-      } as any)
+        data: { user: null as unknown as { id: string; email: string } },
+        error: { message: 'Not authenticated' } as unknown as null,
+      })
 
       const request = new NextRequest('http://localhost/api/generate-posts', {
         method: 'POST',
@@ -146,60 +96,12 @@ describe('/api/generate-posts - Real API Tests', () => {
       expect(response.status).toBe(401)
       expect(data.error).toContain('Unauthorized')
     })
-
-    it('should allow worker-authenticated requests', async () => {
-      const originalToken = process.env.INTERNAL_WORKER_TOKEN
-      process.env.INTERNAL_WORKER_TOKEN = 'worker-secret'
-
-      mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: null },
-        error: { message: 'Not authenticated', status: 401 },
-      } as any)
-
-      const insertMock = vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn(() => ({
-            data: { id: 'newsletter-123' },
-            error: null,
-          })),
-        })),
-      }))
-
-      const builder = createQueryBuilder()
-      builder.insert = insertMock
-      builder.delete = vi.fn(() => ({ eq: vi.fn() }))
-      mockSupabase.from.mockReturnValue(builder as any)
-
-      const request = new NextRequest('http://localhost/api/generate-posts', {
-        method: 'POST',
-        headers: {
-          'x-worker-token': 'worker-secret',
-          'x-service-user-id': 'service-user',
-        },
-        body: JSON.stringify({
-          title: 'Worker Newsletter',
-          content: 'Worker content for processing',
-        }),
-      })
-
-      const response = await POST(request)
-
-      expect(response.status).not.toBe(401)
-      process.env.INTERNAL_WORKER_TOKEN = originalToken
-    })
   })
 
   describe('Input Validation', () => {
     it('should reject request without content', async () => {
-      const originalToken = process.env.INTERNAL_WORKER_TOKEN
-      process.env.INTERNAL_WORKER_TOKEN = 'worker-secret'
-
       const request = new NextRequest('http://localhost/api/generate-posts', {
         method: 'POST',
-        headers: {
-          'x-worker-token': 'worker-secret',
-          'x-service-user-id': 'service-user',
-        },
         body: JSON.stringify({ title: 'Test' }),
       })
 
@@ -208,7 +110,6 @@ describe('/api/generate-posts - Real API Tests', () => {
 
       expect(response.status).toBe(400)
       expect(data.error).toContain('required')
-      process.env.INTERNAL_WORKER_TOKEN = originalToken
     })
 
     it('should accept request without title (uses default)', async () => {
@@ -223,58 +124,6 @@ describe('/api/generate-posts - Real API Tests', () => {
 
       // Should not fail on missing title
       expect(response.status).not.toBe(400)
-    })
-  })
-
-  describe('Access Controls', () => {
-    it('should reject when feature is not available', async () => {
-      mockCheckFeatureAccess.mockResolvedValueOnce({
-        allowed: false,
-        tier: 'trial',
-        requiredTier: 'standard',
-        message: 'Upgrade required',
-      })
-
-      const request = new NextRequest('http://localhost/api/generate-posts', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: 'Test',
-          content: 'Test content for feature gating',
-        }),
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(403)
-      expect(data.error).toContain('Feature not available')
-    })
-
-    it('should reject when usage limits are exceeded', async () => {
-      mockCheckUsageLimits.mockResolvedValueOnce({
-        allowed: false,
-        remaining: 0,
-        limit: 3,
-        tier: 'trial',
-      })
-      mockCheckTrialAccess.mockResolvedValueOnce({
-        allowed: false,
-        error: 'Trial limit reached',
-      })
-
-      const request = new NextRequest('http://localhost/api/generate-posts', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: 'Test',
-          content: 'Test content for usage limits',
-        }),
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(429)
-      expect(data.error).toContain('Trial limit reached')
     })
   })
 

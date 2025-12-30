@@ -232,7 +232,7 @@ describe('lib/supabase/middleware', () => {
             options: { maxAge: 3600 },
           },
         ]
-        cookieConfig.cookies.setAll(cookiesToSet)
+        cookieConfig.cookies.setAll?.(cookiesToSet)
 
         // Should set on request
         expect(mockRequest.cookies.get('new-session')).toEqual({

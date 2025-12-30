@@ -47,7 +47,14 @@ export default function SignUpPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <a
+        href="#signup-form"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
+      >
+        Skip to signup form
+      </a>
+      <main id="signup-form">
+        <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">
             Create an account
@@ -91,6 +98,7 @@ export default function SignUpPage() {
             {error && (
               <div
                 role="alert"
+                aria-live="polite"
                 className={`text-sm ${error.includes('Check your email') ? 'text-green-600' : 'text-destructive'}`}
               >
                 {error}
@@ -109,7 +117,8 @@ export default function SignUpPage() {
             </p>
           </CardFooter>
         </form>
-      </Card>
+        </Card>
+      </main>
     </div>
   )
 }

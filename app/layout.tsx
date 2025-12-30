@@ -37,7 +37,7 @@ export const metadata: Metadata = {
       'AI-powered social media automation for newsletter creators. Generate platform-perfect posts for LinkedIn, Twitter, Threads, and Facebook in seconds.',
     images: [
       {
-        url: '/og-image.png',
+        url: '/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Postrail - Newsletter to Social Media Automation',
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     title: 'Postrail - Automate Your Newsletter Social Posts',
     description:
       'AI-powered social media automation for newsletter creators. Generate and schedule posts automatically.',
-    images: ['/og-image.png'],
+    images: ['/og-image.jpg'],
     creator: '@vibebuildlab',
   },
   robots: {

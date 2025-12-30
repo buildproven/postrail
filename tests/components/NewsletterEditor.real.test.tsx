@@ -27,11 +27,11 @@ vi.mock('@tiptap/extension-placeholder', () => ({
 }))
 
 import { NewsletterEditor } from '@/components/newsletter-editor'
-import { useEditor, Editor } from '@tiptap/react'
+import { useEditor } from '@tiptap/react'
 
 const mockUseEditor = vi.mocked(useEditor)
 
-// Mock editor instance - cast to Editor to satisfy type checker
+// Mock editor instance - cast as any to satisfy Editor type requirements
 const mockEditor = {
   commands: {
     setContent: vi.fn(),
@@ -40,13 +40,7 @@ const mockEditor = {
   getText: vi.fn(() => 'Test newsletter content'),
   on: vi.fn(),
   destroy: vi.fn(),
-} as unknown as Editor & {
-  commands: { setContent: ReturnType<typeof vi.fn> }
-  setEditable: ReturnType<typeof vi.fn>
-  getText: ReturnType<typeof vi.fn>
-  on: ReturnType<typeof vi.fn>
-  destroy: ReturnType<typeof vi.fn>
-}
+} as any
 
 describe('NewsletterEditor - Real Tests', () => {
   const mockOnChange = vi.fn()
@@ -65,7 +59,7 @@ describe('NewsletterEditor - Real Tests', () => {
     })
 
     it('should show loading skeleton when editor is not ready', () => {
-      mockUseEditor.mockReturnValue(null as unknown as Editor)
+      mockUseEditor.mockReturnValue(null as any)
 
       const { container } = render(
         <NewsletterEditor content="" onChange={mockOnChange} />
@@ -220,7 +214,7 @@ describe('NewsletterEditor - Real Tests', () => {
       render(<NewsletterEditor content="" onChange={mockOnChange} />)
 
       const config = mockUseEditor.mock.calls[0][0] as any
-      const classes = config.editorProps?.attributes?.class as string
+      const classes = config.editorProps?.attributes?.class
 
       expect(classes).toContain('prose')
       expect(classes).toContain('min-h-[300px]')

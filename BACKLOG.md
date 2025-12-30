@@ -1,77 +1,73 @@
 # postrail - Priority Actions
 
-**Audit Date:** 2025-12-16
-**Status:** Deployed | **Priority:** REVENUE
-**Key Gap:** Production activation (Stripe products, migrations, Sentry DSN)
+**Audit Date:** 2025-12-30
+**Status:** Deployed | **SOTA Score:** 78/100
+**Key Gap:** Security headers, A11y fixes, SEO improvements
 
 ## Recent Work
 
+- **2025-12-30**: SOTA audit (SEO 72, A11y 78, Security 78, Architecture 85, Performance 72, Code Quality 85)
 - **2025-12-17**: Landing page rewrite (sales copy, pricing tiers, how-it-works), settings page upgrade UI, README roadmap update
 - **2025-12-16**: Vercel deployment fixed (next.config.ts → .js), Stripe SDK v20 compatibility
 - **2025-12-15**: Docs refresh (stack, API surface, architecture, deployment, testing, agent guidance)
 - **2025-12-13**: Stripe billing (checkout/portal/status + webhook), feature gating, Zod schemas
-- **2025-12-12**: Platform integrations (LinkedIn/Facebook OAuth + posting), QStash scheduling + publish webhook, service-key auth for Growth Autopilot
 
 ---
 
-## Prioritized by Value
+## 🔴 Critical - Fix Before Launch
 
-### 1. Revenue Activation (Manual - Dashboard Work)
+> Security and compliance blockers
 
-> Blocking all paid conversions. Do these first.
+- [x] Add security headers (CSP, HSTS, X-Frame-Options)
+- [x] Add CORS configuration to middleware
+- [x] Fix color contrast (gray-500 → gray-600, muted-foreground)
+- [x] Compress OG image (1MB → <200KB)
 
-- [x] Run SQL migration in Supabase Dashboard
-- [x] Create Stripe products (Standard $29/mo, Growth $59/mo)
-- [x] Copy price IDs to env vars (`STRIPE_PRICE_STANDARD`, `STRIPE_PRICE_GROWTH`)
-- [x] Set up Stripe webhook secret in Vercel
-- [x] Set `SENTRY_DSN` in Vercel
+## 🟡 High Priority - Fix This Week
 
-### 2. Trial Conversion Emails (High Value - Reduces Churn)
+> A11y and SEO improvements
 
-> Users who don't know trial is expiring = lost revenue
+- [x] Add aria-live to error messages (login, signup, reset-password)
+- [x] Add skip links to landing page and auth pages
+- [x] Add JSON-LD SoftwareApplication schema to homepage
+- [x] Lazy load TipTap editor (save ~150KB bundle)
+- [x] Add per-page metadata to auth pages
 
-- [ ] Trial expiry warning (3 days before) - Email via Resend
+## 📊 Medium Priority - SOTA Improvements
+
+> From audit recommendations
+
+- [ ] Trial expiry warning emails (3 days before) - Resend
 - [ ] Trial expired notification - Prompt to upgrade
 - [ ] Welcome email with quick-start guide
+- [ ] Usage analytics dashboard (generation history, platform breakdown)
+- [ ] Add `aria-label` to icon-only buttons in PostPreviewCard
+- [ ] Wrap newsletter date input in fieldset with legend
+- [ ] Add `<time>` elements for dates
+- [ ] Migrate console.log to structured logger (79 occurrences)
+- [ ] Add error boundary to dashboard layout
 
-### 3. Usage Analytics Dashboard (Medium-High Value)
+## 📚 Lower Priority
 
-> Shows users their ROI, increases upgrade likelihood
-
-- [ ] Generation history with platform breakdown
-- [ ] Posts published vs scheduled
-- [ ] Usage vs limits visualization (trial/paid)
-
-### 4. Post-Purchase Retention (Medium Value)
-
-> Stripe handles basics, but proactive = lower churn
+> Nice to have
 
 - [ ] Subscription renewal reminder (7 days before)
 - [ ] Payment failed recovery email
 - [ ] Upgrade prompts when hitting limits
-
-### 5. Security Hardening (Medium Priority) ✅
-
-> Supabase security audit findings - schema vulnerabilities
-
-- [x] Fix `update_updated_at_column()` function - add `SET search_path = ''` to prevent schema injection
-- [x] Fix `handle_new_user()` function - add `SET search_path = ''` to prevent schema injection
-- [x] Enable RLS on `blocked_email_domains` table - currently publicly accessible without RLS
-- [x] Enable RLS on `system_limits` table - currently publicly accessible without RLS
-
-_Migration: `20251222_security_hardening.sql`_
-
-### 6. Developer Experience (Low Priority)
-
-> Only if debugging becomes painful
-
 - [ ] Service layer abstraction (refactor)
 - [ ] Sentry breadcrumbs for error context
+- [ ] Add sitemap entries for /pricing, /features pages
+- [ ] Replace axios with native fetch in client code
 
 ---
 
 ## Completed
 
+- [x] Run SQL migration in Supabase Dashboard
+- [x] Create Stripe products (Standard $29/mo, Growth $59/mo)
+- [x] Copy price IDs to env vars
+- [x] Set up Stripe webhook secret in Vercel
+- [x] Set `SENTRY_DSN` in Vercel
 - [x] Landing page with sales copy and pricing tiers
 - [x] Settings page with Standard/Growth upgrade options
 - [x] Trial system (3/day, 10 total, 14-day)
@@ -83,16 +79,21 @@ _Migration: `20251222_security_hardening.sql`_
 - [x] Webhook handler `/api/webhooks/stripe`
 - [x] Sentry SDK installed
 - [x] Zod request/response validation
-- [x] Vercel deployment working (https://postrail.vercel.app)
+- [x] Vercel deployment working
 - [x] Stripe SDK v20 compatibility
+- [x] Security hardening (RLS, search_path)
 
-## Notes
+## SOTA Audit Summary (2025-12-30)
 
-- **Deployed to Vercel** - https://postrail.vercel.app
-- Billing + scheduling infrastructure shipped; production requires env/config and migration activation.
-- LinkedIn/Facebook/Twitter posting live; Threads pending.
-- Redis limiter falls back to memory; ensure prod has Upstash configured.
+| Area | Score | Key Issues |
+|------|-------|------------|
+| SEO | 72/100 | Missing JSON-LD, per-page metadata, large OG image |
+| Accessibility | 78/100 | Color contrast, aria-live, skip links |
+| Security | 78/100 | Missing headers, CORS |
+| Architecture | 85/100 | Solid patterns, minor consolidation needed |
+| Performance | 72/100 | TipTap bundle, OG image size |
+| Code Quality | 85/100 | TypeScript strict, 0 ESLint errors |
 
 ---
 
-_Updated: 2025-12-22_
+_Updated: 2025-12-30_

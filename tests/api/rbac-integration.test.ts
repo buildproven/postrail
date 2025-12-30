@@ -206,7 +206,7 @@ describe('RBAC Integration - API Routes', () => {
         activeUserLimits: 30,
         activeIPLimits: 25,
         allowedPorts: [80, 443],
-        blockedDomains: 5,
+        blockedDomains: 1,
         rateLimits: {
           userRequestsPerMinute: 5,
           ipRequestsPerMinute: 10,

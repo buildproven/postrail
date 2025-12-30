@@ -1,8 +1,41 @@
 export default function Home() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Postrail',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web Browser',
+    description:
+      'AI-powered social media automation for newsletter creators. Turn your newsletter into 8 platform-optimized posts in seconds.',
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'USD',
+      lowPrice: '29',
+      highPrice: '59',
+      offerCount: '2',
+    },
+    creator: {
+      '@type': 'Organization',
+      name: 'Vibe Build Lab LLC',
+      url: 'https://vibebuildlab.com',
+    },
+  }
+
   return (
     <div className="min-h-screen flex flex-col font-[family-name:var(--font-geist-sans)]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Skip Link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
+      >
+        Skip to main content
+      </a>
       {/* Hero Section */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 sm:py-24">
+      <main id="main-content" className="flex-1 flex flex-col items-center justify-center px-6 py-16 sm:py-24">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-6">
             Turn Your Newsletter Into
@@ -30,7 +63,7 @@ export default function Home() {
             </a>
           </div>
 
-          <p className="text-sm text-gray-500 dark:text-gray-500">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             14-day free trial. No credit card required. 3 generations/day, 10
             total.
           </p>
@@ -87,19 +120,19 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div className="p-4 border rounded-lg dark:border-gray-700">
               <p className="font-semibold">Twitter/X</p>
-              <p className="text-sm text-gray-500">280 chars</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">280 chars</p>
             </div>
             <div className="p-4 border rounded-lg dark:border-gray-700">
               <p className="font-semibold">LinkedIn</p>
-              <p className="text-sm text-gray-500">3,000 chars</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">3,000 chars</p>
             </div>
             <div className="p-4 border rounded-lg dark:border-gray-700">
               <p className="font-semibold">Facebook</p>
-              <p className="text-sm text-gray-500">63,206 chars</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">63,206 chars</p>
             </div>
             <div className="p-4 border rounded-lg dark:border-gray-700">
               <p className="font-semibold">Threads</p>
-              <p className="text-sm text-gray-500">500 chars</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">500 chars</p>
             </div>
           </div>
         </div>
@@ -118,7 +151,7 @@ export default function Home() {
               <h3 className="text-xl font-bold mb-2">Free Trial</h3>
               <p className="text-3xl font-bold mb-4">
                 $0
-                <span className="text-base font-normal text-gray-500">
+                <span className="text-base font-normal text-gray-600 dark:text-gray-400">
                   /14 days
                 </span>
               </p>
@@ -144,7 +177,7 @@ export default function Home() {
               <h3 className="text-xl font-bold mb-2">Standard</h3>
               <p className="text-3xl font-bold mb-4">
                 $29
-                <span className="text-base font-normal text-gray-500">/mo</span>
+                <span className="text-base font-normal text-gray-600 dark:text-gray-400">/mo</span>
               </p>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
                 <li>50 generations per day</li>
@@ -166,7 +199,7 @@ export default function Home() {
               <h3 className="text-xl font-bold mb-2">Growth</h3>
               <p className="text-3xl font-bold mb-4">
                 $59
-                <span className="text-base font-normal text-gray-500">/mo</span>
+                <span className="text-base font-normal text-gray-600 dark:text-gray-400">/mo</span>
               </p>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
                 <li>200 generations per day</li>

@@ -45,7 +45,14 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <a
+        href="#login-form"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
+      >
+        Skip to login form
+      </a>
+      <main id="login-form">
+        <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
           <CardDescription>
@@ -89,7 +96,11 @@ export default function LoginPage() {
               />
             </div>
             {error && (
-              <div role="alert" className="text-sm text-destructive">
+              <div
+                role="alert"
+                aria-live="polite"
+                className="text-sm text-destructive"
+              >
                 {error}
               </div>
             )}
@@ -110,6 +121,7 @@ export default function LoginPage() {
           </CardFooter>
         </form>
       </Card>
+      </main>
     </div>
   )
 }
