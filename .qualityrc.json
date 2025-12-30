@@ -3,11 +3,12 @@
   "maturity": "auto",
   "detected": {
     "level": "production-ready",
-    "sourceFiles": 70,
-    "testFiles": 35,
-    "hasDocumentation": true,
-    "hasDependencies": true,
-    "detectedAt": "2025-11-25T21:02:16.645Z"
+    "sourceFiles": 123,
+    "testFiles": 57,
+    "hasReadme": true,
+    "hasRequirements": true,
+    "hasCiConfig": true,
+    "detectedAt": "2025-12-27T22:05:08.651Z"
   },
   "checks": {
     "prettier": {
@@ -27,7 +28,7 @@
       "required": false
     },
     "coverage": {
-      "enabled": false,
+      "enabled": true,
       "required": false,
       "threshold": 80
     },

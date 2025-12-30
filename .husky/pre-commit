@@ -1,2 +1,5 @@
 # Run lint-staged on staged files
 npx --no -- lint-staged
+
+# Check test coverage for new files (warning only)
+./scripts/check-test-coverage.sh
