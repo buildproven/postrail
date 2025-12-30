@@ -8,6 +8,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **Lower Priority Billing & Observability**
+  - Subscription renewal reminder emails (7 days before)
+  - Payment failed recovery emails
+  - Upgrade prompts when hitting limits (`getUpgradePromptForLimit`)
+  - Sentry breadcrumbs for error context in logger
+  - Comprehensive test suites for email and feature-gate
+
+- **Medium Priority SOTA Improvements**
+  - Fieldset/legend for newsletter date input
+  - `<time>` elements for dates in post-scheduler
+  - Error boundary for dashboard layout
+  - Structured Pino logging in API routes
+
+- **SOTA Audit Critical/High Fixes**
+  - Security headers (CSP, HSTS, X-Frame-Options)
+  - CORS configuration in middleware
+  - Color contrast fixes (gray-500 → gray-600)
+  - aria-live on error messages (login, signup, reset-password)
+  - Skip links on landing and auth pages
+  - JSON-LD SoftwareApplication schema
+  - Lazy load TipTap editor (~150KB bundle saved)
+  - Per-page metadata for auth pages
+  - Compressed OG image (1MB → <200KB)
+
+- **Phase 5: Scheduling & Automation**
+  - Smart scheduling with optimal posting times
+  - User timezone settings
+  - Retry logic with exponential backoff
+  - Manual retry API for failed posts
+
+- **Phase 6: Analytics Dashboard**
+  - Analytics API with post stats
+  - Dashboard analytics page with metrics
+  - Stats cards, platform charts, activity timeline
+
+- **AI Features**
+  - AI tone settings (professional, casual, etc.)
+  - A/B post variants generation
+
 - **Queue-First Generation Flow**
   - Async job processing via QStash worker (`/api/generate-posts/queue`)
   - Job status polling endpoint (`/api/generate-posts/status`)
@@ -24,11 +63,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Build-time env validation moved to runtime
 - Queue publishing and Stripe config hardening
 - Missing newsletter record guard
+- Dependabot security vulnerabilities
+- SEO and accessibility improvements
 
 ### Changed
 
 - ROADMAP.md for strategic direction
 - Updated CLAUDE.md with improved commands and architecture docs
+- Refactored to use @vbl/shared for Stripe test utilities
 
 ## [0.2.0] - 2025-12-13
 
