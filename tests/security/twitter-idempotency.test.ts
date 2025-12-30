@@ -12,7 +12,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/platforms/twitter/post/route'
 import { createClient } from '@/lib/supabase/server'
-import { NextRequest } from 'next/server'
 
 // Mock Supabase
 vi.mock('@/lib/supabase/server', () => ({

@@ -37,8 +37,14 @@ describe('Pre-Deployment Smoke Tests', () => {
     })
 
     it('should have Next.js configuration', () => {
-      expect(fs.existsSync('next.config.ts')).toBe(true)
-      const config = fs.readFileSync('next.config.ts', 'utf-8')
+      // Check for either .ts or .js config file (Vercel prefers .js)
+      const hasConfig =
+        fs.existsSync('next.config.ts') || fs.existsSync('next.config.js')
+      expect(hasConfig).toBe(true)
+      const configFile = fs.existsSync('next.config.ts')
+        ? 'next.config.ts'
+        : 'next.config.js'
+      const config = fs.readFileSync(configFile, 'utf-8')
       expect(config).toContain('NextConfig')
     })
 

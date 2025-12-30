@@ -6,6 +6,7 @@
 
 ## Recent Work
 
+- **2025-12-30**: Lower priority items (renewal/payment emails, upgrade prompts, Sentry breadcrumbs, comprehensive tests)
 - **2025-12-30**: Medium priority SOTA fixes (fieldset/legend, time elements, error boundary, structured logging)
 - **2025-12-30**: Critical/High priority SOTA fixes (security headers, CORS, color contrast, aria-live, skip links, JSON-LD, lazy TipTap, OG image)
 - **2025-12-30**: SOTA audit (SEO 72, A11y 78, Security 78, Architecture 85, Performance 72, Code Quality 85)
@@ -53,13 +54,13 @@
 
 > Nice to have
 
-- [ ] Subscription renewal reminder (7 days before)
-- [ ] Payment failed recovery email
-- [ ] Upgrade prompts when hitting limits
+- [x] Subscription renewal reminder (7 days before) - sendRenewalReminder in lib/email.ts
+- [x] Payment failed recovery email - sendPaymentFailed in lib/email.ts
+- [x] Upgrade prompts when hitting limits - getUpgradePromptForLimit in lib/feature-gate.ts
+- [x] Sentry breadcrumbs for error context - addBreadcrumb in lib/logger.ts
 - [ ] Service layer abstraction (refactor)
-- [ ] Sentry breadcrumbs for error context
-- [ ] Add sitemap entries for /pricing, /features pages
-- [ ] Replace axios with native fetch in client code
+- [ ] Add sitemap entries for /pricing, /features pages (pages don't exist yet)
+- [ ] Replace axios with native fetch in client code (only server-side axios, needed for SSRF protection)
 
 ---
 

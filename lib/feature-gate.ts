@@ -217,3 +217,105 @@ export function getTierFeatures(tier: SubscriptionTier): {
 
   return { included, notIncluded }
 }
+
+/**
+ * Upgrade prompt data for when users hit limits
+ */
+export interface UpgradePrompt {
+  title: string
+  message: string
+  currentTier: SubscriptionTier
+  suggestedTier: SubscriptionTier
+  benefits: string[]
+  ctaText: string
+  ctaUrl: string
+}
+
+/**
+ * Get upgrade prompt for usage limits
+ */
+export function getUpgradePromptForLimit(
+  currentTier: SubscriptionTier,
+  limitType: 'daily' | 'trial' | 'feature'
+): UpgradePrompt | null {
+  const nextTier = getTierUpgradePath(currentTier)
+  if (!nextTier) return null
+
+  const prompts: Record<string, UpgradePrompt> = {
+    'trial:daily': {
+      title: 'Daily Limit Reached',
+      message:
+        "You've used your 3 daily generations. Upgrade to continue creating posts.",
+      currentTier: 'trial',
+      suggestedTier: 'standard',
+      benefits: [
+        '50 generations per day',
+        'Scheduled posting',
+        'Basic analytics',
+        'All 4 platforms',
+      ],
+      ctaText: 'Upgrade to Standard - $29/mo',
+      ctaUrl: '/dashboard/settings',
+    },
+    'trial:trial': {
+      title: 'Trial Limit Reached',
+      message:
+        "You've used all 10 trial generations. Upgrade to unlock unlimited access.",
+      currentTier: 'trial',
+      suggestedTier: 'standard',
+      benefits: [
+        'Unlimited total generations',
+        '50 per day',
+        'Post scheduling',
+        'Analytics dashboard',
+      ],
+      ctaText: 'Start Standard Plan - $29/mo',
+      ctaUrl: '/dashboard/settings',
+    },
+    'standard:daily': {
+      title: 'Daily Limit Reached',
+      message: "You've hit your 50 daily generations. Upgrade for 200/day.",
+      currentTier: 'standard',
+      suggestedTier: 'growth',
+      benefits: [
+        '200 generations per day',
+        'Advanced analytics',
+        'A/B variant testing',
+        'API access',
+        'Priority support',
+      ],
+      ctaText: 'Upgrade to Growth - $59/mo',
+      ctaUrl: '/dashboard/settings',
+    },
+    'trial:feature': {
+      title: 'Premium Feature',
+      message: 'This feature requires a paid subscription.',
+      currentTier: 'trial',
+      suggestedTier: 'standard',
+      benefits: [
+        'Scheduled posting',
+        'Analytics dashboard',
+        'Unlimited generations',
+      ],
+      ctaText: 'Upgrade Now - $29/mo',
+      ctaUrl: '/dashboard/settings',
+    },
+    'standard:feature': {
+      title: 'Growth Feature',
+      message: 'This feature is available on the Growth plan.',
+      currentTier: 'standard',
+      suggestedTier: 'growth',
+      benefits: [
+        'A/B variant testing',
+        'Advanced analytics',
+        'API access',
+        'Priority support',
+      ],
+      ctaText: 'Upgrade to Growth - $59/mo',
+      ctaUrl: '/dashboard/settings',
+    },
+  }
+
+  const key = `${currentTier}:${limitType}`
+  return prompts[key] || null
+}

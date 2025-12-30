@@ -205,3 +205,129 @@ export async function sendWelcomeEmail(
     return { success: false, error: String(err) }
   }
 }
+
+/**
+ * Send subscription renewal reminder (7 days before)
+ */
+export async function sendRenewalReminder(
+  email: string,
+  name: string | null,
+  daysUntilRenewal: number,
+  planName: string,
+  amount: number
+): Promise<EmailResult> {
+  try {
+    const { data, error } = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `Your PostRail ${planName} subscription renews in ${daysUntilRenewal} days`,
+      html: `
+        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #4F46E5;">Subscription Renewal Reminder</h1>
+          <p>Hi ${name || 'there'},</p>
+          <p>Your PostRail <strong>${planName}</strong> subscription will automatically renew in <strong>${daysUntilRenewal} days</strong>.</p>
+
+          <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            <p style="margin: 0;"><strong>Plan:</strong> ${planName}</p>
+            <p style="margin: 8px 0 0 0;"><strong>Amount:</strong> $${(amount / 100).toFixed(2)}/month</p>
+          </div>
+
+          <p>No action needed - your subscription will continue seamlessly.</p>
+
+          <p>Need to make changes?</p>
+          <a href="https://postrail.vibebuildlab.com/dashboard/settings"
+             style="display: inline-block; background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+            Manage Subscription
+          </a>
+
+          <p style="color: #666; font-size: 14px;">
+            Questions about billing? Reply to this email.
+          </p>
+        </div>
+      `,
+    })
+
+    if (error) {
+      logger.error({
+        type: 'email.renewal_reminder.failed',
+        email,
+        error: error.message,
+      })
+      return { success: false, error: error.message }
+    }
+
+    logger.info({ type: 'email.renewal_reminder.sent', email, id: data?.id })
+    return { success: true, id: data?.id }
+  } catch (err) {
+    logError(err instanceof Error ? err : new Error(String(err)), {
+      context: 'renewal_reminder_email',
+    })
+    return { success: false, error: String(err) }
+  }
+}
+
+/**
+ * Send payment failed notification
+ */
+export async function sendPaymentFailed(
+  email: string,
+  name: string | null,
+  planName: string,
+  retryDate: Date | null
+): Promise<EmailResult> {
+  try {
+    const retryText = retryDate
+      ? `We'll automatically retry on ${retryDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.`
+      : "We'll retry the payment soon."
+
+    const { data, error } = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: 'Action needed: Your PostRail payment failed',
+      html: `
+        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #DC2626;">Payment Failed</h1>
+          <p>Hi ${name || 'there'},</p>
+          <p>We weren't able to process your payment for your PostRail <strong>${planName}</strong> subscription.</p>
+
+          <p>${retryText}</p>
+
+          <p>To avoid any interruption to your service, please update your payment method:</p>
+
+          <a href="https://postrail.vibebuildlab.com/dashboard/settings"
+             style="display: inline-block; background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+            Update Payment Method
+          </a>
+
+          <p><strong>What happens if payment isn't updated?</strong></p>
+          <ul>
+            <li>Your subscription will be paused after 3 failed attempts</li>
+            <li>You'll lose access to premium features</li>
+            <li>Your data will be preserved for 30 days</li>
+          </ul>
+
+          <p style="color: #666; font-size: 14px;">
+            Need help? Reply to this email and we'll assist you.
+          </p>
+        </div>
+      `,
+    })
+
+    if (error) {
+      logger.error({
+        type: 'email.payment_failed.failed',
+        email,
+        error: error.message,
+      })
+      return { success: false, error: error.message }
+    }
+
+    logger.info({ type: 'email.payment_failed.sent', email, id: data?.id })
+    return { success: true, id: data?.id }
+  } catch (err) {
+    logError(err instanceof Error ? err : new Error(String(err)), {
+      context: 'payment_failed_email',
+    })
+    return { success: false, error: String(err) }
+  }
+}

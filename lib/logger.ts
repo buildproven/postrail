@@ -1,13 +1,39 @@
 /**
- * Structured Logging with Pino
+ * Structured Logging with Pino + Sentry Breadcrumbs
  *
  * Provides JSON-formatted structured logging for production observability.
  * Automatically redacts sensitive fields like passwords, tokens, and emails.
+ * Adds Sentry breadcrumbs for error context when Sentry is configured.
  *
  * Ported from saas-starter-template
  */
 
 import pino from 'pino'
+import * as Sentry from '@sentry/nextjs'
+
+/**
+ * Add a Sentry breadcrumb for error context
+ */
+function addBreadcrumb(
+  category: string,
+  message: string,
+  level: Sentry.SeverityLevel = 'info',
+  data?: Record<string, unknown>
+) {
+  if (
+    typeof window !== 'undefined' ||
+    process.env.SENTRY_DSN ||
+    process.env.NEXT_PUBLIC_SENTRY_DSN
+  ) {
+    Sentry.addBreadcrumb({
+      category,
+      message,
+      level,
+      data,
+      timestamp: Date.now() / 1000,
+    })
+  }
+}
 
 // Determine if we're in development
 const isDevelopment = process.env.NODE_ENV === 'development'
@@ -30,8 +56,8 @@ export const logger = pino({
 
   // Formatters
   formatters: {
-    level: (label) => ({ level: label }),
-    bindings: (bindings) => ({
+    level: label => ({ level: label }),
+    bindings: bindings => ({
       pid: bindings.pid,
       hostname: bindings.hostname,
     }),
@@ -125,73 +151,66 @@ export function logResponse(
 }
 
 /**
- * Log business events
+ * Log business events with Sentry breadcrumbs
  */
 export const events = {
   newsletterCreated: (newsletterId: string, userId: string) => {
-    logger.info(
-      {
-        type: 'newsletter.created',
-        newsletterId,
-        userId,
-      },
-      'Newsletter created'
-    )
+    const message = 'Newsletter created'
+    logger.info({ type: 'newsletter.created', newsletterId, userId }, message)
+    addBreadcrumb('newsletter', message, 'info', { newsletterId, userId })
   },
 
   postsGenerated: (newsletterId: string, count: number, duration: number) => {
+    const message = `Generated ${count} posts in ${duration}ms`
     logger.info(
-      {
-        type: 'posts.generated',
-        newsletterId,
-        count,
-        duration,
-      },
-      `Generated ${count} posts in ${duration}ms`
+      { type: 'posts.generated', newsletterId, count, duration },
+      message
     )
+    addBreadcrumb('generation', message, 'info', {
+      newsletterId,
+      count,
+      duration,
+    })
   },
 
   aiGenerationStarted: (userId: string, requestId: string) => {
-    logger.info(
-      {
-        type: 'ai.generation.started',
-        userId,
-        requestId,
-      },
-      'AI generation started'
-    )
+    const message = 'AI generation started'
+    logger.info({ type: 'ai.generation.started', userId, requestId }, message)
+    addBreadcrumb('ai', message, 'info', { requestId })
   },
 
-  aiGenerationCompleted: (userId: string, requestId: string, duration: number) => {
+  aiGenerationCompleted: (
+    userId: string,
+    requestId: string,
+    duration: number
+  ) => {
+    const message = `AI generation completed in ${duration}ms`
     logger.info(
-      {
-        type: 'ai.generation.completed',
-        userId,
-        requestId,
-        duration,
-      },
-      `AI generation completed in ${duration}ms`
+      { type: 'ai.generation.completed', userId, requestId, duration },
+      message
     )
+    addBreadcrumb('ai', message, 'info', { requestId, duration })
   },
 
   cacheHit: (key: string) => {
     logger.debug({ type: 'cache.hit', key }, `Cache hit: ${key}`)
+    addBreadcrumb('cache', `Cache hit: ${key}`, 'debug', { key })
   },
 
   cacheMiss: (key: string) => {
     logger.debug({ type: 'cache.miss', key }, `Cache miss: ${key}`)
+    addBreadcrumb('cache', `Cache miss: ${key}`, 'debug', { key })
   },
 
   deduplicationHit: (requestId: string) => {
-    logger.info(
-      { type: 'dedup.hit', requestId },
-      `Deduplication hit: returning cached result`
-    )
+    const message = 'Deduplication hit: returning cached result'
+    logger.info({ type: 'dedup.hit', requestId }, message)
+    addBreadcrumb('dedup', message, 'info', { requestId })
   },
 }
 
 /**
- * Log errors with context
+ * Log errors with context and Sentry breadcrumb
  */
 export function logError(error: Error, context?: Record<string, unknown>) {
   logger.error(
@@ -206,6 +225,10 @@ export function logError(error: Error, context?: Record<string, unknown>) {
     },
     error.message
   )
+  addBreadcrumb('error', error.message, 'error', {
+    name: error.name,
+    ...context,
+  })
 }
 
 /**
@@ -228,41 +251,32 @@ export function logPerformance(
 }
 
 /**
- * Log security events
+ * Log security events with Sentry breadcrumbs
  */
 export const security = {
   rateLimitExceeded: (userId: string, endpoint: string, retryAfter: number) => {
+    const message = `Rate limit exceeded for user ${userId}`
     logger.warn(
-      {
-        type: 'security.rate_limit',
-        userId,
-        endpoint,
-        retryAfter,
-      },
-      `Rate limit exceeded for user ${userId}`
+      { type: 'security.rate_limit', userId, endpoint, retryAfter },
+      message
     )
+    addBreadcrumb('security', message, 'warning', {
+      userId,
+      endpoint,
+      retryAfter,
+    })
   },
 
   ssrfBlocked: (url: string, reason: string) => {
-    logger.error(
-      {
-        type: 'security.ssrf_blocked',
-        url,
-        reason,
-      },
-      `SSRF attempt blocked: ${reason}`
-    )
+    const message = `SSRF attempt blocked: ${reason}`
+    logger.error({ type: 'security.ssrf_blocked', url, reason }, message)
+    addBreadcrumb('security', message, 'error', { url, reason })
   },
 
   unauthorizedAccess: (userId: string | undefined, resource: string) => {
-    logger.warn(
-      {
-        type: 'security.unauthorized',
-        userId,
-        resource,
-      },
-      `Unauthorized access attempt to ${resource}`
-    )
+    const message = `Unauthorized access attempt to ${resource}`
+    logger.warn({ type: 'security.unauthorized', userId, resource }, message)
+    addBreadcrumb('security', message, 'warning', { userId, resource })
   },
 }
 
