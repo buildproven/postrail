@@ -105,10 +105,8 @@ export async function GET(request: NextRequest) {
       results,
     })
   } catch (error) {
+    // Log error details server-side only (H5: don't leak to client)
     console.error('Cron job error:', error)
-    return NextResponse.json(
-      { error: 'Internal error', details: String(error) },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

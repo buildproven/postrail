@@ -21,7 +21,8 @@ import {
   vi,
 } from 'vitest'
 import { ssrfProtection } from '@/lib/ssrf-protection'
-import { rateLimiter } from '@/lib/rate-limiter'
+// M1 fix: Use consolidated redis-rate-limiter instead of deprecated rate-limiter
+import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 
 describe('Race Condition Security Tests', () => {
   // Ensure rate limiters are enforced during these security tests
@@ -104,12 +105,12 @@ describe('Race Condition Security Tests', () => {
     })
 
     it('should enforce AI generation rate limit with concurrent requests', async () => {
-      const userId = 'ai-test-user'
-      const limit = 3 // AI_REQUESTS_PER_MINUTE
+      const userId = `ai-test-user-${Date.now()}`
+      const limit = 3 // requestsPerMinute
 
       // Fire 6 concurrent requests
       const promises = Array.from({ length: 6 }, () =>
-        rateLimiter.checkRateLimit(userId)
+        redisRateLimiter.checkRateLimit(userId)
       )
 
       const results = await Promise.all(promises)
@@ -122,20 +123,20 @@ describe('Race Condition Security Tests', () => {
     })
 
     it('should provide retry-after timing for denied requests', async () => {
-      const userId = 'ai-test-retry'
+      const userId = `ai-test-retry-${Date.now()}`
       const limit = 3
 
       // Exhaust rate limit
       for (let i = 0; i < limit; i++) {
-        await rateLimiter.checkRateLimit(userId)
+        await redisRateLimiter.checkRateLimit(userId)
       }
 
       // Next request should be denied with retry-after
-      const result = await rateLimiter.checkRateLimit(userId)
+      const result = await redisRateLimiter.checkRateLimit(userId)
       expect(result.allowed).toBe(false)
       expect(result.retryAfter).toBeDefined()
       expect(result.retryAfter).toBeGreaterThan(0)
-      expect(result.reason).toContain('Rate limit exceeded')
+      expect(result.reason).toContain('rate_limit')
     })
   })
 
@@ -147,20 +148,19 @@ describe('Race Condition Security Tests', () => {
       expect(typeof instance.cleanupIntervalHandle).toBe('object')
     })
 
-    it('should store interval handle in rateLimiter', () => {
-      // Access private property for testing
-      const instance = rateLimiter as any
-      expect(instance.cleanupIntervalHandle).toBeDefined()
-      expect(typeof instance.cleanupIntervalHandle).toBe('object')
+    // M1 fix: Redis rate limiter uses TTL keys, not intervals - no memory leak risk
+    it('redis rate limiter should use TTL-based cleanup (no intervals)', async () => {
+      // Redis rate limiter uses TTL on keys, not setInterval
+      // This is more serverless-friendly and doesn't leak memory
+      const health = await redisRateLimiter.healthCheck()
+      expect(health).toBeDefined()
+      expect(health.backend).toMatch(/redis|memory/)
     })
 
-    it('should provide destroy() method to clear intervals', () => {
+    it('should provide destroy() method for ssrfProtection', () => {
       expect(typeof ssrfProtection.destroy).toBe('function')
-      expect(typeof rateLimiter.destroy).toBe('function')
-
       // Test that destroy() can be called without errors
       // Note: We don't actually call it as it would break the singleton
-      // In production, this would be called on process exit
     })
 
     it('should clear interval handle when destroy() is called', () => {
@@ -321,11 +321,11 @@ describe('Race Condition Security Tests', () => {
     })
 
     it('should handle 100 concurrent AI generation checks without race conditions', async () => {
-      const userId = 'stress-ai-user'
+      const userId = `stress-ai-user-${Date.now()}`
       const limit = 3
 
       const promises = Array.from({ length: 100 }, () =>
-        rateLimiter.checkRateLimit(userId)
+        redisRateLimiter.checkRateLimit(userId)
       )
 
       const results = await Promise.all(promises)

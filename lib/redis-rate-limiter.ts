@@ -70,6 +70,13 @@ export class RedisRateLimiter {
   private readonly enabled: boolean
   private degradedNotified = false
 
+  // Circuit breaker state
+  private circuitBreakerOpen = false
+  private consecutiveFailures = 0
+  private lastFailureTime = 0
+  private readonly CIRCUIT_BREAKER_THRESHOLD = 3 // Open circuit after 3 failures
+  private readonly CIRCUIT_BREAKER_RESET_MS = 30000 // Try Redis again after 30s
+
   // Fallback to in-memory when Redis unavailable (development)
   private readonly memoryStore: Map<string, MemoryStoreValue> = new Map()
 
@@ -133,22 +140,27 @@ export class RedisRateLimiter {
         break
     }
 
-    // Initialize Redis if enabled
+    // Initialize Redis if enabled (env vars already validated via hasRedisConfig)
     if (this.enabled) {
-      try {
-        this.redis = new Redis({
-          url: process.env.UPSTASH_REDIS_REST_URL!,
-          token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-        })
-        console.log('✅ Redis rate limiter initialized successfully')
-      } catch (error) {
-        console.error('❌ Redis rate limiter failed to initialize:', error)
+      const redisUrl = process.env.UPSTASH_REDIS_REST_URL
+      const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN
+      if (!redisUrl || !redisToken) {
+        // Should never happen due to hasRedisConfig check, but satisfies TypeScript
         this.enabled = false
-        console.log('🔄 Falling back to memory-only rate limiting')
-        if (isProduction) {
-          console.error(
-            '🔴 PRODUCTION ERROR: Redis rate limiting failed, service may be degraded'
-          )
+        console.error('Redis config missing despite hasRedisConfig check')
+      } else {
+        try {
+          this.redis = new Redis({ url: redisUrl, token: redisToken })
+          console.log('✅ Redis rate limiter initialized successfully')
+        } catch (error) {
+          console.error('❌ Redis rate limiter failed to initialize:', error)
+          this.enabled = false
+          console.log('🔄 Falling back to memory-only rate limiting')
+          if (isProduction) {
+            console.error(
+              '🔴 PRODUCTION ERROR: Redis rate limiting failed, service may be degraded'
+            )
+          }
         }
       }
     }
@@ -156,11 +168,27 @@ export class RedisRateLimiter {
 
   /**
    * Check rate limit for a user (distributed or in-memory)
+   * Uses circuit breaker pattern to handle Redis failures gracefully
    */
   async checkRateLimit(
     userId: string,
     contentHash?: string
   ): Promise<RateLimitResult> {
+    // Check if circuit breaker should be reset (half-open state)
+    if (this.circuitBreakerOpen) {
+      const timeSinceLastFailure = Date.now() - this.lastFailureTime
+      if (timeSinceLastFailure > this.CIRCUIT_BREAKER_RESET_MS) {
+        // Try Redis again (half-open state)
+        console.log('🔄 Circuit breaker: attempting Redis recovery')
+        this.circuitBreakerOpen = false
+      }
+    }
+
+    // Use memory fallback if circuit breaker is open
+    if (this.circuitBreakerOpen) {
+      return this.checkRateLimitMemory(userId, contentHash)
+    }
+
     if (this.enabled && this.redis) {
       return this.checkRateLimitRedis(userId, contentHash)
     } else {
@@ -191,9 +219,12 @@ export class RedisRateLimiter {
       }
 
       const results = await pipeline.exec()
-      const minuteCount = (results[0] as number) || 0
-      const hourCount = (results[1] as number) || 0
-      const cachedResult = contentHash ? results[2] : null
+      // Redis pipeline.exec() returns [error, result][] or null - extract result with proper typing
+      type PipelineResult = [Error | null, string | null][] | null
+      const typedResults = results as PipelineResult
+      const minuteCount = parseInt(typedResults?.[0]?.[1] || '0', 10) || 0
+      const hourCount = parseInt(typedResults?.[1]?.[1] || '0', 10) || 0
+      const cachedResult = contentHash ? typedResults?.[2]?.[1] : null
 
       // Check if this is a duplicate request
       if (contentHash && cachedResult) {
@@ -242,6 +273,16 @@ export class RedisRateLimiter {
 
       await incrementPipeline.exec()
 
+      // Reset circuit breaker on success
+      if (this.consecutiveFailures > 0) {
+        console.log(
+          '✅ Redis rate limiter recovered, resetting circuit breaker'
+        )
+        this.consecutiveFailures = 0
+        this.circuitBreakerOpen = false
+        this.degradedNotified = false
+      }
+
       return {
         allowed: true,
         requestsRemaining: this.config.requestsPerMinute - minuteCount - 1,
@@ -251,10 +292,32 @@ export class RedisRateLimiter {
         backend: 'redis',
       }
     } catch (error) {
+      // Track consecutive failures for circuit breaker
+      this.consecutiveFailures++
+      this.lastFailureTime = Date.now()
+
       console.error(
-        '🔴 CRITICAL: Redis rate limit check failed - service degraded. Allowing request with memory-mode semantics.',
+        `🔴 Redis rate limit check failed (failure ${this.consecutiveFailures}/${this.CIRCUIT_BREAKER_THRESHOLD})`,
         error
       )
+
+      // Open circuit breaker if threshold reached
+      if (this.consecutiveFailures >= this.CIRCUIT_BREAKER_THRESHOLD) {
+        this.circuitBreakerOpen = true
+        console.error(
+          '🔴 CIRCUIT BREAKER OPEN: Redis failures exceeded threshold, switching to memory fallback'
+        )
+        observability.error(
+          'Circuit breaker opened - Redis rate limiter disabled',
+          {
+            metadata: {
+              consecutiveFailures: this.consecutiveFailures,
+              error: error instanceof Error ? error.message : 'unknown',
+            },
+          }
+        )
+      }
+
       if (!this.degradedNotified) {
         this.degradedNotified = true
         observability.warn(
@@ -267,17 +330,10 @@ export class RedisRateLimiter {
           }
         )
       }
-      // Fail-open with clear degraded signal instead of self‑DOSing the API
-      return {
-        allowed: true,
-        reason: 'rate_limit_service_degraded',
-        degraded: true,
-        backend: 'redis',
-        requestsRemaining: this.config.requestsPerMinute,
-        resetTime:
-          Math.floor(now / this.config.windowMinute + 1) *
-          this.config.windowMinute,
-      }
+
+      // SECURITY FIX: Fall back to memory-based rate limiting instead of failing open
+      // This ensures rate limits are still enforced even when Redis is unavailable
+      return this.checkRateLimitMemory(userId, contentHash)
     }
   }
 

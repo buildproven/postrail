@@ -6,22 +6,40 @@ import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { checkFeatureAccess, checkUsageLimits } from '@/lib/feature-gate'
 import { checkTrialAccess, recordTrialGeneration } from '@/lib/trial-guard'
 import { logger, logError } from '@/lib/logger'
+import { z } from 'zod'
 
-// Validate API key at module load - fail fast with clear error
-if (!process.env.ANTHROPIC_API_KEY) {
-  logger.error(
-    { type: 'config.missing', key: 'ANTHROPIC_API_KEY' },
-    'FATAL: ANTHROPIC_API_KEY environment variable is not set'
-  )
-}
+// M6 fix: Zod schema for request validation
+const generatePostsRequestSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  content: z
+    .string()
+    .min(1)
+    .max(100000, 'Newsletter content too long (max 100k chars)'),
+  newsletterDate: z.string().datetime().optional(),
+})
 
 // Configurable model name via environment variable
 const ANTHROPIC_MODEL =
   process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || 'missing-key',
-})
+// Lazy-initialized Anthropic client (avoids 'missing-key' fallback at module load)
+let anthropicClient: Anthropic | null = null
+
+function getAnthropicClient(): Anthropic {
+  if (!anthropicClient) {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      logger.error(
+        { type: 'config.missing', key: 'ANTHROPIC_API_KEY' },
+        'FATAL: ANTHROPIC_API_KEY environment variable is not set'
+      )
+      throw new Error('ANTHROPIC_API_KEY is not configured')
+    }
+    anthropicClient = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    })
+  }
+  return anthropicClient
+}
 
 const PLATFORMS = ['linkedin', 'threads', 'facebook', 'x'] as const
 const POST_TYPES = ['pre_cta', 'post_cta'] as const
@@ -128,7 +146,7 @@ ${newsletterContent.slice(0, 2000)}
 Generate a ${postType} post for ${platform}.`
 
   try {
-    const message = await anthropic.messages.create({
+    const message = await getAnthropicClient().messages.create({
       model: ANTHROPIC_MODEL,
       max_tokens: 1024,
       messages: [
@@ -172,7 +190,8 @@ export async function POST(request: NextRequest) {
 
     const workerToken = request.headers.get('x-worker-token')
     const serviceUserId = request.headers.get('x-service-user-id')
-    const isWorkerRequest = Boolean(workerToken || serviceUserId)
+    // M11 fix: Require BOTH headers for worker request, not just one
+    const isWorkerRequest = Boolean(workerToken && serviceUserId)
 
     let supabase:
       | Awaited<ReturnType<typeof createClient>>
@@ -201,16 +220,29 @@ export async function POST(request: NextRequest) {
       userId = user.id
     }
 
-    const { title, content, newsletterDate } = await request.json()
+    // M6 fix: Validate request body with Zod
+    const rawBody = await request.json()
+    const parseResult = generatePostsRequestSchema.safeParse(rawBody)
 
-    if (!content) {
+    if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'Newsletter content is required' },
+        {
+          error: 'Invalid request',
+          details: parseResult.error.flatten().fieldErrors,
+        },
         { status: 400 }
       )
     }
 
-    const featureCheck = await checkFeatureAccess(userId, 'basic_generation')
+    const { title, content, newsletterDate } = parseResult.data
+
+    // L9 fix: Parallelize independent checks for better performance
+    const [featureCheck, usage, rateLimitResult] = await Promise.all([
+      checkFeatureAccess(userId, 'basic_generation'),
+      checkUsageLimits(userId),
+      redisRateLimiter.checkRateLimit(userId),
+    ])
+
     if (!featureCheck.allowed) {
       return NextResponse.json(
         {
@@ -223,7 +255,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const usage = await checkUsageLimits(userId)
     if (!usage.allowed) {
       let message = 'Daily usage limit reached. Please try again later.'
       if (usage.tier === 'trial') {
@@ -241,8 +272,6 @@ export async function POST(request: NextRequest) {
         { status: 429 }
       )
     }
-
-    const rateLimitResult = await redisRateLimiter.checkRateLimit(userId)
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         {
@@ -340,7 +369,17 @@ export async function POST(request: NextRequest) {
     // Transaction: Save posts and handle rollback on failure
     if (posts.length === 0) {
       // No posts generated - delete the newsletter and fail
-      await supabase.from('newsletters').delete().eq('id', newsletter.id)
+      const { error: deleteError } = await supabase
+        .from('newsletters')
+        .delete()
+        .eq('id', newsletter.id)
+      if (deleteError) {
+        logger.error({
+          type: 'newsletter.rollback.failed',
+          newsletterId: newsletter.id,
+          error: deleteError.message,
+        })
+      }
       return NextResponse.json(
         { error: 'All post generation attempts failed. Please try again.' },
         { status: 500 }
@@ -373,7 +412,17 @@ export async function POST(request: NextRequest) {
         error: postsError.message,
       })
       // Rollback: delete the newsletter since posts failed to save
-      await supabase.from('newsletters').delete().eq('id', newsletter.id)
+      const { error: deleteError } = await supabase
+        .from('newsletters')
+        .delete()
+        .eq('id', newsletter.id)
+      if (deleteError) {
+        logger.error({
+          type: 'newsletter.rollback.failed',
+          newsletterId: newsletter.id,
+          error: deleteError.message,
+        })
+      }
       return NextResponse.json(
         { error: 'Failed to save generated posts' },
         { status: 500 }

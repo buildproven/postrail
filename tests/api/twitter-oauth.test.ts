@@ -12,6 +12,7 @@ import {
   mockSupabaseAuthUser,
   mockSupabaseAuthError,
 } from '../mocks/supabase'
+import { signValue } from '@/lib/cookie-signer'
 
 // Note: We don't mock crypto as it causes issues with the default export.
 // The auth route uses crypto.randomBytes which works fine without mocking.
@@ -26,6 +27,38 @@ vi.mock('@/lib/crypto', () => ({
   encrypt: vi.fn((text: string) => `encrypted:${text}`),
   decrypt: vi.fn((text: string) => text.replace('encrypted:', '')),
 }))
+
+// Helper to create signed OAuth cookies for tests
+// Note: Auth route signs plain values (no timestamp), so we do the same
+function createSignedOAuthCookies(
+  state: string,
+  verifier: string,
+  userId: string
+): string {
+  const signedState = signValue(state)
+  const signedVerifier = signValue(verifier)
+  const signedUserId = signValue(userId)
+  return `twitter_oauth_state=${signedState}; twitter_oauth_verifier=${signedVerifier}; twitter_oauth_user=${signedUserId}`
+}
+
+// Helper for partial cookies (missing some fields)
+function createPartialSignedCookies(options: {
+  state?: string
+  verifier?: string
+  userId?: string
+}): string {
+  const parts: string[] = []
+  if (options.state !== undefined) {
+    parts.push(`twitter_oauth_state=${signValue(options.state)}`)
+  }
+  if (options.verifier !== undefined) {
+    parts.push(`twitter_oauth_verifier=${signValue(options.verifier)}`)
+  }
+  if (options.userId !== undefined) {
+    parts.push(`twitter_oauth_user=${signValue(options.userId)}`)
+  }
+  return parts.join('; ')
+}
 
 // Mock fetch for Twitter API calls
 const mockFetch = vi.fn()
@@ -223,8 +256,11 @@ describe('/api/platforms/twitter/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'twitter_oauth_state=different-state; twitter_oauth_verifier=verifier; twitter_oauth_user=user-123',
+          cookie: createSignedOAuthCookies(
+            'different-state',
+            'verifier',
+            'user-123'
+          ),
         },
       })
 
@@ -263,8 +299,10 @@ describe('/api/platforms/twitter/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'twitter_oauth_state=matching-state; twitter_oauth_user=user-123',
+          cookie: createPartialSignedCookies({
+            state: 'matching-state',
+            userId: 'user-123',
+          }),
         },
       })
 
@@ -273,7 +311,8 @@ describe('/api/platforms/twitter/callback - OAuth Callback', () => {
       expect(response.status).toBe(307)
       const location = response.headers.get('location')
       expect(location).toContain('error=')
-      expect(location).toContain('verifier')
+      // With HMAC signing, missing cookies return generic "Session expired" error
+      expect(location).toContain('Session%20expired')
     })
   })
 
@@ -287,8 +326,10 @@ describe('/api/platforms/twitter/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'twitter_oauth_state=matching-state; twitter_oauth_verifier=verifier',
+          cookie: createPartialSignedCookies({
+            state: 'matching-state',
+            verifier: 'verifier',
+          }),
         },
       })
 
@@ -313,8 +354,11 @@ describe('/api/platforms/twitter/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'twitter_oauth_state=matching-state; twitter_oauth_verifier=verifier; twitter_oauth_user=user-123',
+          cookie: createSignedOAuthCookies(
+            'matching-state',
+            'verifier',
+            'user-123'
+          ),
         },
       })
 
@@ -337,8 +381,11 @@ describe('/api/platforms/twitter/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'twitter_oauth_state=matching-state; twitter_oauth_verifier=verifier; twitter_oauth_user=user-123',
+          cookie: createSignedOAuthCookies(
+            'matching-state',
+            'verifier',
+            'user-123'
+          ),
         },
       })
 
@@ -366,8 +413,11 @@ describe('/api/platforms/twitter/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'twitter_oauth_state=matching-state; twitter_oauth_verifier=verifier; twitter_oauth_user=user-123',
+          cookie: createSignedOAuthCookies(
+            'matching-state',
+            'verifier',
+            'user-123'
+          ),
         },
       })
 
@@ -407,8 +457,11 @@ describe('/api/platforms/twitter/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'twitter_oauth_state=matching-state; twitter_oauth_verifier=verifier; twitter_oauth_user=user-123',
+          cookie: createSignedOAuthCookies(
+            'matching-state',
+            'verifier',
+            'user-123'
+          ),
         },
       })
 
@@ -464,8 +517,11 @@ describe('/api/platforms/twitter/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'twitter_oauth_state=matching-state; twitter_oauth_verifier=verifier; twitter_oauth_user=user-123',
+          cookie: createSignedOAuthCookies(
+            'matching-state',
+            'verifier',
+            'user-123'
+          ),
         },
       })
 
@@ -548,8 +604,11 @@ describe('/api/platforms/twitter/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'twitter_oauth_state=matching-state; twitter_oauth_verifier=verifier; twitter_oauth_user=user-123',
+          cookie: createSignedOAuthCookies(
+            'matching-state',
+            'verifier',
+            'user-123'
+          ),
         },
       })
 
@@ -603,8 +662,11 @@ describe('/api/platforms/twitter/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'twitter_oauth_state=matching-state; twitter_oauth_verifier=verifier; twitter_oauth_user=user-123',
+          cookie: createSignedOAuthCookies(
+            'matching-state',
+            'verifier',
+            'user-123'
+          ),
         },
       })
 

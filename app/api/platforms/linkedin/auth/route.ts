@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import crypto from 'crypto'
+import { createOAuthState } from '@/lib/cookie-signer'
 
 /**
  * LinkedIn OAuth 2.0 Authorization Endpoint
@@ -58,8 +58,8 @@ export async function GET() {
       )
     }
 
-    // Generate state parameter for CSRF protection
-    const state = crypto.randomBytes(32).toString('hex')
+    // Generate signed state parameter for CSRF protection (H2 fix)
+    const { state, signedState, signedUserId } = createOAuthState(user.id)
 
     // Store state in a cookie for validation in callback
     const response = NextResponse.redirect(
@@ -73,23 +73,19 @@ export async function GET() {
         }).toString()
     )
 
-    // Set state cookie (httpOnly, secure, 10 min expiry)
-    response.cookies.set('linkedin_oauth_state', state, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       maxAge: 600, // 10 minutes
       path: '/',
-    })
+    }
 
-    // Store user ID to associate with the connection after callback
-    response.cookies.set('linkedin_oauth_user', user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 600,
-      path: '/',
-    })
+    // Set signed state cookie (HMAC-protected)
+    response.cookies.set('linkedin_oauth_state', signedState, cookieOptions)
+
+    // Store signed user ID to associate with the connection after callback
+    response.cookies.set('linkedin_oauth_user', signedUserId, cookieOptions)
 
     return response
   } catch (error) {

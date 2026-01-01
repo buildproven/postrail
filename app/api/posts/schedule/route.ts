@@ -6,19 +6,43 @@ import {
   type Platform,
   type PostType,
 } from '@/lib/scheduling'
+import { logger } from '@/lib/logger'
+// M2 fix: Add feature gating for scheduling
+import { checkFeatureAccess } from '@/lib/feature-gate'
+import { z } from 'zod'
+
+// M10 fix: Zod schemas for request validation
+const singleScheduleSchema = z.object({
+  postId: z.string().uuid('Invalid post ID format'),
+  scheduledTime: z.string().datetime('Invalid datetime format (use ISO 8601)'),
+})
+
+const bulkScheduleSchema = z.object({
+  newsletterId: z.string().uuid('Invalid newsletter ID format'),
+  newsletterPublishDate: z
+    .string()
+    .datetime('Invalid datetime format (use ISO 8601)'),
+  useSmartTiming: z.boolean().optional().default(true),
+  customTimes: z
+    .object({
+      preCTA: z.string().datetime().optional(),
+      postCTA: z.string().datetime().optional(),
+    })
+    .optional(),
+})
 
 interface ScheduleRequest {
   postId: string
-  scheduledTime: string // ISO 8601 timestamp
+  scheduledTime: string
 }
 
 interface BulkScheduleRequest {
   newsletterId: string
-  newsletterPublishDate: string // ISO 8601 timestamp
-  useSmartTiming?: boolean // Default true - use platform-optimized times
+  newsletterPublishDate: string
+  useSmartTiming?: boolean
   customTimes?: {
-    preCTA?: string // Custom pre-CTA time (ISO 8601)
-    postCTA?: string // Custom post-CTA time (ISO 8601)
+    preCTA?: string
+    postCTA?: string
   }
 }
 
@@ -38,15 +62,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // M2 fix: Check if user has scheduling feature access
+    const featureCheck = await checkFeatureAccess(user.id, 'scheduling')
+    if (!featureCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Feature not available',
+          message: featureCheck.message,
+          requiredTier: featureCheck.requiredTier,
+          currentTier: featureCheck.tier,
+        },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
 
-    // Bulk scheduling for entire newsletter
+    // M10 fix: Validate request with appropriate Zod schema
     if (body.newsletterId) {
-      return handleBulkSchedule(body as BulkScheduleRequest, user.id, supabase)
+      const parseResult = bulkScheduleSchema.safeParse(body)
+      if (!parseResult.success) {
+        return NextResponse.json(
+          {
+            error: 'Invalid request',
+            details: parseResult.error.flatten().fieldErrors,
+          },
+          { status: 400 }
+        )
+      }
+      return handleBulkSchedule(parseResult.data, user.id, supabase)
     }
 
     // Single post scheduling
-    return handleSingleSchedule(body as ScheduleRequest, user.id, supabase)
+    const parseResult = singleScheduleSchema.safeParse(body)
+    if (!parseResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Invalid request',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+        { status: 400 }
+      )
+    }
+    return handleSingleSchedule(parseResult.data, user.id, supabase)
   } catch (error) {
     console.error('Scheduling error:', error)
     return NextResponse.json(
@@ -143,13 +201,31 @@ async function handleSingleSchedule(
 
   // Schedule with QStash if configured
   let qstashMessageId: string | undefined
+  let qstashScheduled = false
   if (isQStashConfigured()) {
     try {
       const result = await schedulePost(postId, scheduledDate)
       qstashMessageId = result.messageId
+      qstashScheduled = true
+      logger.info({
+        type: 'qstash.schedule.success',
+        postId,
+        messageId: qstashMessageId,
+        scheduledTime: scheduledDate.toISOString(),
+      })
     } catch (qstashError) {
-      console.error('QStash scheduling failed:', qstashError)
-      // Continue anyway - manual trigger can still work
+      // H7 FIX: Proper structured logging for QStash failures
+      logger.error({
+        type: 'qstash.schedule.failed',
+        postId,
+        scheduledTime: scheduledDate.toISOString(),
+        error:
+          qstashError instanceof Error
+            ? qstashError.message
+            : String(qstashError),
+      })
+      // Post is marked as scheduled in DB - manual publish will still work
+      // but automated publishing won't trigger
     }
   }
 
@@ -158,6 +234,7 @@ async function handleSingleSchedule(
     postId,
     scheduledTime: scheduledDate.toISOString(),
     qstashMessageId,
+    qstashScheduled, // Let client know if automated publishing is set up
   })
 }
 
@@ -251,6 +328,7 @@ async function handleBulkSchedule(
     isOptimal?: boolean
     reason?: string
     error?: string
+    qstashScheduled?: boolean
   }> = []
 
   // Track scheduled times for response
@@ -346,22 +424,39 @@ async function handleBulkSchedule(
 
     // Schedule with QStash
     let qstashMessageId: string | undefined
+    let qstashScheduled = false
     if (isQStashConfigured()) {
       try {
         const result = await schedulePost(post.id, scheduledTime)
         qstashMessageId = result.messageId
+        qstashScheduled = true
 
         // Store message ID for potential cancellation
         await supabase
           .from('social_posts')
           .update({ qstash_message_id: qstashMessageId })
           .eq('id', post.id)
+
+        logger.info({
+          type: 'qstash.schedule.success',
+          postId: post.id,
+          platform: post.platform,
+          messageId: qstashMessageId,
+          scheduledTime: scheduledTime.toISOString(),
+        })
       } catch (qstashError) {
-        console.error(
-          'QStash scheduling failed for post:',
-          post.id,
-          qstashError
-        )
+        // H7 FIX: Proper structured logging for QStash failures
+        logger.error({
+          type: 'qstash.schedule.failed',
+          postId: post.id,
+          platform: post.platform,
+          scheduledTime: scheduledTime.toISOString(),
+          error:
+            qstashError instanceof Error
+              ? qstashError.message
+              : String(qstashError),
+        })
+        // Post is marked as scheduled in DB - manual publish will still work
       }
     }
 
@@ -380,6 +475,7 @@ async function handleBulkSchedule(
       localTime,
       isOptimal,
       reason,
+      qstashScheduled, // H7: Include QStash status in response
     })
   }
 

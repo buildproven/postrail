@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { encrypt } from '@/lib/crypto'
+import { verifyOAuthState } from '@/lib/cookie-signer'
 
 /**
  * Facebook OAuth 2.0 Callback Endpoint
@@ -61,16 +62,25 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Validate state parameter (CSRF protection)
-    const storedState = request.cookies.get('facebook_oauth_state')?.value
-    const userId = request.cookies.get('facebook_oauth_user')?.value
+    // Validate HMAC-signed state parameter (CSRF protection)
+    const signedState = request.cookies.get('facebook_oauth_state')?.value
+    const signedUserId = request.cookies.get('facebook_oauth_user')?.value
 
-    if (!storedState || storedState !== state) {
+    if (!signedState || !signedUserId) {
       return NextResponse.redirect(
-        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Invalid state parameter. Please try again.')}`
+        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Session expired. Please try again.')}`
       )
     }
 
+    const verification = verifyOAuthState(signedState, signedUserId, state)
+
+    if (!verification.valid) {
+      return NextResponse.redirect(
+        `${appUrl}/dashboard/platforms?error=${encodeURIComponent(verification.error || 'Invalid state parameter. Please try again.')}`
+      )
+    }
+
+    const userId = verification.userId
     if (!userId) {
       return NextResponse.redirect(
         `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Session expired. Please try again.')}`

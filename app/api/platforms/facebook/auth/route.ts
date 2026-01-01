@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import crypto from 'crypto'
+import { createOAuthState } from '@/lib/cookie-signer'
 
 /**
  * Facebook OAuth 2.0 Authorization Endpoint
@@ -57,8 +57,8 @@ export async function GET() {
       )
     }
 
-    // Generate state parameter for CSRF protection
-    const state = crypto.randomBytes(32).toString('hex')
+    // Generate HMAC-signed state parameter for CSRF protection
+    const { state, signedState, signedUserId } = createOAuthState(user.id)
 
     // Redirect to Facebook authorization
     const response = NextResponse.redirect(
@@ -72,8 +72,8 @@ export async function GET() {
         }).toString()
     )
 
-    // Set state cookie (httpOnly, secure, 10 min expiry)
-    response.cookies.set('facebook_oauth_state', state, {
+    // Set HMAC-signed state cookie (httpOnly, secure, 10 min expiry)
+    response.cookies.set('facebook_oauth_state', signedState, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -81,8 +81,8 @@ export async function GET() {
       path: '/',
     })
 
-    // Store user ID to associate with the connection after callback
-    response.cookies.set('facebook_oauth_user', user.id, {
+    // Store HMAC-signed user ID to associate with the connection after callback
+    response.cookies.set('facebook_oauth_user', signedUserId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

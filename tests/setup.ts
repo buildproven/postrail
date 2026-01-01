@@ -9,6 +9,7 @@ afterEach(() => {
 })
 
 // Mock environment variables (set once, not per test)
+// Note: COOKIE_SECRET is set in vitest.config.ts env to ensure it's available before module load
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key'
 process.env.ANTHROPIC_API_KEY = 'test-anthropic-key'

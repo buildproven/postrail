@@ -12,6 +12,7 @@ import {
   mockSupabaseAuthUser,
   mockSupabaseAuthError,
 } from '../mocks/supabase'
+import { signValue } from '@/lib/cookie-signer'
 
 // Mock Supabase
 vi.mock('@/lib/supabase/server', () => ({
@@ -23,6 +24,32 @@ vi.mock('@/lib/crypto', () => ({
   encrypt: vi.fn((text: string) => `encrypted:${text}`),
   decrypt: vi.fn((text: string) => text.replace('encrypted:', '')),
 }))
+
+// Helper to create signed OAuth cookies for LinkedIn tests
+// LinkedIn uses createOAuthState which adds timestamp to state
+function createSignedLinkedInCookies(state: string, userId: string): string {
+  // State format in cookie: state.timestamp (then signed)
+  const stateWithTimestamp = `${state}.${Date.now()}`
+  const signedState = signValue(stateWithTimestamp)
+  const signedUserId = signValue(userId)
+  return `linkedin_oauth_state=${signedState}; linkedin_oauth_user=${signedUserId}`
+}
+
+// Helper for partial cookies
+function createPartialSignedLinkedInCookies(options: {
+  state?: string
+  userId?: string
+}): string {
+  const parts: string[] = []
+  if (options.state !== undefined) {
+    const stateWithTimestamp = `${options.state}.${Date.now()}`
+    parts.push(`linkedin_oauth_state=${signValue(stateWithTimestamp)}`)
+  }
+  if (options.userId !== undefined) {
+    parts.push(`linkedin_oauth_user=${signValue(options.userId)}`)
+  }
+  return parts.join('; ')
+}
 
 // Mock fetch for LinkedIn API calls
 const mockFetch = vi.fn()
@@ -213,8 +240,7 @@ describe('/api/platforms/linkedin/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'linkedin_oauth_state=different-state; linkedin_oauth_user=user-123',
+          cookie: createSignedLinkedInCookies('different-state', 'user-123'),
         },
       })
 
@@ -223,7 +249,7 @@ describe('/api/platforms/linkedin/callback - OAuth Callback', () => {
       expect(response.status).toBe(307)
       const location = response.headers.get('location')
       expect(location).toContain('error=')
-      expect(location).toContain('Invalid%20state')
+      expect(location).toContain('State%20mismatch')
     })
 
     it('should reject request when state cookie is missing', async () => {
@@ -253,7 +279,9 @@ describe('/api/platforms/linkedin/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie: 'linkedin_oauth_state=matching-state',
+          cookie: createPartialSignedLinkedInCookies({
+            state: 'matching-state',
+          }),
         },
       })
 
@@ -278,8 +306,7 @@ describe('/api/platforms/linkedin/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'linkedin_oauth_state=matching-state; linkedin_oauth_user=user-123',
+          cookie: createSignedLinkedInCookies('matching-state', 'user-123'),
         },
       })
 
@@ -302,8 +329,7 @@ describe('/api/platforms/linkedin/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'linkedin_oauth_state=matching-state; linkedin_oauth_user=user-123',
+          cookie: createSignedLinkedInCookies('matching-state', 'user-123'),
         },
       })
 
@@ -331,8 +357,7 @@ describe('/api/platforms/linkedin/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'linkedin_oauth_state=matching-state; linkedin_oauth_user=user-123',
+          cookie: createSignedLinkedInCookies('matching-state', 'user-123'),
         },
       })
 
@@ -371,8 +396,7 @@ describe('/api/platforms/linkedin/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'linkedin_oauth_state=matching-state; linkedin_oauth_user=user-123',
+          cookie: createSignedLinkedInCookies('matching-state', 'user-123'),
         },
       })
 
@@ -435,8 +459,7 @@ describe('/api/platforms/linkedin/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'linkedin_oauth_state=matching-state; linkedin_oauth_user=user-123',
+          cookie: createSignedLinkedInCookies('matching-state', 'user-123'),
         },
       })
 
@@ -524,8 +547,7 @@ describe('/api/platforms/linkedin/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'linkedin_oauth_state=matching-state; linkedin_oauth_user=user-123',
+          cookie: createSignedLinkedInCookies('matching-state', 'user-123'),
         },
       })
 
@@ -580,8 +602,7 @@ describe('/api/platforms/linkedin/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'linkedin_oauth_state=matching-state; linkedin_oauth_user=user-123',
+          cookie: createSignedLinkedInCookies('matching-state', 'user-123'),
         },
       })
 
@@ -639,8 +660,7 @@ describe('/api/platforms/linkedin/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'linkedin_oauth_state=matching-state; linkedin_oauth_user=user-123',
+          cookie: createSignedLinkedInCookies('matching-state', 'user-123'),
         },
       })
 

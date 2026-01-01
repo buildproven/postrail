@@ -50,6 +50,8 @@ interface PostSchedulerProps {
   newsletterId: string
   posts: Post[]
   connections: Connection[]
+  // M12 fix: Add callback for post updates instead of page reload
+  onPostUpdate?: (postId: string, updates: Partial<Post>) => void
 }
 
 const PLATFORM_OPTIMAL_TIMES: Record<
@@ -66,7 +68,10 @@ export function PostScheduler({
   newsletterId,
   posts,
   connections,
+  onPostUpdate,
 }: PostSchedulerProps) {
+  // M12 fix: Track local post state to avoid page reload
+  const [localPosts, setLocalPosts] = useState<Post[]>(posts)
   const [publishDate, setPublishDate] = useState('')
   const [publishTime, setPublishTime] = useState('09:00')
   const [useSmartTiming, setUseSmartTiming] = useState(true)
@@ -100,9 +105,10 @@ export function PostScheduler({
     connections.filter(c => c.connected).map(c => c.platform)
   )
 
-  const preCTAPosts = posts.filter(p => p.post_type === 'pre_cta')
-  const postCTAPosts = posts.filter(p => p.post_type === 'post_cta')
-  const failedPosts = posts.filter(p => p.status === 'failed')
+  // M12 fix: Use local state for derived values
+  const preCTAPosts = localPosts.filter(p => p.post_type === 'pre_cta')
+  const postCTAPosts = localPosts.filter(p => p.post_type === 'post_cta')
+  const failedPosts = localPosts.filter(p => p.status === 'failed')
 
   const handleScheduleAll = async () => {
     if (!publishDate) {
@@ -176,8 +182,11 @@ export function PostScheduler({
           type: 'success',
           text: 'Post queued for retry',
         })
-        // Refresh page to show updated status
-        window.location.reload()
+        // M12 fix: Update local state instead of page reload
+        setLocalPosts(prev =>
+          prev.map(p => (p.id === postId ? { ...p, status: 'scheduled' } : p))
+        )
+        onPostUpdate?.(postId, { status: 'scheduled' })
       } else {
         const data = await response.json()
         setMessage({

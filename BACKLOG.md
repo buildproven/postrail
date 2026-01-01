@@ -1,102 +1,121 @@
 # postrail - Priority Actions
 
-**Audit Date:** 2025-12-30
-**Status:** Deployed | **SOTA Score:** ~88/100 (after fixes)
-**Key Gap:** Minor improvements remaining (lower priority)
+**Audit Date:** 2025-12-31
+**Status:** Deployed | **SOTA Score:** ~88/100
+**Deep Review:** Completed | **Issues Found:** 45+
 
 ## Recent Work
 
-- **2025-12-30**: Lower priority items (renewal/payment emails, upgrade prompts, Sentry breadcrumbs, comprehensive tests)
-- **2025-12-30**: Medium priority SOTA fixes (fieldset/legend, time elements, error boundary, structured logging)
-- **2025-12-30**: Critical/High priority SOTA fixes (security headers, CORS, color contrast, aria-live, skip links, JSON-LD, lazy TipTap, OG image)
-- **2025-12-30**: SOTA audit (SEO 72, A11y 78, Security 78, Architecture 85, Performance 72, Code Quality 85)
-- **2025-12-17**: Landing page rewrite (sales copy, pricing tiers, how-it-works), settings page upgrade UI, README roadmap update
-- **2025-12-16**: Vercel deployment fixed (next.config.ts → .js), Stripe SDK v20 compatibility
-- **2025-12-15**: Docs refresh (stack, API surface, architecture, deployment, testing, agent guidance)
-- **2025-12-13**: Stripe billing (checkout/portal/status + webhook), feature gating, Zod schemas
+- **2025-12-31**: Deep code review (quality, security, a11y, architecture, type safety, silent failures)
+- **2025-12-30**: Lower priority items (renewal/payment emails, upgrade prompts, Sentry breadcrumbs)
+- **2025-12-30**: Medium priority SOTA fixes (fieldset/legend, time elements, error boundary)
+- **2025-12-30**: Critical/High priority SOTA fixes (security headers, CORS, color contrast)
 
 ---
 
-## 🔴 Critical - Fix Before Launch
+## 🔴 Critical - Fix Immediately
 
-> Security and compliance blockers
+> Security vulnerabilities and build blockers
 
-- [x] Add security headers (CSP, HSTS, X-Frame-Options)
-- [x] Add CORS configuration to middleware
-- [x] Fix color contrast (gray-500 → gray-600, muted-foreground)
-- [x] Compress OG image (1MB → <200KB)
+| ID  | Issue                                                | File:Line                      | Effort | Status |
+| --- | ---------------------------------------------------- | ------------------------------ | ------ | ------ |
+| C1  | qs package DoS vulnerability (GHSA-6rw7-vpxm-498p)   | package.json                   | S      | [x]    |
+| C2  | CORS falls back to request origin when env missing   | middleware.ts:21               | S      | [x]    |
+| C3  | Anthropic client init with 'missing-key' fallback    | api/generate-posts/route.ts:22 | S      | [x]    |
+| C4  | vitest.config.ts minWorkers invalid option           | vitest.config.ts:15            | S      | [x]    |
+| C5  | Test zombie processes (execution tests spawn vitest) | package.json:test:fast         | S      | [x]    |
 
-## 🟡 High Priority - Fix This Week
+## 🟠 High Priority - Fix This Week
 
-> A11y and SEO improvements
+> Security, data integrity, type safety
 
-- [x] Add aria-live to error messages (login, signup, reset-password)
-- [x] Add skip links to landing page and auth pages
-- [x] Add JSON-LD SoftwareApplication schema to homepage
-- [x] Lazy load TipTap editor (save ~150KB bundle)
-- [x] Add per-page metadata to auth pages
+| ID  | Issue                                           | File:Line                          | Effort | Status |
+| --- | ----------------------------------------------- | ---------------------------------- | ------ | ------ |
+| H1  | Rate limiter fail-open on Redis failure         | lib/redis-rate-limiter.ts:270      | M      | [x]    |
+| H2  | OAuth state in unsigned cookies                 | api/platforms/_/callback/_.ts      | M      | [ ]    |
+| H3  | `Record<string, any>` loses type safety         | lib/observability.ts:55            | S      | [x]    |
+| H4  | Unsafe metadata cast from DB (no validation)    | api/queues/publish/route.ts:35     | M      | [ ]    |
+| H5  | Error details returned to client                | api/cron/trial-emails/route.ts:110 | S      | [x]    |
+| H6  | Dynamic imports on every call                   | lib/feature-gate.ts:113            | S      | [x]    |
+| H7  | QStash scheduling failures silently ignored     | api/posts/schedule/route.ts        | M      | [x]    |
+| H8  | Non-null assertions on env vars (runtime crash) | lib/redis-rate-limiter.ts:140      | S      | [x]    |
+| H9  | CSP allows unsafe-eval and unsafe-inline        | next.config.js:34                  | M      | [ ]    |
 
-## 📊 Medium Priority - SOTA Improvements
+## 📊 Medium Priority - This Sprint
 
-> From audit recommendations
+> Architecture, code quality, performance
 
-- [x] Trial expiry warning emails (3 days before) - Resend (already implemented in lib/email.ts)
-- [x] Trial expired notification - Prompt to upgrade (already implemented in lib/email.ts)
-- [x] Welcome email with quick-start guide (already implemented in lib/email.ts)
-- [x] Usage analytics dashboard (generation history, platform breakdown) - app/dashboard/analytics/
-- [x] Add `aria-label` to icon-only buttons - N/A (no icon-only buttons in PostPreviewCard)
-- [x] Wrap newsletter date input in fieldset with legend
-- [x] Add `<time>` elements for dates in post-scheduler
-- [x] Migrate console.log to structured logger (key API files)
-- [x] Add error boundary to dashboard layout
+| ID  | Issue                                              | File:Line                                | Effort | Status |
+| --- | -------------------------------------------------- | ---------------------------------------- | ------ | ------ |
+| M1  | Dual rate limiter implementations                  | lib/rate-limiter.ts                      | S      | [ ]    |
+| M2  | Missing feature gate on scheduling                 | api/posts/schedule/route.ts              | S      | [ ]    |
+| M3  | Service client used for user-scoped queries        | lib/feature-gate.ts                      | M      | [ ]    |
+| M4  | 400+ line schedule route needs extraction          | api/posts/schedule/route.ts              | L      | [ ]    |
+| M5  | Dashboard makes 5 sequential queries               | app/dashboard/page.tsx                   | M      | [ ]    |
+| M6  | Missing request validation (Zod) in generate-posts | api/generate-posts/route.ts:204          | S      | [ ]    |
+| M7  | Rollback logic doesn't check delete success        | api/generate-posts/route.ts:343          | S      | [x]    |
+| M8  | Unsafe `as unknown as` double casts                | api/posts/[postId]/variants/route.ts:193 | M      | [ ]    |
+| M9  | Unsafe array assertions on metadata.variants       | api/posts/[postId]/variants/route.ts:240 | S      | [ ]    |
+| M10 | Request body casts without Zod validation          | api/posts/schedule/route.ts:45           | S      | [ ]    |
+| M11 | Worker request validation logic inconsistent       | api/generate-posts/route.ts:175-189      | S      | [ ]    |
+| M12 | Page reload after retry (poor UX)                  | components/post-scheduler.tsx:180        | S      | [ ]    |
+| M13 | Hardcoded URLs in email templates                  | lib/email.ts:53                          | S      | [x]    |
 
-## 📚 Lower Priority
+## 📚 Lower Priority - When Needed
 
-> Nice to have
+> Tech debt, nice-to-haves
 
-- [x] Subscription renewal reminder (7 days before) - sendRenewalReminder in lib/email.ts
-- [x] Payment failed recovery email - sendPaymentFailed in lib/email.ts
-- [x] Upgrade prompts when hitting limits - getUpgradePromptForLimit in lib/feature-gate.ts
-- [x] Sentry breadcrumbs for error context - addBreadcrumb in lib/logger.ts
-- [ ] Service layer abstraction (refactor)
-- [ ] Add sitemap entries for /pricing, /features pages (pages don't exist yet)
-- [ ] Replace axios with native fetch in client code (only server-side axios, needed for SSRF protection)
+| ID  | Issue                                        | File:Line                        | Effort | Status |
+| --- | -------------------------------------------- | -------------------------------- | ------ | ------ |
+| L1  | ESLint object injection warnings (15)        | Various                          | M      | [ ]    |
+| L2  | Missing test coverage for post-scheduler     | components/post-scheduler.tsx    | M      | [ ]    |
+| L3  | Unused PLATFORM_OPTIMAL_TIMES constant       | components/post-scheduler.tsx:55 | S      | [ ]    |
+| L4  | Props drilling in PostPreviewCard            | components/post-preview-card.tsx | S      | [ ]    |
+| L5  | Client-side auth re-fetch in settings        | app/dashboard/settings/page.tsx  | S      | [ ]    |
+| L6  | Missing rate limit headers on some endpoints | Various API routes               | S      | [ ]    |
+| L7  | Create shared types directory                | types/                           | M      | [ ]    |
+| L8  | Service layer abstraction (refactor)         | lib/services/                    | L      | [ ]    |
+| L9  | Parallel rate limit/feature checks           | api/generate-posts/route.ts:213  | S      | [ ]    |
 
 ---
 
-## Completed
+## Completed (2025-12-31 Deep Review)
 
-- [x] Run SQL migration in Supabase Dashboard
-- [x] Create Stripe products (Standard $29/mo, Growth $59/mo)
-- [x] Copy price IDs to env vars
-- [x] Set up Stripe webhook secret in Vercel
-- [x] Set `SENTRY_DSN` in Vercel
-- [x] Landing page with sales copy and pricing tiers
-- [x] Settings page with Standard/Growth upgrade options
-- [x] Trial system (3/day, 10 total, 14-day)
-- [x] Usage tracking and rate limiting
-- [x] Public demo route (3/month per IP)
+- [x] C4: Fixed vitest.config.ts minWorkers invalid option
+
+## Completed (Previous)
+
+- [x] Security headers (CSP, HSTS, X-Frame-Options)
+- [x] CORS configuration in middleware
+- [x] Color contrast fixes
+- [x] OG image compression
+- [x] aria-live on error messages
+- [x] Skip links
+- [x] JSON-LD schema
+- [x] Lazy load TipTap
+- [x] Per-page metadata
+- [x] Trial/welcome/renewal emails
+- [x] Usage analytics dashboard
+- [x] Fieldset/legend for inputs
+- [x] Time elements for dates
+- [x] Structured logging
+- [x] Error boundary
 - [x] Stripe billing infrastructure
-- [x] Subscription-based feature gating
-- [x] BillingService wrapper class
-- [x] Webhook handler `/api/webhooks/stripe`
-- [x] Sentry SDK installed
-- [x] Zod request/response validation
-- [x] Vercel deployment working
-- [x] Stripe SDK v20 compatibility
-- [x] Security hardening (RLS, search_path)
-
-## SOTA Audit Summary (2025-12-30)
-
-| Area          | Score  | Key Issues                                         |
-| ------------- | ------ | -------------------------------------------------- |
-| SEO           | 72/100 | Missing JSON-LD, per-page metadata, large OG image |
-| Accessibility | 78/100 | Color contrast, aria-live, skip links              |
-| Security      | 78/100 | Missing headers, CORS                              |
-| Architecture  | 85/100 | Solid patterns, minor consolidation needed         |
-| Performance   | 72/100 | TipTap bundle, OG image size                       |
-| Code Quality  | 85/100 | TypeScript strict, 0 ESLint errors                 |
+- [x] Feature gating
 
 ---
 
-_Updated: 2025-12-30_
+## Deep Review Summary (2025-12-31)
+
+| Area             | Status | Issues Found                                             |
+| ---------------- | ------ | -------------------------------------------------------- |
+| Automated Checks | ✅     | TypeScript, ESLint, 672 tests passing                    |
+| Security         | ⚠️     | 1 HIGH dep vuln, CORS fallback, rate limiter fail-open   |
+| Type Safety      | ⚠️     | 18 issues (any usage, unsafe casts, non-null assertions) |
+| Silent Failures  | ⚠️     | 14 issues (QStash, DB updates, error swallowing)         |
+| Architecture     | ✅     | Solid patterns, minor consolidation needed               |
+| Deployment       | ✅     | Correct URLs, security headers present                   |
+
+---
+
+_Updated: 2025-12-31_

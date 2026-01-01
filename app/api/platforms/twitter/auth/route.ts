@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
+import { signValue } from '@/lib/cookie-signer'
 
 /**
  * Twitter/X OAuth 2.0 Authorization Endpoint (PKCE Flow)
@@ -88,6 +89,7 @@ export async function GET() {
     const response = NextResponse.redirect(authUrl.toString())
 
     // Set cookies for validation in callback (httpOnly, secure, 10 min expiry)
+    // H2 fix: Sign sensitive cookies with HMAC
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -96,9 +98,17 @@ export async function GET() {
       path: '/',
     }
 
-    response.cookies.set('twitter_oauth_state', state, cookieOptions)
-    response.cookies.set('twitter_oauth_verifier', codeVerifier, cookieOptions)
-    response.cookies.set('twitter_oauth_user', user.id, cookieOptions)
+    response.cookies.set('twitter_oauth_state', signValue(state), cookieOptions)
+    response.cookies.set(
+      'twitter_oauth_verifier',
+      signValue(codeVerifier),
+      cookieOptions
+    )
+    response.cookies.set(
+      'twitter_oauth_user',
+      signValue(user.id),
+      cookieOptions
+    )
 
     return response
   } catch (error) {

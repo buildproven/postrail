@@ -4,6 +4,14 @@ import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { publishGenerationJob } from '@/lib/platforms/qstash'
 import { checkFeatureAccess, checkUsageLimits } from '@/lib/feature-gate'
 import { checkTrialAccess } from '@/lib/trial-guard'
+import { z } from 'zod'
+
+// Zod schema for request validation
+const queueRequestSchema = z.object({
+  title: z.string().max(500).optional(),
+  content: z.string().min(50, 'Content must be at least 50 characters'),
+  newsletterDate: z.string().datetime().optional(),
+})
 
 // Lightweight enqueue endpoint: accepts a request, records a pending job, and publishes to QStash.
 // A separate worker endpoint (process) will consume.
@@ -19,20 +27,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { title, content, newsletterDate } = await request.json()
-    if (!content) {
+    const body = await request.json()
+    const parseResult = queueRequestSchema.safeParse(body)
+
+    if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'Newsletter content is required' },
+        {
+          error: 'Invalid request',
+          details: parseResult.error.flatten().fieldErrors,
+        },
         { status: 400 }
       )
     }
 
-    if (newsletterDate && Number.isNaN(new Date(newsletterDate).getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid newsletterDate format' },
-        { status: 400 }
-      )
-    }
+    const { title, content, newsletterDate } = parseResult.data
 
     const featureCheck = await checkFeatureAccess(user.id, 'basic_generation')
     if (!featureCheck.allowed) {
@@ -72,13 +80,22 @@ export async function POST(request: NextRequest) {
       contentHash
     )
     if (!rateLimit.allowed) {
+      // L6 fix: Add standard rate limit headers
       return NextResponse.json(
         {
           error: 'Rate limit exceeded',
           reason: rateLimit.reason,
           retryAfter: rateLimit.retryAfter,
+          requestsRemaining: rateLimit.requestsRemaining,
         },
-        { status: 429 }
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.retryAfter || 60),
+            'X-RateLimit-Remaining': String(rateLimit.requestsRemaining),
+            'X-RateLimit-Reset': String(rateLimit.resetTime),
+          },
+        }
       )
     }
 

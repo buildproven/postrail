@@ -17,37 +17,41 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Fetch real data
-  const { count: newsletterCount } = await supabase
-    .from('newsletters')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user?.id)
+  // M5 fix: Parallelize independent dashboard queries for better performance
+  const now = new Date()
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-  const { data: connections } = await supabase
-    .from('platform_connections')
-    .select('platform, is_active')
-    .eq('user_id', user?.id)
+  const [
+    { count: newsletterCount },
+    { data: connections },
+    { data: userProfile },
+    { data: recentPosts },
+  ] = await Promise.all([
+    supabase
+      .from('newsletters')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user?.id),
+    supabase
+      .from('platform_connections')
+      .select('platform, is_active')
+      .eq('user_id', user?.id),
+    supabase
+      .from('user_profiles')
+      .select(
+        'generations_today, generations_total, subscription_status, trial_ends_at'
+      )
+      .eq('id', user?.id)
+      .single(),
+    supabase
+      .from('social_posts')
+      .select('status, impressions, newsletters!inner(user_id)')
+      .eq('newsletters.user_id', user?.id)
+      .gte('created_at', thirtyDaysAgo.toISOString()),
+  ])
 
   const connectedPlatforms = new Map(
     connections?.map(c => [c.platform, c.is_active]) || []
   )
-
-  const { data: userProfile } = await supabase
-    .from('user_profiles')
-    .select(
-      'generations_today, generations_total, subscription_status, trial_ends_at'
-    )
-    .eq('id', user?.id)
-    .single()
-
-  const now = new Date()
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-
-  const { data: recentPosts } = await supabase
-    .from('social_posts')
-    .select('status, impressions, newsletters!inner(user_id)')
-    .eq('newsletters.user_id', user?.id)
-    .gte('created_at', thirtyDaysAgo.toISOString())
 
   const publishedCount =
     recentPosts?.filter(p => p.status === 'published').length || 0

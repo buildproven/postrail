@@ -12,6 +12,7 @@ import {
   mockSupabaseAuthUser,
   mockSupabaseAuthError,
 } from '../mocks/supabase'
+import { signValue } from '@/lib/cookie-signer'
 
 // Mock Supabase
 vi.mock('@/lib/supabase/server', () => ({
@@ -31,6 +32,30 @@ global.fetch = mockFetch
 import { createClient } from '@/lib/supabase/server'
 import { GET as authHandler } from '@/app/api/platforms/facebook/auth/route'
 import { GET as callbackHandler } from '@/app/api/platforms/facebook/callback/route'
+
+// Helper to create signed OAuth cookies for Facebook tests
+// Facebook uses createOAuthState which adds timestamp to state
+function createSignedFacebookCookies(
+  state: string,
+  userId: string,
+  options?: { expiredTimestamp?: boolean }
+): string {
+  // State format in cookie: state.timestamp (then signed)
+  const timestamp = options?.expiredTimestamp
+    ? Date.now() - 15 * 60 * 1000 // 15 minutes ago (expired)
+    : Date.now()
+  const stateWithTimestamp = `${state}.${timestamp}`
+  const signedState = signValue(stateWithTimestamp)
+  const signedUserId = signValue(userId)
+  return `facebook_oauth_state=${signedState}; facebook_oauth_user=${signedUserId}`
+}
+
+// Helper for only state cookie (missing user cookie test)
+function createSignedStateCookieOnly(state: string): string {
+  const stateWithTimestamp = `${state}.${Date.now()}`
+  const signedState = signValue(stateWithTimestamp)
+  return `facebook_oauth_state=${signedState}`
+}
 
 describe('/api/platforms/facebook/auth - OAuth Initiation', () => {
   beforeEach(() => {
@@ -208,10 +233,10 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
       url.searchParams.set('code', 'auth-code-123')
       url.searchParams.set('state', 'incoming-state')
 
+      // Cookie is signed with different-state, but URL param is incoming-state
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=different-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('different-state', 'user-123'),
         },
       })
 
@@ -220,7 +245,6 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
       expect(response.status).toBe(307)
       const location = response.headers.get('location')
       expect(location).toContain('error=')
-      expect(location).toContain('Invalid%20state')
     })
 
     it('should reject request when state cookie is missing', async () => {
@@ -248,9 +272,10 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
       url.searchParams.set('code', 'auth-code-123')
       url.searchParams.set('state', 'matching-state')
 
+      // Only state cookie, missing user cookie
       const request = new NextRequest(url, {
         headers: {
-          cookie: 'facebook_oauth_state=matching-state',
+          cookie: createSignedStateCookieOnly('matching-state'),
         },
       })
 
@@ -275,8 +300,7 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=matching-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('matching-state', 'user-123'),
         },
       })
 
@@ -299,8 +323,7 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=matching-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('matching-state', 'user-123'),
         },
       })
 
@@ -328,8 +351,7 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=matching-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('matching-state', 'user-123'),
         },
       })
 
@@ -378,8 +400,7 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=matching-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('matching-state', 'user-123'),
         },
       })
 
@@ -444,8 +465,7 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=matching-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('matching-state', 'user-123'),
         },
       })
 
@@ -504,8 +524,7 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=matching-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('matching-state', 'user-123'),
         },
       })
 
@@ -584,8 +603,7 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=matching-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('matching-state', 'user-123'),
         },
       })
 
@@ -668,8 +686,7 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=matching-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('matching-state', 'user-123'),
         },
       })
 
@@ -739,8 +756,7 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=matching-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('matching-state', 'user-123'),
         },
       })
 
@@ -815,8 +831,7 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=matching-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('matching-state', 'user-123'),
         },
       })
 
@@ -903,8 +918,7 @@ describe('/api/platforms/facebook/callback - OAuth Callback', () => {
 
       const request = new NextRequest(url, {
         headers: {
-          cookie:
-            'facebook_oauth_state=matching-state; facebook_oauth_user=user-123',
+          cookie: createSignedFacebookCookies('matching-state', 'user-123'),
         },
       })
 

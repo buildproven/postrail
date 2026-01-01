@@ -8,9 +8,19 @@ import { z } from 'zod'
 const ANTHROPIC_MODEL =
   process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || 'missing-key',
-})
+// Lazy initialization to avoid masking missing API key errors at module load
+let anthropicClient: Anthropic | null = null
+
+function getAnthropicClient(): Anthropic {
+  if (!anthropicClient) {
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY is not configured')
+    }
+    anthropicClient = new Anthropic({ apiKey })
+  }
+  return anthropicClient
+}
 
 const CHAR_LIMITS: Record<string, number> = {
   linkedin: 3000,
@@ -47,12 +57,56 @@ const requestSchema = z.object({
   styles: z.array(z.enum(['hook', 'story', 'data', 'contrarian'])).optional(),
 })
 
+// M8-M9 fix: Zod schemas for type-safe validation instead of unsafe casts
+const variantSchema = z.object({
+  id: z.string(),
+  style: z.string(),
+  styleName: z.string(),
+  content: z.string(),
+  characterCount: z.number(),
+})
+
+const postMetadataSchema = z
+  .object({
+    variants: z.array(variantSchema).optional().default([]),
+  })
+  .passthrough() // Allow other properties
+
+const newsletterSchema = z.object({
+  user_id: z.string(),
+})
+
 interface Variant {
   id: string
   style: string
   styleName: string
   content: string
   characterCount: number
+}
+
+// M8-M9 fix: Helper to safely extract newsletter user_id
+function getNewsletterUserId(newsletters: unknown): string | null {
+  const parsed = newsletterSchema.safeParse(newsletters)
+  return parsed.success ? parsed.data.user_id : null
+}
+
+// M8-M9 fix: Helper to safely extract variants from metadata
+function getVariantsFromMetadata(metadata: unknown): Variant[] {
+  if (!metadata || typeof metadata !== 'object') return []
+  const parsed = postMetadataSchema.safeParse(metadata)
+  return parsed.success ? parsed.data.variants : []
+}
+
+// M8-M9 fix: Helper to merge metadata safely
+function mergeMetadata(
+  existing: unknown,
+  updates: Record<string, unknown>
+): Record<string, unknown> {
+  const base =
+    existing && typeof existing === 'object'
+      ? (existing as Record<string, unknown>)
+      : {}
+  return { ...base, ...updates }
 }
 
 async function generateVariant(
@@ -99,7 +153,7 @@ ${originalContent}
 
 Create a ${style.name} variant of this post. Make it distinctly different while conveying the same core value proposition.`
 
-  const message = await anthropic.messages.create({
+  const message = await getAnthropicClient().messages.create({
     model: ANTHROPIC_MODEL,
     max_tokens: 1024,
     messages: [{ role: 'user', content: userPrompt }],
@@ -157,12 +211,21 @@ export async function POST(
     // Rate limiting
     const rateLimitResult = await redisRateLimiter.checkRateLimit(user.id)
     if (!rateLimitResult.allowed) {
+      // L6 fix: Add standard rate limit headers
       return NextResponse.json(
         {
           error: 'Rate limit exceeded',
           retryAfter: rateLimitResult.retryAfter,
+          requestsRemaining: rateLimitResult.requestsRemaining,
         },
-        { status: 429 }
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitResult.retryAfter || 60),
+            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
+            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
+          },
+        }
       )
     }
 
@@ -189,9 +252,9 @@ export async function POST(
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
-    // Verify ownership
-    const newsletter = post.newsletters as unknown as { user_id: string }
-    if (newsletter.user_id !== user.id) {
+    // M8-M9 fix: Verify ownership with type-safe validation
+    const newsletterUserId = getNewsletterUserId(post.newsletters)
+    if (!newsletterUserId || newsletterUserId !== user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -236,17 +299,14 @@ export async function POST(
       )
     }
 
-    // Store variants in post metadata
-    const existingVariants = (post.metadata?.variants as Variant[]) || []
+    // M8-M9 fix: Type-safe metadata extraction and update
+    const existingVariants = getVariantsFromMetadata(post.metadata)
     const updatedVariants = [...existingVariants, ...variants]
 
     const { error: updateError } = await supabase
       .from('social_posts')
       .update({
-        metadata: {
-          ...((post.metadata as Record<string, unknown>) || {}),
-          variants: updatedVariants,
-        },
+        metadata: mergeMetadata(post.metadata, { variants: updatedVariants }),
       })
       .eq('id', postId)
 
@@ -303,12 +363,14 @@ export async function GET(
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
-    const newsletter = post.newsletters as unknown as { user_id: string }
-    if (newsletter.user_id !== user.id) {
+    // M8-M9 fix: Verify ownership with type-safe validation
+    const newsletterUserId = getNewsletterUserId(post.newsletters)
+    if (!newsletterUserId || newsletterUserId !== user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const variants = (post.metadata?.variants as Variant[]) || []
+    // M8-M9 fix: Type-safe metadata extraction
+    const variants = getVariantsFromMetadata(post.metadata)
 
     return NextResponse.json({
       postId,
@@ -366,12 +428,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
-    const newsletter = post.newsletters as unknown as { user_id: string }
-    if (newsletter.user_id !== user.id) {
+    // M8-M9 fix: Verify ownership with type-safe validation
+    const newsletterUserId = getNewsletterUserId(post.newsletters)
+    if (!newsletterUserId || newsletterUserId !== user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const variants = (post.metadata?.variants as Variant[]) || []
+    // M8-M9 fix: Type-safe metadata extraction
+    const variants = getVariantsFromMetadata(post.metadata)
     const selectedVariant = variants.find(v => v.id === variantId)
 
     if (!selectedVariant) {
@@ -392,16 +456,16 @@ export async function PUT(
       ...variants.filter(v => v.id !== variantId),
     ]
 
+    // M8-M9 fix: Type-safe metadata merge
     const { error: updateError } = await supabase
       .from('social_posts')
       .update({
         content: selectedVariant.content,
         character_count: selectedVariant.characterCount,
-        metadata: {
-          ...((post.metadata as Record<string, unknown>) || {}),
+        metadata: mergeMetadata(post.metadata, {
           variants: updatedVariants,
           lastSwappedAt: new Date().toISOString(),
-        },
+        }),
       })
       .eq('id', postId)
 

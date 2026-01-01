@@ -1,6 +1,9 @@
 import { Resend } from 'resend'
 import { logger, logError } from '@/lib/logger'
 
+// Base URL for email links - uses env var or production fallback
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || '${BASE_URL}'
+
 // Lazy-initialize Resend to avoid build-time errors when API key is missing
 let resendClient: Resend | null = null
 
@@ -50,7 +53,7 @@ export async function sendTrialExpiryWarning(
             <li>✅ Analytics dashboard</li>
           </ul>
 
-          <a href="https://postrail.vibebuildlab.com/dashboard/settings"
+          <a href="${BASE_URL}/dashboard/settings"
              style="display: inline-block; background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
             Upgrade Now - Starting at $29/mo
           </a>
@@ -104,7 +107,7 @@ export async function sendTrialExpired(
           <p>Your PostRail free trial has expired.</p>
           <p>But the good news? You can pick up right where you left off.</p>
 
-          <a href="https://postrail.vibebuildlab.com/dashboard/settings"
+          <a href="${BASE_URL}/dashboard/settings"
              style="display: inline-block; background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
             Subscribe Now - $29/mo
           </a>
@@ -168,7 +171,7 @@ export async function sendWelcomeEmail(
             <li><strong>Review & Post</strong> - Edit if needed, then publish</li>
           </ol>
 
-          <a href="https://postrail.vibebuildlab.com/dashboard/newsletters/new"
+          <a href="${BASE_URL}/dashboard/newsletters/new"
              style="display: inline-block; background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
             Create Your First Posts
           </a>
@@ -235,7 +238,7 @@ export async function sendRenewalReminder(
           <p>No action needed - your subscription will continue seamlessly.</p>
 
           <p>Need to make changes?</p>
-          <a href="https://postrail.vibebuildlab.com/dashboard/settings"
+          <a href="${BASE_URL}/dashboard/settings"
              style="display: inline-block; background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
             Manage Subscription
           </a>
@@ -294,7 +297,7 @@ export async function sendPaymentFailed(
 
           <p>To avoid any interruption to your service, please update your payment method:</p>
 
-          <a href="https://postrail.vibebuildlab.com/dashboard/settings"
+          <a href="${BASE_URL}/dashboard/settings"
              style="display: inline-block; background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
             Update Payment Method
           </a>

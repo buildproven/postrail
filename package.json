@@ -12,7 +12,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:fast": "vitest run --exclude='**/*.{real,crypto,e2e}.test.{ts,tsx}' --exclude='tests/lib/crypto.test.ts'",
+    "test:fast": "vitest run --exclude='**/*.{real,crypto,e2e}.test.{ts,tsx}' --exclude='tests/lib/crypto.test.ts' --exclude='tests/execution/**' --exclude='tests/performance/**'",
     "test:medium": "npm run test:fast && npm run test:smoke",
     "test:slow": "vitest run tests/lib/crypto.test.ts tests/**/*.real.test.ts",
     "test:watch": "vitest",

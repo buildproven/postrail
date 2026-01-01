@@ -13,6 +13,10 @@ import crypto from 'crypto'
 // Log levels
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal'
 
+// Type-safe metadata values (replaces Record<string, any>)
+// Uses unknown for flexibility while still being type-safe (requires checks at usage)
+export type ObservabilityMetadata = Record<string, unknown>
+
 // Event types for metrics
 export type EventType =
   | 'ai_generation_request'
@@ -52,7 +56,7 @@ interface LogEntry {
     message: string
     stack?: string
   }
-  metadata?: Record<string, any>
+  metadata?: ObservabilityMetadata
   source: string
 }
 
@@ -62,7 +66,7 @@ interface Metric {
   timestamp: number
   userId?: string
   duration?: number
-  metadata?: Record<string, any>
+  metadata?: ObservabilityMetadata
 }
 
 // Health check status
@@ -143,7 +147,7 @@ class ObservabilityManager {
       event?: EventType
       duration?: number
       error?: Error
-      metadata?: Record<string, any>
+      metadata?: ObservabilityMetadata
       source?: string
     } = {}
   ): void {
@@ -247,7 +251,7 @@ class ObservabilityManager {
     options: {
       userId?: string
       duration?: number
-      metadata?: Record<string, any>
+      metadata?: ObservabilityMetadata
     } = {}
   ): void {
     const metric: Metric = {
@@ -543,7 +547,7 @@ export const withObservability = {
     options: {
       userId?: string
       event?: EventType
-      metadata?: Record<string, any>
+      metadata?: ObservabilityMetadata
     } = {}
   ): Promise<T> {
     const requestId = observability.generateRequestId()

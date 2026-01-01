@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { encrypt } from '@/lib/crypto'
+import { verifyValue } from '@/lib/cookie-signer'
 
 /**
  * Twitter/X OAuth 2.0 Callback Endpoint
@@ -56,10 +57,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Validate state parameter (CSRF protection)
-    const storedState = request.cookies.get('twitter_oauth_state')?.value
-    const codeVerifier = request.cookies.get('twitter_oauth_verifier')?.value
-    const userId = request.cookies.get('twitter_oauth_user')?.value
+    // Validate state parameter with HMAC verification (CSRF protection) - H2 fix
+    const signedState = request.cookies.get('twitter_oauth_state')?.value
+    const signedVerifier = request.cookies.get('twitter_oauth_verifier')?.value
+    const signedUserId = request.cookies.get('twitter_oauth_user')?.value
+
+    if (!signedState || !signedVerifier || !signedUserId) {
+      return NextResponse.redirect(
+        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Session expired. Please try again.')}`
+      )
+    }
+
+    // Verify signatures
+    const storedState = verifyValue(signedState)
+    const codeVerifier = verifyValue(signedVerifier)
+    const userId = verifyValue(signedUserId)
 
     if (!storedState || storedState !== state) {
       return NextResponse.redirect(
@@ -69,13 +81,13 @@ export async function GET(request: NextRequest) {
 
     if (!codeVerifier) {
       return NextResponse.redirect(
-        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Missing code verifier. Please try again.')}`
+        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Invalid code verifier. Please try again.')}`
       )
     }
 
     if (!userId) {
       return NextResponse.redirect(
-        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Session expired. Please try again.')}`
+        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Invalid session. Please try again.')}`
       )
     }
 
