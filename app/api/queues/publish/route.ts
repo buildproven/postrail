@@ -9,6 +9,11 @@ import { z } from 'zod'
 const RETRY_DELAYS = [60, 300, 1800] as const
 const MAX_RETRIES = 3
 
+// Webhook payload validation schema
+const webhookPayloadSchema = z.object({
+  jobId: z.string().uuid('Invalid jobId format - must be a valid UUID'),
+})
+
 type SocialPost = {
   id: string
   content: string
@@ -240,10 +245,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { jobId } = JSON.parse(body)
-    if (!jobId) {
-      return NextResponse.json({ error: 'Missing jobId' }, { status: 400 })
+    // Validate webhook payload with Zod (prevents malformed UUID attacks)
+    let payload
+    try {
+      const rawPayload = JSON.parse(body)
+      const validation = webhookPayloadSchema.safeParse(rawPayload)
+
+      if (!validation.success) {
+        console.error('Invalid webhook payload:', validation.error.flatten())
+        return NextResponse.json(
+          {
+            error: 'Invalid webhook payload',
+            details: validation.error.flatten().fieldErrors,
+          },
+          { status: 400 }
+        )
+      }
+
+      payload = validation.data
+    } catch (parseError) {
+      console.error('Failed to parse webhook body:', parseError)
+      return NextResponse.json(
+        { error: 'Invalid JSON payload' },
+        { status: 400 }
+      )
     }
+
+    const { jobId } = payload
 
     const supabase = createServiceClient()
 
