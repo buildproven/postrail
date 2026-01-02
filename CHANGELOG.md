@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Backlog Verification (Jan 2, 2026)**
+  - Verified and documented completion of 7 high/medium priority security issues
+  - H2: OAuth state HMAC-signed cookies (cookie-signer.ts)
+  - H9: CSP with nonces in production (middleware.ts)
+  - M2: Feature gate on scheduling endpoint
+  - M3: Server client preferred over service client (RLS enforcement)
+  - M8-M9: Zod schemas for type-safe metadata validation
+  - M10: Request body Zod validation
+  - M11: Worker authentication requires both headers
+  - M1: Deferred dual rate limiter consolidation (requires SSRF refactor)
+
 ### Fixed
 
 - **Critical Security Improvements (Jan 2, 2026)**
