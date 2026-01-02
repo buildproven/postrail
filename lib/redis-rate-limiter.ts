@@ -332,10 +332,25 @@ export class RedisRateLimiter {
             action: 'Check Redis/Upstash health immediately',
           }
         ).catch(alertError => {
-          // Don't let alerting failures crash the app
-          observability.error('Failed to send circuit breaker alert', {
-            error: alertError,
-          })
+          // CRITICAL: Alert failures must be surfaced - operators need to know about circuit breaker
+          observability.fatal(
+            'CRITICAL: Alert system failure during circuit breaker',
+            {
+              metadata: {
+                alertError:
+                  alertError instanceof Error
+                    ? alertError.message
+                    : String(alertError),
+                originalIssue: 'Redis circuit breaker opened',
+                securityImpact: 'Rate limits not enforced across instances',
+              },
+            }
+          )
+          // Log to console as last resort
+          console.error(
+            'ALERTING SYSTEM FAILED - manual intervention required',
+            alertError
+          )
         })
       }
 

@@ -219,7 +219,24 @@ async function checkTrialAccessWithProfile(
 
   if (countError) {
     logger.error({ error: countError }, 'Error counting daily generations')
-    // Allow on error to avoid blocking legitimate users
+    // CRITICAL: Fail closed - deny access if we can't verify limits
+    return {
+      allowed: false,
+      error: 'Unable to verify trial limits. Please try again.',
+      status: {
+        allowed: false,
+        reason: 'verification_failed',
+        isTrial: true,
+        trialEnded: false,
+        trialDaysRemaining: Math.ceil(
+          (trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        ),
+        generationsToday: 0,
+        generationsTotal: profile.trial_total_generations,
+        dailyLimit: limits.trialDailyLimitPerUser,
+        totalLimit: limits.trialTotalLimitPerUser,
+      },
+    }
   }
 
   const generationsToday = todayCount || 0

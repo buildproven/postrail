@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Deep Review Security Fixes (Jan 2, 2026)**
+  - C1: Unsafe regex in ISO datetime validation (ReDoS prevention)
+  - C2: Alert failure swallowing in Redis rate limiter (fatal logging with console fallback)
+  - C3: RLS bypass fallback in feature-gate.ts (enforces auth context requirement)
+  - C4: Trial limit bypass on database errors (fail closed, not open)
+  - H2: OAuth error logging sanitization (prevents token leakage in logs)
+  - H3: Payment error messages improved (specific Stripe error details)
+  - M1: Dashboard queries parallelized (3x faster analytics endpoint)
+
 ### Changed
 
 - **Backlog Verification (Jan 2, 2026)**

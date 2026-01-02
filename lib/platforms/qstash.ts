@@ -11,8 +11,12 @@ if (!process.env.QSTASH_PROCESS_URL) missing.push('QSTASH_PROCESS_URL')
 if (missing.length > 0) {
   const errorMsg = `QStash configuration incomplete: missing ${missing.join(', ')}`
 
-  if (process.env.NODE_ENV === 'production') {
-    // FAIL FAST in production - post scheduling is a critical feature
+  // CRITICAL: Don't throw during build - Next.js needs to complete compilation
+  // Runtime errors will occur when actually using QStash features
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build'
+
+  if (process.env.NODE_ENV === 'production' && !isBuildTime) {
+    // FAIL FAST at runtime in production - post scheduling is a critical feature
     observability.fatal(errorMsg, {
       metadata: {
         missingVars: missing,
@@ -24,7 +28,7 @@ if (missing.length > 0) {
       `${errorMsg}. Post scheduling unavailable. Set these environment variables.`
     )
   } else {
-    // Warn in development but allow startup
+    // Warn in development/build but allow startup
     logger.warn(`⚠️  ${errorMsg}`)
     logger.warn('⚠️  Post scheduling features will be disabled')
   }

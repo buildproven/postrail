@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export const runtime = 'nodejs'
 
@@ -112,17 +113,29 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       )
     }
 
-    // Fetch user profile for usage tracking
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    // M1 fix: Parallelize independent database queries for performance
+    const [
+      { data: userProfile },
+      { data: limits },
+      { data: posts, error: postsError },
+    ] = await Promise.all([
+      supabase.from('user_profiles').select('*').eq('id', user.id).single(),
+      supabase.from('system_limits').select('name, value'),
+      supabase
+        .from('social_posts')
+        .select('*, newsletters(user_id)')
+        .eq('newsletters.user_id', user.id)
+        .gte('created_at', fromDate.toISOString())
+        .lte('created_at', toDate.toISOString()),
+    ])
 
-    // Get system limits
-    const { data: limits } = await supabase
-      .from('system_limits')
-      .select('name, value')
+    if (postsError) {
+      logger.error({ error: postsError }, 'Analytics query error')
+      return NextResponse.json(
+        { error: 'Failed to fetch analytics' },
+        { status: 500 }
+      )
+    }
 
     const limitMap: Record<string, number> = {}
     limits?.forEach(l => {
@@ -149,22 +162,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       ? limitMap['trial_daily_limit'] || 3
       : limitMap['paid_daily_limit'] || 50
     const totalLimit = isTrial ? limitMap['trial_total_limit'] || 10 : null
-
-    // Fetch posts for the period
-    const { data: posts, error: postsError } = await supabase
-      .from('social_posts')
-      .select('*, newsletters(user_id)')
-      .eq('newsletters.user_id', user.id)
-      .gte('created_at', fromDate.toISOString())
-      .lte('created_at', toDate.toISOString())
-
-    if (postsError) {
-      console.error('Analytics query error:', postsError)
-      return NextResponse.json(
-        { error: 'Failed to fetch analytics' },
-        { status: 500 }
-      )
-    }
 
     const allPosts = posts || []
 
@@ -252,24 +249,24 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         ? Math.round((totalEngagements / totalImpressions) * 10000) / 100
         : 0
 
-    // Get connected platforms
-    const { data: connections } = await supabase
-      .from('platform_connections')
-      .select('platform, is_active')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
+    // M1 fix: Parallelize remaining queries
+    const [{ data: connections }, { data: recentPosts }] = await Promise.all([
+      supabase
+        .from('platform_connections')
+        .select('platform, is_active')
+        .eq('user_id', user.id)
+        .eq('is_active', true),
+      supabase
+        .from('social_posts')
+        .select(
+          'id, platform, post_type, status, content, scheduled_time, published_at, created_at, newsletters(user_id)'
+        )
+        .eq('newsletters.user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(activityLimit),
+    ])
 
     const connectedPlatforms = connections?.map(c => c.platform) || []
-
-    // Get recent activity
-    const { data: recentPosts } = await supabase
-      .from('social_posts')
-      .select(
-        'id, platform, post_type, status, content, scheduled_time, published_at, created_at, newsletters(user_id)'
-      )
-      .eq('newsletters.user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(activityLimit)
 
     const activity: ActivityItem[] = (recentPosts || []).map(p => ({
       id: p.id,
@@ -325,7 +322,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Dashboard analytics error:', error)
+    logger.error(
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      'Dashboard analytics error'
+    )
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

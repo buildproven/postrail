@@ -136,16 +136,21 @@ export async function checkUsageLimits(
   }
 
   // M3 fix: Use provided client or create server client (respects RLS)
-  // Falls back to service client only if server client creation fails
   let supabase: AnySupabaseClient
   if (supabaseClient) {
     supabase = supabaseClient
   } else {
     try {
       supabase = await createClient()
-    } catch {
-      // Fallback to service client if not in request context
-      supabase = createServiceClient()
+    } catch (serverClientError) {
+      // CRITICAL: Never silently fall back to service client - this bypasses RLS!
+      const error =
+        serverClientError instanceof Error
+          ? serverClientError
+          : new Error(String(serverClientError))
+      throw new Error(
+        `Unable to validate usage limits - authentication context missing: ${error.message}`
+      )
     }
   }
 
@@ -191,9 +196,15 @@ export async function checkPlatformLimits(
   } else {
     try {
       supabase = await createClient()
-    } catch {
-      // Fallback to service client if not in request context
-      supabase = createServiceClient()
+    } catch (serverClientError) {
+      // CRITICAL: Never silently fall back to service client - this bypasses RLS!
+      const error =
+        serverClientError instanceof Error
+          ? serverClientError
+          : new Error(String(serverClientError))
+      throw new Error(
+        `Unable to check platform limits - authentication context missing: ${error.message}`
+      )
     }
   }
 

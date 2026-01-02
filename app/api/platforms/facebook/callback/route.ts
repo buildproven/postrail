@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { encrypt } from '@/lib/crypto'
 import { verifyOAuthState } from '@/lib/cookie-signer'
+import { logger } from '@/lib/logger'
 
 /**
  * Facebook OAuth 2.0 Callback Endpoint
@@ -50,7 +51,8 @@ export async function GET(request: NextRequest) {
 
     // Handle OAuth errors from Facebook
     if (error) {
-      console.error('Facebook OAuth error:', error, errorDescription)
+      // Sanitize: only log error type, not potentially sensitive descriptions
+      logger.error({ errorType: error }, 'Facebook OAuth error')
       return NextResponse.redirect(
         `${appUrl}/dashboard/platforms?error=${encodeURIComponent(errorDescription || error)}`
       )
@@ -108,8 +110,15 @@ export async function GET(request: NextRequest) {
     )
 
     if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text()
-      console.error('Facebook token exchange error:', errorText)
+      const _errorText = await tokenResponse.text()
+      // Sanitize: only log status code, not response body which may contain tokens
+      logger.error(
+        {
+          status: tokenResponse.status,
+          statusText: tokenResponse.statusText,
+        },
+        'Facebook token exchange failed'
+      )
       return NextResponse.redirect(
         `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Failed to exchange authorization code')}`
       )
@@ -144,7 +153,14 @@ export async function GET(request: NextRequest) {
     )
 
     if (!userInfoResponse.ok) {
-      console.error('Facebook userinfo error:', await userInfoResponse.text())
+      // Sanitize: only log status code, not response body
+      logger.error(
+        {
+          status: userInfoResponse.status,
+          statusText: userInfoResponse.statusText,
+        },
+        'Facebook user info request failed'
+      )
       return NextResponse.redirect(
         `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Failed to get Facebook user info')}`
       )
@@ -216,7 +232,14 @@ export async function GET(request: NextRequest) {
       )
 
     if (dbError) {
-      console.error('Database error saving Facebook connection:', dbError)
+      // Sanitize: only log error message, not full object which may contain metadata
+      logger.error(
+        {
+          error: dbError.message || 'Unknown error',
+          code: dbError.code,
+        },
+        'Database error saving Facebook connection'
+      )
       return NextResponse.redirect(
         `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Failed to save Facebook connection')}`
       )
@@ -231,7 +254,13 @@ export async function GET(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('Facebook OAuth callback error:', error)
+    // Sanitize: only log error message, not full stack which may contain tokens
+    logger.error(
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      'Facebook OAuth callback error'
+    )
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
     return NextResponse.redirect(
       `${appUrl}/dashboard/platforms?error=${encodeURIComponent('OAuth callback failed')}`

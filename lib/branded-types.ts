@@ -85,11 +85,9 @@ export function sanitizeHTML(html: string): SanitizedHTML {
 export type ISODateTime = Brand<string, 'ISODateTime'>
 
 export function validateISODateTime(dateTime: string): ISODateTime | null {
-  // Validate ISO 8601 format
-  // eslint-disable-next-line security/detect-unsafe-regex -- Regex for ISO 8601 validation, not user-controlled
-  const isoRegex =
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})$/
-  if (!isoRegex.test(dateTime)) return null
+  // Use simple format check + native Date parsing (safer than complex regex)
+  // Check for basic ISO 8601 pattern: YYYY-MM-DDTHH:mm:ss
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(dateTime)) return null
 
   const date = new Date(dateTime)
   return Number.isNaN(date.getTime()) ? null : (dateTime as ISODateTime)

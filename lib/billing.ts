@@ -190,7 +190,12 @@ class BillingService {
       return { url: session.url || options.cancelUrl }
     } catch (error) {
       logger.error({ error: error }, 'Stripe checkout error')
-      return { error: 'Failed to create checkout session' }
+      // Provide specific error message based on Stripe error type
+      const errorMessage =
+        error instanceof Error
+          ? `Payment setup failed: ${error.message}`
+          : 'Failed to create checkout session. Please try again.'
+      return { error: errorMessage }
     }
   }
 
@@ -226,7 +231,12 @@ class BillingService {
       return { url: session.url }
     } catch (error) {
       logger.error({ error: error }, 'Portal session error')
-      return { error: 'Failed to create portal session' }
+      // Provide specific error message to help users understand the issue
+      const errorMessage =
+        error instanceof Error
+          ? `Unable to access billing portal: ${error.message}`
+          : 'Failed to create portal session. Please try again.'
+      return { error: errorMessage }
     }
   }
 
