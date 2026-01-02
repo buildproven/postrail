@@ -15,7 +15,10 @@ export async function POST(request: NextRequest) {
       const signature = request.headers.get('Upstash-Signature')
       const url = request.url
       const qstashConfigured = Boolean(process.env.QSTASH_CURRENT_SIGNING_KEY)
-      if (qstashConfigured && !verifyQStashSignature(signature, rawBody, url)) {
+      if (
+        qstashConfigured &&
+        !(await verifyQStashSignature(signature, rawBody, url))
+      ) {
         return NextResponse.json(
           { error: 'Invalid signature' },
           { status: 401 }

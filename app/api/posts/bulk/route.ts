@@ -4,6 +4,7 @@ import {
   authenticateService,
   hasPermission,
   canAccessClient,
+  checkServiceRateLimit,
 } from '@/lib/service-auth'
 
 export const runtime = 'nodejs'
@@ -53,6 +54,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Forbidden. Missing create_post permission.' },
         { status: 403 }
+      )
+    }
+
+    const rateLimitResult = await checkServiceRateLimit(serviceContext)
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          reason: rateLimitResult.reason,
+          retryAfter: rateLimitResult.retryAfter,
+          requestsRemaining: rateLimitResult.requestsRemaining,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitResult.retryAfter || 60),
+            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
+            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
+          },
+        }
       )
     }
 

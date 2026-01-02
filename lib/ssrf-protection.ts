@@ -264,6 +264,65 @@ class SSRFProtection {
   }
 
   /**
+   * Non-mutating rate limit status check (does not increment counters)
+   */
+  getRateLimitStatus(
+    userId: string,
+    clientIP: string
+  ): {
+    allowed: boolean
+    retryAfter?: number
+    reason?: string
+  } {
+    const now = Date.now()
+
+    const userKey = `scrape_user:${userId}`
+    const userStatus = this.peekRateLimit(
+      userKey,
+      this.userLimits,
+      this.SCRAPE_REQUESTS_PER_USER_PER_MINUTE,
+      now,
+      'User'
+    )
+    if (!userStatus.allowed) return userStatus
+
+    const ipKey = `scrape_ip:${clientIP}`
+    const ipStatus = this.peekRateLimit(
+      ipKey,
+      this.ipLimits,
+      this.SCRAPE_REQUESTS_PER_IP_PER_MINUTE,
+      now,
+      'IP'
+    )
+    if (!ipStatus.allowed) return ipStatus
+
+    return { allowed: true }
+  }
+
+  private peekRateLimit(
+    key: string,
+    limitMap: Map<string, RateLimitRecord>,
+    limit: number,
+    now: number,
+    label: 'User' | 'IP'
+  ): { allowed: boolean; retryAfter?: number; reason?: string } {
+    const record = limitMap.get(key)
+    if (!record || now > record.resetTime) {
+      return { allowed: true }
+    }
+
+    if (record.count >= limit) {
+      return {
+        allowed: false,
+        retryAfter: Math.ceil((record.resetTime - now) / 1000),
+        reason: `${label} rate limit exceeded: ${limit} requests per minute`,
+      }
+    }
+
+    return { allowed: true }
+  }
+
+  /**
    * Acquire mutex lock with timeout protection
    * Prevents race conditions in concurrent rate limit checks
    */
@@ -557,7 +616,8 @@ class SSRFProtection {
     // No catastrophic backtracking risk - alternation groups are non-overlapping
     // Verified safe: bounded quantifiers, anchored, non-overlapping alternation
     // eslint-disable-next-line security/detect-unsafe-regex
-    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+    const ipv4Regex =
+      /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
 
     // IPv6 validation: Safe regex with bounded quantifiers ({7}, {1,4}) and anchored pattern
     // Simplified format checking - full RFC 4291 compliance handled by DNS resolution

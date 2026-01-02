@@ -40,10 +40,7 @@ export async function GET(request: NextRequest) {
     const clientIP = ssrfProtection.getClientIP(request)
 
     // Check current rate limit status (without incrementing)
-    const rateLimitCheck = await ssrfProtection.checkRateLimit(
-      user.id,
-      clientIP
-    )
+    const rateLimitCheck = ssrfProtection.getRateLimitStatus(user.id, clientIP)
 
     // SECURITY: System statistics only for admins
     const canViewSystemStats = await checkPermission(user.id, 'viewSystemStats')

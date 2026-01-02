@@ -232,10 +232,17 @@ export async function POST(request: NextRequest) {
     const body = await request.text()
     const signature = request.headers.get('upstash-signature')
 
-    // Verify request comes from QStash
-    if (process.env.NODE_ENV === 'production') {
+    // Verify request comes from QStash when signing key is configured
+    const qstashConfigured = Boolean(process.env.QSTASH_CURRENT_SIGNING_KEY)
+    if (qstashConfigured) {
       try {
-        await verifyQStashSignature(signature, body, request.url)
+        const valid = await verifyQStashSignature(signature, body, request.url)
+        if (!valid) {
+          return NextResponse.json(
+            { error: 'Invalid signature' },
+            { status: 401 }
+          )
+        }
       } catch (err) {
         console.error('QStash signature verification failed', err)
         return NextResponse.json(

@@ -95,7 +95,7 @@ export async function cancelScheduledPost(messageId: string) {
   return client.messages.delete(messageId)
 }
 
-export function verifyQStashSignature(
+export async function verifyQStashSignature(
   signature: string | null,
   body: string,
   url: string

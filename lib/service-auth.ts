@@ -10,6 +10,7 @@
 
 import { createServiceClient } from './supabase/service'
 import { hash } from './crypto'
+import { Redis } from '@upstash/redis'
 
 export type ServicePermission =
   | 'create_post'
@@ -29,6 +30,15 @@ export interface ServiceContext {
   clientIds?: string[] // Optional: restrict to specific clients
 }
 
+export interface ServiceRateLimitResult {
+  allowed: boolean
+  retryAfter?: number
+  reason?: string
+  requestsRemaining: number
+  resetTime: number
+  backend?: 'redis' | 'memory'
+}
+
 interface ServiceKeyRow {
   id: string
   service_id: string
@@ -42,6 +52,22 @@ interface ServiceKeyRow {
   last_used_at: string | null
   created_at: string
 }
+
+interface RateLimitEntry {
+  count: number
+  resetTime: number
+}
+
+const serviceRateLimitStore = new Map<string, RateLimitEntry>()
+const SERVICE_RATE_LIMIT_WINDOW_MINUTE = 60 * 1000
+const SERVICE_RATE_LIMIT_WINDOW_HOUR = 60 * 60 * 1000
+const serviceRedis =
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      })
+    : null
 
 /**
  * Validate a service API key and return the service context
@@ -88,6 +114,196 @@ export async function validateServiceKey(
       requestsPerHour: row.rate_limit_per_hour,
     },
     clientIds: row.allowed_client_ids || undefined,
+  }
+}
+
+function getRateLimitKey(
+  serviceId: string,
+  windowMs: number,
+  now: number,
+  label: 'minute' | 'hour'
+): string {
+  const window = Math.floor(now / windowMs)
+  return `${serviceId}:${label}:${window}`
+}
+
+function cleanupExpiredRateLimits(now: number) {
+  for (const [key, entry] of serviceRateLimitStore.entries()) {
+    if (now > entry.resetTime) {
+      serviceRateLimitStore.delete(key)
+    }
+  }
+}
+
+/**
+ * Enforce per-service API key rate limits (memory fallback).
+ */
+export async function checkServiceRateLimit(
+  context: ServiceContext
+): Promise<ServiceRateLimitResult> {
+  const isTestEnv =
+    process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
+  if (isTestEnv) {
+    return {
+      allowed: true,
+      requestsRemaining: context.rateLimit.requestsPerMinute,
+      resetTime: Date.now() + SERVICE_RATE_LIMIT_WINDOW_MINUTE,
+      backend: serviceRedis ? 'redis' : 'memory',
+    }
+  }
+
+  const now = Date.now()
+  if (serviceRedis) {
+    try {
+      return await checkServiceRateLimitRedis(context, now)
+    } catch {
+      // Fall back to memory-based limiter if Redis is unavailable
+    }
+  }
+
+  if (Math.random() < 0.01) {
+    cleanupExpiredRateLimits(now)
+  }
+
+  const minuteKey = getRateLimitKey(
+    context.serviceId,
+    SERVICE_RATE_LIMIT_WINDOW_MINUTE,
+    now,
+    'minute'
+  )
+  const hourKey = getRateLimitKey(
+    context.serviceId,
+    SERVICE_RATE_LIMIT_WINDOW_HOUR,
+    now,
+    'hour'
+  )
+
+  const minuteReset =
+    Math.floor(now / SERVICE_RATE_LIMIT_WINDOW_MINUTE + 1) *
+    SERVICE_RATE_LIMIT_WINDOW_MINUTE
+  const hourReset =
+    Math.floor(now / SERVICE_RATE_LIMIT_WINDOW_HOUR + 1) *
+    SERVICE_RATE_LIMIT_WINDOW_HOUR
+
+  const minuteEntry = serviceRateLimitStore.get(minuteKey)
+  const hourEntry = serviceRateLimitStore.get(hourKey)
+
+  const minuteCount =
+    minuteEntry && now <= minuteEntry.resetTime ? minuteEntry.count : 0
+  const hourCount =
+    hourEntry && now <= hourEntry.resetTime ? hourEntry.count : 0
+
+  if (minuteCount >= context.rateLimit.requestsPerMinute) {
+    return {
+      allowed: false,
+      retryAfter: Math.ceil((minuteReset - now) / 1000),
+      reason: 'rate_limit_minute',
+      requestsRemaining: 0,
+      resetTime: minuteReset,
+      backend: 'memory',
+    }
+  }
+
+  if (hourCount >= context.rateLimit.requestsPerHour) {
+    return {
+      allowed: false,
+      retryAfter: Math.ceil((hourReset - now) / 1000),
+      reason: 'rate_limit_hour',
+      requestsRemaining: 0,
+      resetTime: hourReset,
+      backend: 'memory',
+    }
+  }
+
+  serviceRateLimitStore.set(minuteKey, {
+    count: minuteCount + 1,
+    resetTime: minuteReset,
+  })
+  serviceRateLimitStore.set(hourKey, {
+    count: hourCount + 1,
+    resetTime: hourReset,
+  })
+
+  return {
+    allowed: true,
+    requestsRemaining: context.rateLimit.requestsPerMinute - minuteCount - 1,
+    resetTime: minuteReset,
+    backend: 'memory',
+  }
+}
+
+async function checkServiceRateLimitRedis(
+  context: ServiceContext,
+  now: number
+): Promise<ServiceRateLimitResult> {
+  const minuteKey = getRateLimitKey(
+    context.serviceId,
+    SERVICE_RATE_LIMIT_WINDOW_MINUTE,
+    now,
+    'minute'
+  )
+  const hourKey = getRateLimitKey(
+    context.serviceId,
+    SERVICE_RATE_LIMIT_WINDOW_HOUR,
+    now,
+    'hour'
+  )
+
+  const minuteReset =
+    Math.floor(now / SERVICE_RATE_LIMIT_WINDOW_MINUTE + 1) *
+    SERVICE_RATE_LIMIT_WINDOW_MINUTE
+  const hourReset =
+    Math.floor(now / SERVICE_RATE_LIMIT_WINDOW_HOUR + 1) *
+    SERVICE_RATE_LIMIT_WINDOW_HOUR
+
+  const pipeline = serviceRedis!.pipeline()
+  pipeline.get(minuteKey)
+  pipeline.get(hourKey)
+  const results = (await pipeline.exec()) as [Error | null, string | null][]
+
+  const minuteCount = parseInt(results?.[0]?.[1] || '0', 10) || 0
+  const hourCount = parseInt(results?.[1]?.[1] || '0', 10) || 0
+
+  if (minuteCount >= context.rateLimit.requestsPerMinute) {
+    return {
+      allowed: false,
+      retryAfter: Math.ceil((minuteReset - now) / 1000),
+      reason: 'rate_limit_minute',
+      requestsRemaining: 0,
+      resetTime: minuteReset,
+      backend: 'redis',
+    }
+  }
+
+  if (hourCount >= context.rateLimit.requestsPerHour) {
+    return {
+      allowed: false,
+      retryAfter: Math.ceil((hourReset - now) / 1000),
+      reason: 'rate_limit_hour',
+      requestsRemaining: 0,
+      resetTime: hourReset,
+      backend: 'redis',
+    }
+  }
+
+  const updatePipeline = serviceRedis!.pipeline()
+  updatePipeline.incr(minuteKey)
+  updatePipeline.expire(
+    minuteKey,
+    Math.ceil(SERVICE_RATE_LIMIT_WINDOW_MINUTE / 1000)
+  )
+  updatePipeline.incr(hourKey)
+  updatePipeline.expire(
+    hourKey,
+    Math.ceil(SERVICE_RATE_LIMIT_WINDOW_HOUR / 1000)
+  )
+  await updatePipeline.exec()
+
+  return {
+    allowed: true,
+    requestsRemaining: context.rateLimit.requestsPerMinute - minuteCount - 1,
+    resetTime: minuteReset,
+    backend: 'redis',
   }
 }
 
