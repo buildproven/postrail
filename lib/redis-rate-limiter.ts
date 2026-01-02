@@ -157,7 +157,7 @@ export class RedisRateLimiter {
           observability.info('✅ Redis rate limiter initialized successfully')
         } catch (error) {
           observability.error('❌ Redis rate limiter failed to initialize:', {
-            error,
+            error: error instanceof Error ? error : new Error(String(error)),
           })
           this.enabled = false
           observability.info('🔄 Falling back to memory-only rate limiting')
@@ -303,7 +303,7 @@ export class RedisRateLimiter {
 
       observability.error(
         `🔴 Redis rate limit check failed (failure ${this.consecutiveFailures}/${this.CIRCUIT_BREAKER_THRESHOLD})`,
-        { error }
+        { error: error instanceof Error ? error : new Error(String(error)) }
       )
 
       // Open circuit breaker if threshold reached
@@ -463,7 +463,9 @@ export class RedisRateLimiter {
       try {
         await this.redis.set(dedupKey, JSON.stringify(result), { ex: 600 }) // 10 minutes TTL
       } catch (error) {
-        observability.warn('Failed to store dedup result in Redis:', { error })
+        observability.warn('Failed to store dedup result in Redis:', {
+          error: error instanceof Error ? error : new Error(String(error)),
+        })
       }
     } else {
       this.memoryStore.set(dedupKey, { result, timestamp: Date.now() })
@@ -484,7 +486,9 @@ export class RedisRateLimiter {
         const cached = await this.redis.get(dedupKey)
         return cached && typeof cached === 'string' ? JSON.parse(cached) : null
       } catch (error) {
-        observability.warn('Failed to get cached result from Redis:', { error })
+        observability.warn('Failed to get cached result from Redis:', {
+          error: error instanceof Error ? error : new Error(String(error)),
+        })
         return null
       }
     } else {
@@ -532,7 +536,9 @@ export class RedisRateLimiter {
       try {
         minuteCount = (await this.redis.get(minuteKey)) || 0
       } catch (error) {
-        observability.warn('Failed to get user status from Redis:', { error })
+        observability.warn('Failed to get user status from Redis:', {
+          error: error instanceof Error ? error : new Error(String(error)),
+        })
       }
     } else {
       const memoryKey = `${userId}:minute:${Math.floor(now / this.config.windowMinute)}`
@@ -582,7 +588,9 @@ export class RedisRateLimiter {
           activeUsers: 0, // Would need Redis SCAN to count, expensive
         }
       } catch (error) {
-        observability.warn('Redis health check failed:', { error })
+        observability.warn('Redis health check failed:', {
+          error: error instanceof Error ? error : new Error(String(error)),
+        })
         return {
           ...stats,
           redisHealth: false,
