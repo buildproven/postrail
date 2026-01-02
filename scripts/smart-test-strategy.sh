@@ -83,9 +83,9 @@ echo ""
 
 if [[ $RISK_SCORE -ge 7 ]]; then
   echo "🔄 HIGH RISK - Comprehensive validation (pre-push)"
-  echo "   • All unit tests + smoke + security audit"
-  echo "   • (e2e tests run in CI only)"
-  npm run test:all && npm run test:smoke && npm run security:audit
+  echo "   • Fast tests + type-check + security audit"
+  echo "   • (real API/crypto/e2e tests run in CI only)"
+  npm run test:fast && npm run type-check && npm run security:audit
 elif [[ $RISK_SCORE -ge 4 ]]; then
   echo "⚡ MEDIUM RISK - Standard validation"
   echo "   • Core tests + smoke tests (excludes slow crypto/browser)"
