@@ -279,13 +279,16 @@ export async function assignRole(
     }
 
     // Log successful role assignment
-    logger.info('RBAC: Role assigned', {
-      targetUserId,
-      role,
-      assignerUserId,
-      roleId: data,
-      timestamp: new Date().toISOString(),
-    })
+    logger.info(
+      {
+        targetUserId,
+        role,
+        assignerUserId,
+        roleId: data,
+        timestamp: new Date().toISOString(),
+      },
+      'RBAC: Role assigned'
+    )
 
     return {
       success: true,
@@ -346,11 +349,14 @@ export async function revokeRole(
     }
 
     // Log successful role revocation
-    logger.info('RBAC: Role revoked', {
-      targetUserId,
-      revokerUserId,
-      timestamp: new Date().toISOString(),
-    })
+    logger.info(
+      {
+        targetUserId,
+        revokerUserId,
+        timestamp: new Date().toISOString(),
+      },
+      'RBAC: Role revoked'
+    )
 
     return {
       success: true,
