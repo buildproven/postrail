@@ -35,25 +35,28 @@ class AlertManager {
     const timestamp = options.timestamp || new Date().toISOString()
 
     // Log locally first
-    logger.error(`[ALERT] ${options.title}`, {
-      type: 'alert',
-      severity: options.severity,
-      message: options.message,
-      metadata: options.metadata,
-      timestamp,
-    })
+    logger.error(
+      {
+        type: 'alert',
+        severity: options.severity,
+        message: options.message,
+        metadata: options.metadata,
+        timestamp,
+      },
+      `[ALERT] ${options.title}`
+    )
 
     // Send to Slack if configured
     if (this.slackWebhookUrl) {
       await this.sendSlackAlert(options).catch(error => {
-        logger.error('Failed to send Slack alert', { error })
+        logger.error({ error }, 'Failed to send Slack alert')
       })
     }
 
     // Send to PagerDuty if configured and severity is critical
     if (this.pagerDutyKey && options.severity === 'critical') {
       await this.sendPagerDutyAlert(options).catch(error => {
-        logger.error('Failed to send PagerDuty alert', { error })
+        logger.error({ error }, 'Failed to send PagerDuty alert')
       })
     }
 
