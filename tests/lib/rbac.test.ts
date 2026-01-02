@@ -21,6 +21,16 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }))
 
+// Mock logger
+vi.mock('@/lib/logger', () => ({
+  logger: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
 // Mock Next.js request
 const mockRequest = {
   nextUrl: {
@@ -130,18 +140,14 @@ describe('RBAC - Role Checking', () => {
       }
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
+      const { logger } = await import('@/lib/logger')
 
       const result = await checkUserRole('user-123', 'admin')
       expect(result).toBe(false)
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(logger.error).toHaveBeenCalledWith(
         'RBAC: Role check error:',
         expect.objectContaining({ code: 'PGRST500' })
       )
-
-      consoleErrorSpy.mockRestore()
     })
   })
 
@@ -272,20 +278,16 @@ describe('RBAC - Role Checking', () => {
       }
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const { logger } = await import('@/lib/logger')
 
       const result = await requireAdmin(mockRequest)
       expect(result.authorized).toBe(false)
       expect(result.error).toBe('Forbidden: Admin access required')
       expect(result.status).toBe(403)
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(logger.warn).toHaveBeenCalledWith(
         'RBAC: Unauthorized admin access attempt',
         expect.objectContaining({ userId: 'user-123' })
       )
-
-      consoleWarnSpy.mockRestore()
     })
   })
 
@@ -566,18 +568,14 @@ describe('RBAC - Role Checking', () => {
       }
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const { logger } = await import('@/lib/logger')
 
       const result = await listUsersWithRoles('user-123')
       expect(result).toEqual([])
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(logger.warn).toHaveBeenCalledWith(
         'RBAC: Unauthorized role list access attempt',
         expect.objectContaining({ userId: 'user-123' })
       )
-
-      consoleWarnSpy.mockRestore()
     })
   })
 
