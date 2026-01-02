@@ -1,6 +1,6 @@
 'use server'
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { logger } from '@/lib/logger'
 import { headers } from 'next/headers'
@@ -75,7 +75,7 @@ export async function secureLogin(
     }
 
     // Step 3: Attempt login
-    const supabase = await createServerClient()
+    const supabase = await createClient()
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
