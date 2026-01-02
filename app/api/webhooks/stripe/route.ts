@@ -14,14 +14,58 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { billingService } from '@/lib/billing'
 import { createServiceClient } from '@/lib/supabase/service'
+import { logger } from '@/lib/logger'
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET
 
+// Stripe webhook IP ranges (https://stripe.com/docs/ips)
+// Updated 2025-01 - verify at https://stripe.com/files/ips/ips_webhooks.txt
+const STRIPE_WEBHOOK_IPS = [
+  '3.18.12.63',
+  '3.130.192.231',
+  '13.235.14.237',
+  '13.235.122.149',
+  '18.211.135.69',
+  '35.154.171.200',
+  '52.15.183.38',
+  '54.187.174.169',
+  '54.187.205.235',
+  '54.187.216.72',
+]
+
+function isStripeIP(ip: string | null): boolean {
+  if (!ip) return false
+  // Also allow localhost in development
+  if (process.env.NODE_ENV === 'development' && ip.includes('127.0.0.1')) {
+    return true
+  }
+  return STRIPE_WEBHOOK_IPS.includes(ip)
+}
+
 export async function POST(request: NextRequest) {
   if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
-    console.warn('Stripe webhook: Missing configuration')
+    logger.warn({
+      type: 'warning',
+      context: 'stripe_webhook',
+      msg: 'Stripe webhook: Missing configuration',
+    })
     return NextResponse.json({ error: 'Not configured' }, { status: 503 })
+  }
+
+  // Validate request origin (IP allowlist)
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  const realIp = request.headers.get('x-real-ip')
+  const clientIp = forwardedFor?.split(',')[0] || realIp
+
+  if (!isStripeIP(clientIp)) {
+    logger.error({
+      type: 'security',
+      context: 'stripe_webhook_ip_validation',
+      ip: clientIp,
+      msg: 'Stripe webhook from unauthorized IP address',
+    })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
   }
 
   const stripe = new Stripe(STRIPE_SECRET_KEY, {
@@ -44,7 +88,12 @@ export async function POST(request: NextRequest) {
       STRIPE_WEBHOOK_SECRET
     )
   } catch (err) {
-    console.error('Webhook signature verification failed:', err)
+    logger.error({
+      type: 'error',
+      error: err instanceof Error ? err : new Error(String(err)),
+      context: 'stripe_webhook_signature',
+      msg: 'Webhook signature verification failed',
+    })
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 

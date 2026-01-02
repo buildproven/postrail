@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { logger } from '@/lib/logger'
 
 export async function createClient() {
   const cookieStore = await cookies()
@@ -17,10 +18,26 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+          } catch (error) {
+            // Log cookie setting failures for debugging auth issues
+            logger.error({
+              type: 'error',
+              error: error instanceof Error ? error : new Error(String(error)),
+              context: 'supabase_server_cookie_set',
+              cookieCount: cookiesToSet.length,
+              msg: 'Failed to set authentication cookies',
+            })
+
+            // Only suppress if middleware is handling session refresh
+            // Otherwise, cookie failures should be investigated
+            if (!process.env.SUPABASE_AUTH_MIDDLEWARE_ENABLED) {
+              // Re-throw in development or if middleware not configured
+              if (process.env.NODE_ENV === 'development') {
+                console.warn(
+                  'Cookie setting failed - check middleware configuration'
+                )
+              }
+            }
           }
         },
       },

@@ -1,14 +1,32 @@
 import { Client, Receiver } from '@upstash/qstash'
+import { observability } from '@/lib/observability'
 
 const missing: string[] = []
 if (!process.env.QSTASH_TOKEN) missing.push('QSTASH_TOKEN')
 if (!process.env.QSTASH_CURRENT_SIGNING_KEY)
   missing.push('QSTASH_CURRENT_SIGNING_KEY')
 if (!process.env.QSTASH_PROCESS_URL) missing.push('QSTASH_PROCESS_URL')
-if (missing.length) {
-  console.warn(
-    `QStash: missing ${missing.join(', ')}; queueing will be disabled until set`
-  )
+
+if (missing.length > 0) {
+  const errorMsg = `QStash configuration incomplete: missing ${missing.join(', ')}`
+
+  if (process.env.NODE_ENV === 'production') {
+    // FAIL FAST in production - post scheduling is a critical feature
+    observability.fatal(errorMsg, {
+      metadata: {
+        missingVars: missing,
+        feature: 'post_scheduling',
+        impact: 'Scheduled posts will fail silently',
+      },
+    })
+    throw new Error(
+      `${errorMsg}. Post scheduling unavailable. Set these environment variables.`
+    )
+  } else {
+    // Warn in development but allow startup
+    console.warn(`⚠️  ${errorMsg}`)
+    console.warn('⚠️  Post scheduling features will be disabled')
+  }
 }
 
 const client = process.env.QSTASH_TOKEN

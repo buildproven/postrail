@@ -302,7 +302,106 @@ async function checkTrialAccessWithProfile(
 }
 
 /**
+ * Check trial limits and record generation atomically
+ * This replaces the old check-then-record pattern to prevent race conditions
+ */
+export async function checkAndRecordTrialGeneration(
+  userId: string,
+  options?: {
+    tokensUsed?: number
+    newsletterId?: string
+    postsCount?: number
+    ipAddress?: string
+    userAgent?: string
+  }
+): Promise<TrialCheckResult> {
+  const supabase = createServiceClient()
+
+  // Call atomic RPC that checks limits and records in single transaction
+  const { data, error } = await supabase.rpc(
+    'check_and_record_trial_generation',
+    {
+      p_user_id: userId,
+      p_newsletter_id: options?.newsletterId || null,
+      p_posts_count: options?.postsCount || 0,
+      p_tokens_used: options?.tokensUsed || 0,
+      p_ip_address: options?.ipAddress || null,
+      p_user_agent: options?.userAgent || null,
+    }
+  )
+
+  if (error) {
+    console.error('Trial generation check failed:', error)
+    return {
+      allowed: false,
+      error: 'Failed to check trial limits. Please try again.',
+    }
+  }
+
+  const result = data as {
+    allowed: boolean
+    reason?: string
+    generationsToday?: number
+    generationsTotal?: number
+    dailyLimit?: number
+    totalLimit?: number
+    remainingToday?: number
+    remainingTotal?: number
+    daysRemaining?: number
+    trialEnded?: boolean
+  }
+
+  if (!result.allowed) {
+    const errorMessages: Record<string, string> = {
+      trial_expired: 'Trial expired. Please upgrade to continue.',
+      total_limit_reached: `Trial limit reached (${result.totalLimit} generations). Please upgrade to continue.`,
+      daily_limit_reached: `Daily trial limit reached (${result.dailyLimit} generations). Try again tomorrow.`,
+      global_cap_reached:
+        'Trial capacity reached for today. Please try again tomorrow.',
+    }
+
+    return {
+      allowed: false,
+      error: errorMessages[result.reason || ''] || 'Trial limit reached',
+      status: {
+        allowed: false,
+        reason: result.reason,
+        isTrial: true,
+        trialEnded: result.trialEnded || false,
+        trialDaysRemaining: Math.ceil(result.daysRemaining || 0),
+        generationsToday: result.generationsToday || 0,
+        generationsTotal: result.generationsTotal || 0,
+        dailyLimit: result.dailyLimit || 3,
+        totalLimit: result.totalLimit || 10,
+      },
+    }
+  }
+
+  // Success - return with headers
+  return {
+    allowed: true,
+    status: {
+      allowed: true,
+      isTrial: true,
+      trialEnded: false,
+      trialDaysRemaining: Math.ceil(result.daysRemaining || 0),
+      generationsToday: result.generationsToday || 0,
+      generationsTotal: result.generationsTotal || 0,
+      dailyLimit: result.dailyLimit || 3,
+      totalLimit: result.totalLimit || 10,
+    },
+    headers: {
+      'X-Trial-Remaining-Today': String(result.remainingToday || 0),
+      'X-Trial-Remaining-Total': String(result.remainingTotal || 0),
+      'X-Trial-Days-Remaining': String(Math.ceil(result.daysRemaining || 0)),
+    },
+  }
+}
+
+/**
  * Record a trial generation event and increment counter
+ * DEPRECATED: Use checkAndRecordTrialGeneration() instead for atomic operation
+ * This is kept for backward compatibility only
  */
 export async function recordTrialGeneration(
   userId: string,
