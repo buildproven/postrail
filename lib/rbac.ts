@@ -196,12 +196,15 @@ export async function requireAdmin(
 
     if (!isAdmin) {
       // Log unauthorized admin access attempts for security monitoring
-      logger.warn('RBAC: Unauthorized admin access attempt', {
-        userId: user.id,
-        email: user.email,
-        timestamp: new Date().toISOString(),
-        path: request?.nextUrl?.pathname,
-      })
+      logger.warn(
+        {
+          userId: user.id,
+          email: user.email,
+          timestamp: new Date().toISOString(),
+          path: request?.nextUrl?.pathname,
+        },
+        'RBAC: Unauthorized admin access attempt'
+      )
 
       return {
         authorized: false,
@@ -379,9 +382,12 @@ export async function listUsersWithRoles(
     // Verify requester is admin
     const isAdmin = await checkUserRole(adminUserId, 'admin')
     if (!isAdmin) {
-      logger.warn('RBAC: Unauthorized role list access attempt', {
-        userId: adminUserId,
-      })
+      logger.warn(
+        {
+          userId: adminUserId,
+        },
+        'RBAC: Unauthorized role list access attempt'
+      )
       return []
     }
 

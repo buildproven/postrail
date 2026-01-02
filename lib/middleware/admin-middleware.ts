@@ -81,12 +81,15 @@ export async function adminMiddleware(
 
     if (roleError || !roleData) {
       // Log unauthorized admin access attempt
-      logger.warn('Admin middleware: Unauthorized access attempt', {
-        userId: user.id,
-        email: user.email,
-        path: request.nextUrl.pathname,
-        timestamp: new Date().toISOString(),
-      })
+      logger.warn(
+        {
+          userId: user.id,
+          email: user.email,
+          path: request.nextUrl.pathname,
+          timestamp: new Date().toISOString(),
+        },
+        'Admin middleware: Unauthorized access attempt'
+      )
 
       return NextResponse.json(
         { error: 'Forbidden: Admin access required' },
