@@ -287,8 +287,8 @@ describe('RBAC - Role Checking', () => {
       expect(result.error).toBe('Forbidden: Admin access required')
       expect(result.status).toBe(403)
       expect(logger.warn).toHaveBeenCalledWith(
-        'RBAC: Unauthorized admin access attempt',
-        expect.objectContaining({ userId: 'user-123' })
+        expect.objectContaining({ userId: 'user-123' }),
+        'RBAC: Unauthorized admin access attempt'
       )
     })
   })
@@ -575,8 +575,8 @@ describe('RBAC - Role Checking', () => {
       const result = await listUsersWithRoles('user-123')
       expect(result).toEqual([])
       expect(logger.warn).toHaveBeenCalledWith(
-        'RBAC: Unauthorized role list access attempt',
-        expect.objectContaining({ userId: 'user-123' })
+        expect.objectContaining({ userId: 'user-123' }),
+        'RBAC: Unauthorized role list access attempt'
       )
     })
   })
