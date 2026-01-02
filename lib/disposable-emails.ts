@@ -62,7 +62,7 @@ async function loadBlockedDomains(): Promise<Set<string>> {
       .select('domain')
 
     if (error) {
-      logger.error('Error loading blocked domains:', error)
+      logger.error({ error: error }, 'Error loading blocked domains')
       return LOCAL_BLOCKLIST
     }
 
@@ -76,7 +76,7 @@ async function loadBlockedDomains(): Promise<Set<string>> {
 
     return domains
   } catch (error) {
-    logger.error('Failed to load blocked domains:', error)
+    logger.error({ error: error }, 'Failed to load blocked domains')
     return LOCAL_BLOCKLIST
   }
 }
@@ -137,7 +137,7 @@ export async function blockEmailDomain(
     })
 
     if (error) {
-      logger.error('Error blocking domain:', error)
+      logger.error({ error: error }, 'Error blocking domain')
       return false
     }
 
@@ -145,7 +145,7 @@ export async function blockEmailDomain(
     cachedBlockedDomains = null
     return true
   } catch (error) {
-    logger.error('Failed to block domain:', error)
+    logger.error({ error: error }, 'Failed to block domain')
     return false
   }
 }

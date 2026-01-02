@@ -95,13 +95,13 @@ export async function checkUserRole(
       if (error.code === 'PGRST116') {
         return false
       }
-      logger.error('RBAC: Role check error:', error)
+      logger.error({ error: error }, 'RBAC: Role check error')
       return false
     }
 
     return data?.is_active === true && data?.role === role
   } catch (error) {
-    logger.error('RBAC: Unexpected error in checkUserRole:', error)
+    logger.error({ error: error }, 'RBAC: Unexpected error in checkUserRole')
     return false
   }
 }
@@ -135,13 +135,13 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
       if (error.code === 'PGRST116') {
         return null // No role assigned
       }
-      logger.error('RBAC: Get role error:', error)
+      logger.error({ error: error }, 'RBAC: Get role error')
       return null
     }
 
     return (data?.role as UserRole) || null
   } catch (error) {
-    logger.error('RBAC: Unexpected error in getUserRole:', error)
+    logger.error({ error: error }, 'RBAC: Unexpected error in getUserRole')
     return null
   }
 }
@@ -218,7 +218,7 @@ export async function requireAdmin(
       role: 'admin',
     }
   } catch (error) {
-    logger.error('RBAC: Unexpected error in requireAdmin:', error)
+    logger.error({ error: error }, 'RBAC: Unexpected error in requireAdmin')
     return {
       authorized: false,
       error: 'Internal server error',
@@ -268,7 +268,7 @@ export async function assignRole(
     })
 
     if (error) {
-      logger.error('RBAC: Role assignment error:', error)
+      logger.error({ error: error }, 'RBAC: Role assignment error')
       return {
         success: false,
         error: error.message || 'Failed to assign role',
@@ -289,7 +289,7 @@ export async function assignRole(
       roleId: data,
     }
   } catch (error) {
-    logger.error('RBAC: Unexpected error in assignRole:', error)
+    logger.error({ error: error }, 'RBAC: Unexpected error in assignRole')
     return {
       success: false,
       error: 'Internal server error',
@@ -335,7 +335,7 @@ export async function revokeRole(
     })
 
     if (error) {
-      logger.error('RBAC: Role revocation error:', error)
+      logger.error({ error: error }, 'RBAC: Role revocation error')
       return {
         success: false,
         error: error.message || 'Failed to revoke role',
@@ -353,7 +353,7 @@ export async function revokeRole(
       success: true,
     }
   } catch (error) {
-    logger.error('RBAC: Unexpected error in revokeRole:', error)
+    logger.error({ error: error }, 'RBAC: Unexpected error in revokeRole')
     return {
       success: false,
       error: 'Internal server error',
@@ -394,13 +394,16 @@ export async function listUsersWithRoles(
       .order('assigned_at', { ascending: false })
 
     if (error) {
-      logger.error('RBAC: List roles error:', error)
+      logger.error({ error: error }, 'RBAC: List roles error')
       return []
     }
 
     return (data as UserRoleRecord[]) || []
   } catch (error) {
-    logger.error('RBAC: Unexpected error in listUsersWithRoles:', error)
+    logger.error(
+      { error: error },
+      'RBAC: Unexpected error in listUsersWithRoles'
+    )
     return []
   }
 }
@@ -480,7 +483,7 @@ export async function checkPermission(
         return false
     }
   } catch (error) {
-    logger.error('RBAC: Unexpected error in checkPermission:', error)
+    logger.error({ error: error }, 'RBAC: Unexpected error in checkPermission')
     return false
   }
 }

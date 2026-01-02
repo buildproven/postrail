@@ -97,7 +97,7 @@ export async function adminMiddleware(
     // Success - continue to route handler
     return NextResponse.next()
   } catch (error) {
-    logger.error('Admin middleware error:', error)
+    logger.error({ error: error }, 'Admin middleware error')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

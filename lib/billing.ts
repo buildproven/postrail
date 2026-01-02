@@ -189,7 +189,7 @@ class BillingService {
 
       return { url: session.url || options.cancelUrl }
     } catch (error) {
-      logger.error('Stripe checkout error:', error)
+      logger.error({ error: error }, 'Stripe checkout error')
       return { error: 'Failed to create checkout session' }
     }
   }
@@ -225,7 +225,7 @@ class BillingService {
 
       return { url: session.url }
     } catch (error) {
-      logger.error('Portal session error:', error)
+      logger.error({ error: error }, 'Portal session error')
       return { error: 'Failed to create portal session' }
     }
   }
