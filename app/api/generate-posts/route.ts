@@ -366,6 +366,15 @@ export async function POST(request: NextRequest) {
     const results = await Promise.all(postPromises)
     const posts = results.filter((p): p is GeneratedPost => p !== null)
 
+    // M2 fix: Track which posts failed for user visibility
+    const expectedPosts = PLATFORMS.flatMap(platform =>
+      POST_TYPES.map(postType => ({ platform, postType }))
+    )
+    // eslint-disable-next-line security/detect-object-injection -- False positive: index is array index from filter, not user input
+    const failures = expectedPosts.filter(
+      (expected, index) => results[index] === null
+    )
+
     // Transaction: Save posts and handle rollback on failure
     if (posts.length === 0) {
       // No posts generated - delete the newsletter and fail
@@ -455,11 +464,23 @@ export async function POST(request: NextRequest) {
       type: 'posts.generated',
       newsletterId: newsletter.id,
       count: posts.length,
+      failureCount: failures.length,
     })
     return NextResponse.json({
       newsletterId: newsletter.id,
       postsGenerated: posts.length,
       posts,
+      // M2 fix: Show users which posts failed (partial failure visibility)
+      ...(failures.length > 0 && {
+        partialFailure: true,
+        failures: failures.map(f => ({
+          platform: f.platform,
+          postType: f.postType,
+          reason:
+            'Generation timeout or AI error - please try regenerating this post',
+        })),
+        warning: `${failures.length} out of ${expectedPosts.length} posts failed to generate. You can regenerate failed posts later.`,
+      }),
     })
   } catch (error) {
     logError(error instanceof Error ? error : new Error(String(error)), {

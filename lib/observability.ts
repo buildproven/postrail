@@ -185,6 +185,7 @@ class ObservabilityManager {
     const logMessage = `${timestamp} ${logLevel} ${requestId}${userId}${duration} ${message}`
 
     // Output to console based on level
+
     switch (level) {
       case 'debug':
         console.debug(logMessage, options.metadata || '')
@@ -283,7 +284,9 @@ class ObservabilityManager {
     // Filter by level
     if (options.level) {
       const levelPriority = { debug: 0, info: 1, warn: 2, error: 3, fatal: 4 }
+
       const minPriority = levelPriority[options.level]
+
       filtered = filtered.filter(log => levelPriority[log.level] >= minPriority)
     }
 
