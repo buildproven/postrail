@@ -61,7 +61,10 @@ export async function middleware(request: NextRequest) {
         const nextResponse = NextResponse.next({
           request: { headers: requestHeaders },
         })
-        nextResponse.cookies.setAll(supabaseResponse.cookies.getAll())
+        // Copy cookies from supabase response
+        supabaseResponse.cookies.getAll().forEach(cookie => {
+          nextResponse.cookies.set(cookie.name, cookie.value)
+        })
         return nextResponse
       })()
 
