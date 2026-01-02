@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Critical Security Improvements (Jan 2, 2026)**
+  - Webhook input validation with Zod (prevents malformed UUID DoS)
+  - Supabase cookie handling now logs failures properly
+  - QStash fail-fast validation in production
+  - Atomic trial generation (prevents race condition bypass)
+
+- **Medium Priority Security & UX (Jan 2, 2026)**
+  - AI partial failure visibility (shows which posts failed)
+  - Error classification system (retryable vs permanent)
+  - TypeScript branded types for validated data
+  - ESLint false positive fixes with contextual comments
+
+- **Deep Review Security Fixes (Dec 2025)**
+  - Account lockout policy (5 attempts = 15min)
+  - Redis circuit breaker alerting (Slack/PagerDuty)
+  - Crypto key caching (50-100ms performance gain)
+  - Structured logger replaces console.log (79 occurrences)
+
 ### Added
 
 - **Lower Priority Billing & Observability**

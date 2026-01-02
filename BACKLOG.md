@@ -1,11 +1,13 @@
 # postrail - Priority Actions
 
-**Audit Date:** 2025-12-31
-**Status:** Deployed | **SOTA Score:** ~88/100
-**Deep Review:** Completed | **Issues Found:** 45+
+**Audit Date:** 2026-01-02
+**Status:** Deployed | **SOTA Score:** ~92/100
+**Deep Review:** Round 4 Completed | **Critical Issues:** 0
 
 ## Recent Work
 
+- **2026-01-02**: Fixed 4 critical security issues (webhook validation, cookie logging, QStash fail-fast, trial race condition)
+- **2026-01-02**: Fixed 5 medium priority issues (partial failures, error classification, branded types, crypto caching, ESLint)
 - **2025-12-31**: Deep code review (quality, security, a11y, architecture, type safety, silent failures)
 - **2025-12-30**: Lower priority items (renewal/payment emails, upgrade prompts, Sentry breadcrumbs)
 - **2025-12-30**: Medium priority SOTA fixes (fieldset/legend, time elements, error boundary)
@@ -34,7 +36,7 @@
 | H1  | Rate limiter fail-open on Redis failure         | lib/redis-rate-limiter.ts:270      | M      | [x]    |
 | H2  | OAuth state in unsigned cookies                 | api/platforms/_/callback/_.ts      | M      | [ ]    |
 | H3  | `Record<string, any>` loses type safety         | lib/observability.ts:55            | S      | [x]    |
-| H4  | Unsafe metadata cast from DB (no validation)    | api/queues/publish/route.ts:35     | M      | [ ]    |
+| H4  | Unsafe metadata cast from DB (no validation)    | api/queues/publish/route.ts:35     | M      | [x]    |
 | H5  | Error details returned to client                | api/cron/trial-emails/route.ts:110 | S      | [x]    |
 | H6  | Dynamic imports on every call                   | lib/feature-gate.ts:113            | S      | [x]    |
 | H7  | QStash scheduling failures silently ignored     | api/posts/schedule/route.ts        | M      | [x]    |
@@ -52,7 +54,7 @@
 | M3  | Service client used for user-scoped queries        | lib/feature-gate.ts                      | M      | [ ]    |
 | M4  | 400+ line schedule route needs extraction          | api/posts/schedule/route.ts              | L      | [ ]    |
 | M5  | Dashboard makes 5 sequential queries               | app/dashboard/page.tsx                   | M      | [ ]    |
-| M6  | Missing request validation (Zod) in generate-posts | api/generate-posts/route.ts:204          | S      | [ ]    |
+| M6  | Missing request validation (Zod) in generate-posts | api/generate-posts/route.ts:204          | S      | [x]    |
 | M7  | Rollback logic doesn't check delete success        | api/generate-posts/route.ts:343          | S      | [x]    |
 | M8  | Unsafe `as unknown as` double casts                | api/posts/[postId]/variants/route.ts:193 | M      | [ ]    |
 | M9  | Unsafe array assertions on metadata.variants       | api/posts/[postId]/variants/route.ts:240 | S      | [ ]    |
