@@ -6,6 +6,7 @@
 
 ## Recent Work
 
+- **2026-01-02**: Security improvements - QStash signature verification, CSP nonce propagation, service-key rate limiting with Redis
 - **2026-01-02**: Completed 7 high/medium priority issues (H2, H9, M2, M3, M8, M9, M10, M11) - all items already fixed in previous sessions
 - **2026-01-02**: Fixed 4 critical security issues (webhook validation, cookie logging, QStash fail-fast, trial race condition)
 - **2026-01-02**: Fixed 5 medium priority issues (partial failures, error classification, branded types, crypto caching, ESLint)

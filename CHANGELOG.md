@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **Security Fix: QStash Signature & Service Auth (Jan 2, 2026)**
+  - Await QStash signature verification in process and publish endpoints (prevents bypass)
+  - Restore CSP nonce propagation via request headers (Next.js integration)
+  - Add Redis-backed service-key rate limiting with memory fallback (multi-instance support)
+  - Fix SSRF status endpoint to use non-mutating rate limit check (prevents counter increment on status checks)
+
 - **Deep Review Security Fixes (Jan 2, 2026)**
   - C1: Unsafe regex in ISO datetime validation (ReDoS prevention)
   - C2: Alert failure swallowing in Redis rate limiter (fatal logging with console fallback)
