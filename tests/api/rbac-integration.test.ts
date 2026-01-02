@@ -158,7 +158,7 @@ describe('RBAC Integration - API Routes', () => {
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
       vi.mocked(ssrfProtection.getClientIP).mockReturnValue('127.0.0.1')
-      vi.mocked(ssrfProtection.checkRateLimit).mockResolvedValue({
+      vi.mocked(ssrfProtection.getRateLimitStatus).mockReturnValue({
         allowed: true,
         retryAfter: undefined,
         reason: undefined,
@@ -196,7 +196,7 @@ describe('RBAC Integration - API Routes', () => {
       vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
 
       vi.mocked(ssrfProtection.getClientIP).mockReturnValue('127.0.0.1')
-      vi.mocked(ssrfProtection.checkRateLimit).mockResolvedValue({
+      vi.mocked(ssrfProtection.getRateLimitStatus).mockReturnValue({
         allowed: true,
         retryAfter: undefined,
         reason: undefined,
