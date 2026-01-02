@@ -6,6 +6,7 @@
 
 ## Recent Work
 
+- **2026-01-02**: Completed 7 high/medium priority issues (H2, H9, M2, M3, M8, M9, M10, M11) - all items already fixed in previous sessions
 - **2026-01-02**: Fixed 4 critical security issues (webhook validation, cookie logging, QStash fail-fast, trial race condition)
 - **2026-01-02**: Fixed 5 medium priority issues (partial failures, error classification, branded types, crypto caching, ESLint)
 - **2025-12-31**: Deep code review (quality, security, a11y, architecture, type safety, silent failures)
@@ -34,34 +35,34 @@
 | ID  | Issue                                           | File:Line                          | Effort | Status |
 | --- | ----------------------------------------------- | ---------------------------------- | ------ | ------ |
 | H1  | Rate limiter fail-open on Redis failure         | lib/redis-rate-limiter.ts:270      | M      | [x]    |
-| H2  | OAuth state in unsigned cookies                 | api/platforms/_/callback/_.ts      | M      | [ ]    |
+| H2  | OAuth state in unsigned cookies                 | api/platforms/_/callback/_.ts      | M      | [x]    |
 | H3  | `Record<string, any>` loses type safety         | lib/observability.ts:55            | S      | [x]    |
 | H4  | Unsafe metadata cast from DB (no validation)    | api/queues/publish/route.ts:35     | M      | [x]    |
 | H5  | Error details returned to client                | api/cron/trial-emails/route.ts:110 | S      | [x]    |
 | H6  | Dynamic imports on every call                   | lib/feature-gate.ts:113            | S      | [x]    |
 | H7  | QStash scheduling failures silently ignored     | api/posts/schedule/route.ts        | M      | [x]    |
 | H8  | Non-null assertions on env vars (runtime crash) | lib/redis-rate-limiter.ts:140      | S      | [x]    |
-| H9  | CSP allows unsafe-eval and unsafe-inline        | next.config.js:34                  | M      | [ ]    |
+| H9  | CSP allows unsafe-eval and unsafe-inline        | next.config.js:34                  | M      | [x]    |
 
 ## 📊 Medium Priority - This Sprint
 
 > Architecture, code quality, performance
 
-| ID  | Issue                                              | File:Line                                | Effort | Status |
-| --- | -------------------------------------------------- | ---------------------------------------- | ------ | ------ |
-| M1  | Dual rate limiter implementations                  | lib/rate-limiter.ts                      | S      | [ ]    |
-| M2  | Missing feature gate on scheduling                 | api/posts/schedule/route.ts              | S      | [ ]    |
-| M3  | Service client used for user-scoped queries        | lib/feature-gate.ts                      | M      | [ ]    |
-| M4  | 400+ line schedule route needs extraction          | api/posts/schedule/route.ts              | L      | [ ]    |
-| M5  | Dashboard makes 5 sequential queries               | app/dashboard/page.tsx                   | M      | [ ]    |
-| M6  | Missing request validation (Zod) in generate-posts | api/generate-posts/route.ts:204          | S      | [x]    |
-| M7  | Rollback logic doesn't check delete success        | api/generate-posts/route.ts:343          | S      | [x]    |
-| M8  | Unsafe `as unknown as` double casts                | api/posts/[postId]/variants/route.ts:193 | M      | [ ]    |
-| M9  | Unsafe array assertions on metadata.variants       | api/posts/[postId]/variants/route.ts:240 | S      | [ ]    |
-| M10 | Request body casts without Zod validation          | api/posts/schedule/route.ts:45           | S      | [ ]    |
-| M11 | Worker request validation logic inconsistent       | api/generate-posts/route.ts:175-189      | S      | [ ]    |
-| M12 | Page reload after retry (poor UX)                  | components/post-scheduler.tsx:180        | S      | [ ]    |
-| M13 | Hardcoded URLs in email templates                  | lib/email.ts:53                          | S      | [x]    |
+| ID  | Issue                                                                                                                           | File:Line                                | Effort | Status |
+| --- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------ | ------ |
+| M1  | Dual rate limiter implementations (DEFERRED: would require significant refactoring of SSRF protection + extensive test updates) | lib/rate-limiter.ts                      | M      | [-]    |
+| M2  | Missing feature gate on scheduling                                                                                              | api/posts/schedule/route.ts              | S      | [x]    |
+| M3  | Service client used for user-scoped queries                                                                                     | lib/feature-gate.ts                      | M      | [x]    |
+| M4  | 400+ line schedule route needs extraction                                                                                       | api/posts/schedule/route.ts              | L      | [ ]    |
+| M5  | Dashboard makes 5 sequential queries                                                                                            | app/dashboard/page.tsx                   | M      | [ ]    |
+| M6  | Missing request validation (Zod) in generate-posts                                                                              | api/generate-posts/route.ts:204          | S      | [x]    |
+| M7  | Rollback logic doesn't check delete success                                                                                     | api/generate-posts/route.ts:343          | S      | [x]    |
+| M8  | Unsafe `as unknown as` double casts                                                                                             | api/posts/[postId]/variants/route.ts:193 | M      | [x]    |
+| M9  | Unsafe array assertions on metadata.variants                                                                                    | api/posts/[postId]/variants/route.ts:240 | S      | [x]    |
+| M10 | Request body casts without Zod validation                                                                                       | api/posts/schedule/route.ts:45           | S      | [x]    |
+| M11 | Worker request validation logic inconsistent                                                                                    | api/generate-posts/route.ts:175-189      | S      | [x]    |
+| M12 | Page reload after retry (poor UX)                                                                                               | components/post-scheduler.tsx:180        | S      | [ ]    |
+| M13 | Hardcoded URLs in email templates                                                                                               | lib/email.ts:53                          | S      | [x]    |
 
 ## 📚 Lower Priority - When Needed
 
