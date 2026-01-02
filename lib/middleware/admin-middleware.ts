@@ -32,6 +32,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /**
  * Middleware to protect admin routes
@@ -80,7 +81,7 @@ export async function adminMiddleware(
 
     if (roleError || !roleData) {
       // Log unauthorized admin access attempt
-      console.warn('Admin middleware: Unauthorized access attempt', {
+      logger.warn('Admin middleware: Unauthorized access attempt', {
         userId: user.id,
         email: user.email,
         path: request.nextUrl.pathname,
@@ -96,7 +97,7 @@ export async function adminMiddleware(
     // Success - continue to route handler
     return NextResponse.next()
   } catch (error) {
-    console.error('Admin middleware error:', error)
+    logger.error('Admin middleware error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

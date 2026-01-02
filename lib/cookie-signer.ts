@@ -6,11 +6,12 @@
  */
 
 import crypto from 'crypto'
+import { logger } from '@/lib/logger'
 
 const COOKIE_SECRET = process.env.COOKIE_SECRET || process.env.ENCRYPTION_KEY
 
 if (!COOKIE_SECRET && process.env.NODE_ENV === 'production') {
-  console.error(
+  logger.error(
     'CRITICAL: COOKIE_SECRET or ENCRYPTION_KEY must be set for cookie signing'
   )
 }
@@ -23,7 +24,7 @@ export function signValue(value: string): string {
   if (!COOKIE_SECRET) {
     // In development without secret, return value as-is with warning
     if (process.env.NODE_ENV === 'development') {
-      console.warn('Cookie signing disabled: COOKIE_SECRET not set')
+      logger.warn('Cookie signing disabled: COOKIE_SECRET not set')
       return value
     }
     throw new Error('COOKIE_SECRET is required for cookie signing')

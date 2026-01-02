@@ -33,7 +33,7 @@ export async function createClient() {
             if (!process.env.SUPABASE_AUTH_MIDDLEWARE_ENABLED) {
               // Re-throw in development or if middleware not configured
               if (process.env.NODE_ENV === 'development') {
-                console.warn(
+                logger.warn(
                   'Cookie setting failed - check middleware configuration'
                 )
               }

@@ -1,6 +1,9 @@
 /**
  * Encryption utilities for sensitive data (API keys, tokens)
  * Uses AES-256-GCM for authenticated encryption
+ *
+ * Performance optimization: Caches base encryption key and derived keys (LRU cache)
+ * to avoid repeated PBKDF2 iterations (100,000 iterations = 50-100ms per call).
  */
 
 import crypto from 'crypto'
@@ -10,11 +13,21 @@ const IV_LENGTH = 16
 const SALT_LENGTH = 64
 const KEY_LENGTH = 32
 
+// Cache for base encryption key (parsed from env var)
+let cachedEncryptionKey: Buffer | null = null
+
+// LRU cache for derived keys (salt -> derived key)
+// Max 100 entries to prevent memory bloat
+const derivedKeyCache = new Map<string, Buffer>()
+const MAX_DERIVED_KEY_CACHE_SIZE = 100
+
 /**
  * Get encryption key from environment variable with validation
  *
  * CRITICAL: Key must be 32 bytes (64 hex characters) for AES-256-GCM.
  * Generate with: `node -e "console.log(crypto.randomBytes(32).toString('hex'))"`
+ *
+ * Performance: Caches the parsed key to avoid repeated hex parsing
  *
  * @returns {Buffer} 32-byte encryption key for AES-256-GCM
  * @throws {Error} If ENCRYPTION_KEY is missing or invalid length
@@ -25,6 +38,11 @@ const KEY_LENGTH = 32
  * const key = getEncryptionKey()
  */
 function getEncryptionKey(): Buffer {
+  // Return cached key if available
+  if (cachedEncryptionKey) {
+    return cachedEncryptionKey
+  }
+
   const key = process.env.ENCRYPTION_KEY
 
   if (!key) {
@@ -37,7 +55,9 @@ function getEncryptionKey(): Buffer {
     throw new Error('ENCRYPTION_KEY must be 64 hex characters (32 bytes)')
   }
 
-  return Buffer.from(key, 'hex')
+  // Parse and cache
+  cachedEncryptionKey = Buffer.from(key, 'hex')
+  return cachedEncryptionKey
 }
 
 /**
@@ -67,7 +87,8 @@ export function encrypt(text: string): string {
   const iv = crypto.randomBytes(IV_LENGTH)
   const salt = crypto.randomBytes(SALT_LENGTH)
 
-  // Derive key using PBKDF2
+  // Derive key using PBKDF2 (expensive operation, but can't be cached for encryption
+  // since each encryption uses a new random salt)
   const derivedKey = crypto.pbkdf2Sync(key, salt, 100000, KEY_LENGTH, 'sha256')
 
   // Create cipher and encrypt
@@ -121,8 +142,21 @@ export function decrypt(encryptedData: string): string {
   const iv = Buffer.from(ivHex, 'hex')
   const authTag = Buffer.from(authTagHex, 'hex')
 
-  // Derive key using same parameters as encryption
-  const derivedKey = crypto.pbkdf2Sync(key, salt, 100000, KEY_LENGTH, 'sha256')
+  // Check cache first (saves 50-100ms per decrypt)
+  const saltKey = saltHex // Use hex string as cache key
+  let derivedKey = derivedKeyCache.get(saltKey)
+
+  if (!derivedKey) {
+    // Derive key using same parameters as encryption (expensive: 100,000 PBKDF2 iterations)
+    derivedKey = crypto.pbkdf2Sync(key, salt, 100000, KEY_LENGTH, 'sha256')
+
+    // Cache derived key (LRU: evict oldest if cache full)
+    if (derivedKeyCache.size >= MAX_DERIVED_KEY_CACHE_SIZE) {
+      const firstKey = derivedKeyCache.keys().next().value
+      if (firstKey) derivedKeyCache.delete(firstKey)
+    }
+    derivedKeyCache.set(saltKey, derivedKey)
+  }
 
   // Create decipher
   const decipher = crypto.createDecipheriv(ALGORITHM, derivedKey, iv)

@@ -10,6 +10,7 @@
 
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
+import { logger } from '@/lib/logger'
 
 // Subscription tiers
 export const SUBSCRIPTION_TIERS = {
@@ -188,7 +189,7 @@ class BillingService {
 
       return { url: session.url || options.cancelUrl }
     } catch (error) {
-      console.error('Stripe checkout error:', error)
+      logger.error('Stripe checkout error:', error)
       return { error: 'Failed to create checkout session' }
     }
   }
@@ -224,7 +225,7 @@ class BillingService {
 
       return { url: session.url }
     } catch (error) {
-      console.error('Portal session error:', error)
+      logger.error('Portal session error:', error)
       return { error: 'Failed to create portal session' }
     }
   }

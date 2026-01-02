@@ -14,6 +14,7 @@
 import { Redis } from '@upstash/redis'
 import { createHash } from 'crypto'
 import { observability } from './observability'
+import { sendCriticalAlert } from './alerts'
 
 export interface GenerationResult {
   newsletterId: string
@@ -99,15 +100,17 @@ export class RedisRateLimiter {
     switch (rateLimitMode) {
       case 'disabled':
         this.enabled = false
-        console.warn('🚫 Rate limiting DISABLED via RATE_LIMIT_MODE=disabled')
+        observability.warn(
+          '🚫 Rate limiting DISABLED via RATE_LIMIT_MODE=disabled'
+        )
         break
       case 'memory':
         this.enabled = false
-        console.warn(
+        observability.warn(
           '⚠️ Rate limiting forced to MEMORY mode (per-instance only)'
         )
         if (isProduction) {
-          console.error(
+          observability.error(
             '🔴 PRODUCTION WARNING: Memory-only rate limiting is not recommended for production'
           )
         }
@@ -124,15 +127,15 @@ export class RedisRateLimiter {
       default:
         this.enabled = hasRedisConfig
         if (this.enabled) {
-          console.log(
+          observability.info(
             '🔄 Auto-detected Redis configuration, enabling distributed rate limiting'
           )
         } else {
-          console.warn(
+          observability.warn(
             '⚠️ No Redis configuration found, falling back to memory-only rate limiting'
           )
           if (isProduction) {
-            console.error(
+            observability.error(
               '🔴 PRODUCTION WARNING: Set RATE_LIMIT_MODE=redis and configure Upstash for production'
             )
           }
@@ -147,17 +150,19 @@ export class RedisRateLimiter {
       if (!redisUrl || !redisToken) {
         // Should never happen due to hasRedisConfig check, but satisfies TypeScript
         this.enabled = false
-        console.error('Redis config missing despite hasRedisConfig check')
+        observability.error('Redis config missing despite hasRedisConfig check')
       } else {
         try {
           this.redis = new Redis({ url: redisUrl, token: redisToken })
-          console.log('✅ Redis rate limiter initialized successfully')
+          observability.info('✅ Redis rate limiter initialized successfully')
         } catch (error) {
-          console.error('❌ Redis rate limiter failed to initialize:', error)
+          observability.error('❌ Redis rate limiter failed to initialize:', {
+            error,
+          })
           this.enabled = false
-          console.log('🔄 Falling back to memory-only rate limiting')
+          observability.info('🔄 Falling back to memory-only rate limiting')
           if (isProduction) {
-            console.error(
+            observability.error(
               '🔴 PRODUCTION ERROR: Redis rate limiting failed, service may be degraded'
             )
           }
@@ -179,7 +184,7 @@ export class RedisRateLimiter {
       const timeSinceLastFailure = Date.now() - this.lastFailureTime
       if (timeSinceLastFailure > this.CIRCUIT_BREAKER_RESET_MS) {
         // Try Redis again (half-open state)
-        console.log('🔄 Circuit breaker: attempting Redis recovery')
+        observability.info('🔄 Circuit breaker: attempting Redis recovery')
         this.circuitBreakerOpen = false
       }
     }
@@ -275,7 +280,7 @@ export class RedisRateLimiter {
 
       // Reset circuit breaker on success
       if (this.consecutiveFailures > 0) {
-        console.log(
+        observability.info(
           '✅ Redis rate limiter recovered, resetting circuit breaker'
         )
         this.consecutiveFailures = 0
@@ -296,19 +301,16 @@ export class RedisRateLimiter {
       this.consecutiveFailures++
       this.lastFailureTime = Date.now()
 
-      console.error(
+      observability.error(
         `🔴 Redis rate limit check failed (failure ${this.consecutiveFailures}/${this.CIRCUIT_BREAKER_THRESHOLD})`,
-        error
+        { error }
       )
 
       // Open circuit breaker if threshold reached
       if (this.consecutiveFailures >= this.CIRCUIT_BREAKER_THRESHOLD) {
         this.circuitBreakerOpen = true
-        console.error(
-          '🔴 CIRCUIT BREAKER OPEN: Redis failures exceeded threshold, switching to memory fallback'
-        )
-        observability.error(
-          'Circuit breaker opened - Redis rate limiter disabled',
+        observability.fatal(
+          '🔴 CIRCUIT BREAKER OPEN: Redis failures exceeded threshold, switching to memory fallback',
           {
             metadata: {
               consecutiveFailures: this.consecutiveFailures,
@@ -316,6 +318,25 @@ export class RedisRateLimiter {
             },
           }
         )
+
+        // Send critical alert to monitoring systems (Slack/PagerDuty)
+        sendCriticalAlert(
+          'Redis Rate Limiter Circuit Breaker Opened',
+          `Rate limiting has degraded to memory-only mode after ${this.consecutiveFailures} consecutive Redis failures. This means rate limits are NOT shared across server instances and can be bypassed with multiple instances.`,
+          {
+            consecutiveFailures: this.consecutiveFailures,
+            threshold: this.CIRCUIT_BREAKER_THRESHOLD,
+            error: error instanceof Error ? error.message : 'unknown',
+            impact:
+              'Rate limits per-instance only - production security degraded',
+            action: 'Check Redis/Upstash health immediately',
+          }
+        ).catch(alertError => {
+          // Don't let alerting failures crash the app
+          observability.error('Failed to send circuit breaker alert', {
+            error: alertError,
+          })
+        })
       }
 
       if (!this.degradedNotified) {
@@ -442,7 +463,7 @@ export class RedisRateLimiter {
       try {
         await this.redis.set(dedupKey, JSON.stringify(result), { ex: 600 }) // 10 minutes TTL
       } catch (error) {
-        console.warn('Failed to store dedup result in Redis:', error)
+        observability.warn('Failed to store dedup result in Redis:', { error })
       }
     } else {
       this.memoryStore.set(dedupKey, { result, timestamp: Date.now() })
@@ -463,7 +484,7 @@ export class RedisRateLimiter {
         const cached = await this.redis.get(dedupKey)
         return cached && typeof cached === 'string' ? JSON.parse(cached) : null
       } catch (error) {
-        console.warn('Failed to get cached result from Redis:', error)
+        observability.warn('Failed to get cached result from Redis:', { error })
         return null
       }
     } else {
@@ -511,7 +532,7 @@ export class RedisRateLimiter {
       try {
         minuteCount = (await this.redis.get(minuteKey)) || 0
       } catch (error) {
-        console.warn('Failed to get user status from Redis:', error)
+        observability.warn('Failed to get user status from Redis:', { error })
       }
     } else {
       const memoryKey = `${userId}:minute:${Math.floor(now / this.config.windowMinute)}`
@@ -561,7 +582,7 @@ export class RedisRateLimiter {
           activeUsers: 0, // Would need Redis SCAN to count, expensive
         }
       } catch (error) {
-        console.warn('Redis health check failed:', error)
+        observability.warn('Redis health check failed:', { error })
         return {
           ...stats,
           redisHealth: false,
@@ -616,7 +637,9 @@ export class RedisRateLimiter {
     expiredKeys.forEach(key => this.memoryStore.delete(key))
 
     if (expiredKeys.length > 0) {
-      console.log(`🧹 Cleaned up ${expiredKeys.length} expired rate limit keys`)
+      observability.debug(
+        `🧹 Cleaned up ${expiredKeys.length} expired rate limit keys`
+      )
     }
   }
 

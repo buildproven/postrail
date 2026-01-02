@@ -6,6 +6,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { logger } from '@/lib/logger'
 
 // Local blocklist of common disposable email domains (backup if DB unavailable)
 const LOCAL_BLOCKLIST = new Set([
@@ -61,7 +62,7 @@ async function loadBlockedDomains(): Promise<Set<string>> {
       .select('domain')
 
     if (error) {
-      console.error('Error loading blocked domains:', error)
+      logger.error('Error loading blocked domains:', error)
       return LOCAL_BLOCKLIST
     }
 
@@ -75,7 +76,7 @@ async function loadBlockedDomains(): Promise<Set<string>> {
 
     return domains
   } catch (error) {
-    console.error('Failed to load blocked domains:', error)
+    logger.error('Failed to load blocked domains:', error)
     return LOCAL_BLOCKLIST
   }
 }
@@ -97,9 +98,7 @@ export async function isDisposableEmail(email: string): Promise<boolean> {
 /**
  * Check email and return detailed result
  */
-export async function checkEmailDomain(
-  email: string
-): Promise<{
+export async function checkEmailDomain(email: string): Promise<{
   blocked: boolean
   domain: string
   reason?: string
@@ -138,7 +137,7 @@ export async function blockEmailDomain(
     })
 
     if (error) {
-      console.error('Error blocking domain:', error)
+      logger.error('Error blocking domain:', error)
       return false
     }
 
@@ -146,7 +145,7 @@ export async function blockEmailDomain(
     cachedBlockedDomains = null
     return true
   } catch (error) {
-    console.error('Failed to block domain:', error)
+    logger.error('Failed to block domain:', error)
     return false
   }
 }

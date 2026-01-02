@@ -1,5 +1,6 @@
 import { Client, Receiver } from '@upstash/qstash'
 import { observability } from '@/lib/observability'
+import { logger } from '@/lib/logger'
 
 const missing: string[] = []
 if (!process.env.QSTASH_TOKEN) missing.push('QSTASH_TOKEN')
@@ -24,8 +25,8 @@ if (missing.length > 0) {
     )
   } else {
     // Warn in development but allow startup
-    console.warn(`⚠️  ${errorMsg}`)
-    console.warn('⚠️  Post scheduling features will be disabled')
+    logger.warn(`⚠️  ${errorMsg}`)
+    logger.warn('⚠️  Post scheduling features will be disabled')
   }
 }
 

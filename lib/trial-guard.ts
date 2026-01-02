@@ -10,6 +10,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { logger } from '@/lib/logger'
 
 export interface TrialStatus {
   allowed: boolean
@@ -217,7 +218,7 @@ async function checkTrialAccessWithProfile(
     .gte('created_at', startOfDay.toISOString())
 
   if (countError) {
-    console.error('Error counting daily generations:', countError)
+    logger.error('Error counting daily generations:', countError)
     // Allow on error to avoid blocking legitimate users
   }
 
@@ -331,7 +332,7 @@ export async function checkAndRecordTrialGeneration(
   )
 
   if (error) {
-    console.error('Trial generation check failed:', error)
+    logger.error('Trial generation check failed:', error)
     return {
       allowed: false,
       error: 'Failed to check trial limits. Please try again.',
