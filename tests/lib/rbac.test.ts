@@ -145,8 +145,10 @@ describe('RBAC - Role Checking', () => {
       const result = await checkUserRole('user-123', 'admin')
       expect(result).toBe(false)
       expect(logger.error).toHaveBeenCalledWith(
-        'RBAC: Role check error:',
-        expect.objectContaining({ code: 'PGRST500' })
+        expect.objectContaining({
+          error: expect.objectContaining({ code: 'PGRST500' }),
+        }),
+        'RBAC: Role check error'
       )
     })
   })
