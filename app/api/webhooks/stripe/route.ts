@@ -20,7 +20,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET
 
 // Stripe webhook IP ranges (https://stripe.com/docs/ips)
-// Updated 2025-01 - verify at https://stripe.com/files/ips/ips_webhooks.txt
+// Updated 2026-01-03 - verified at https://stripe.com/files/ips/ips_webhooks.txt
 const STRIPE_WEBHOOK_IPS = [
   '3.18.12.63',
   '3.130.192.231',
@@ -29,6 +29,8 @@ const STRIPE_WEBHOOK_IPS = [
   '18.211.135.69',
   '35.154.171.200',
   '52.15.183.38',
+  '54.88.130.119', // M15 fix: Added missing Stripe webhook IP
+  '54.88.130.237', // M15 fix: Added missing Stripe webhook IP
   '54.187.174.169',
   '54.187.205.235',
   '54.187.216.72',

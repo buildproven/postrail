@@ -6,6 +6,12 @@
 
 ## Recent Work
 
+- **2026-01-03**: Completed all outstanding Medium priority items (M4, M5, M15)
+  - M4: Extracted 450+ lines of business logic from schedule route to service layer
+  - M5: Dashboard queries already parallelized (verified)
+  - M15: Updated Stripe webhook IP allowlist with 2 missing IPs (54.88.130.119, 54.88.130.237)
+  - Fixed code review findings: removed `any` types, added UUID validation to DELETE endpoint
+  - All 696 tests passing, TypeScript strict mode clean
 - **2026-01-03**: Production-Ready Quality Improvements (autonomous quality loop until 98% standard)
   - **Accessibility**: Fixed 11 WCAG 2.1 AA violations (79% → 95% compliance)
   - **Error Handling**: Fixed 6 critical silent failure paths (analytics, billing, OAuth)
@@ -41,117 +47,59 @@
 
 ---
 
-## 🔴 Critical - Fix Immediately
+## 📋 Pending Items
 
-> Security vulnerabilities and build blockers
+**Scoring**: (Revenue + Retention + Differentiation) ÷ Effort = Priority Score
+**Effort**: S (<4h) = ÷1, M (4-16h) = ÷2, L (16-40h) = ÷3, XL (40h+) = ÷4
 
-| ID  | Issue                                                | File:Line                      | Effort | Status |
-| --- | ---------------------------------------------------- | ------------------------------ | ------ | ------ |
-| C1  | qs package DoS vulnerability (GHSA-6rw7-vpxm-498p)   | package.json                   | S      | [x]    |
-| C2  | CORS falls back to request origin when env missing   | middleware.ts:21               | S      | [x]    |
-| C3  | Anthropic client init with 'missing-key' fallback    | api/generate-posts/route.ts:22 | S      | [x]    |
-| C4  | vitest.config.ts minWorkers invalid option           | vitest.config.ts:15            | S      | [x]    |
-| C5  | Test zombie processes (execution tests spawn vitest) | package.json:test:fast         | S      | [x]    |
-| C6  | Non-null assertions without runtime checks           | lib/service-auth.ts:259,289    | S      | [x]    |
-| C7  | Auth cookie failures swallowed (breaks login)        | lib/supabase/server.ts:17-41   | S      | [x]    |
-| C8  | Unvalidated external API responses (injection risk)  | app/api/platforms/\*/callback  | M      | [x]    |
-| C9  | JSON.parse without validation (crash risk)           | api/generate-posts/process:30  | S      | [x]    |
+### 🔥 High Value - Next Up
 
-## 🟠 High Priority - Fix This Week
+| ID  | Issue                                    | Value Drivers      | Effort | Score | Location                      | Status  |
+| --- | ---------------------------------------- | ------------------ | ------ | ----- | ----------------------------- | ------- |
+| L2  | Missing test coverage for post-scheduler | Rev:2 Ret:3 Diff:2 | M      | 3.5   | components/post-scheduler.tsx | Pending |
+| L13 | Alert system failures not escalated      | Rev:2 Ret:4 Diff:1 | M      | 3.5   | lib/alerts.ts:51-62           | Pending |
+| L14 | User profile caching opportunity (Redis) | Rev:2 Ret:3 Diff:2 | M      | 3.5   | Multiple API routes           | Pending |
 
-> Security, data integrity, type safety
+### 📊 Medium Value - Worth Doing
 
-| ID  | Issue                                           | File:Line                          | Effort | Status |
-| --- | ----------------------------------------------- | ---------------------------------- | ------ | ------ |
-| H1  | Rate limiter fail-open on Redis failure         | lib/redis-rate-limiter.ts:270      | M      | [x]    |
-| H2  | OAuth state in unsigned cookies                 | api/platforms/_/callback/_.ts      | M      | [x]    |
-| H3  | `Record<string, any>` loses type safety         | lib/observability.ts:55            | S      | [x]    |
-| H4  | Unsafe metadata cast from DB (no validation)    | api/queues/publish/route.ts:35     | M      | [x]    |
-| H5  | Error details returned to client                | api/cron/trial-emails/route.ts:110 | S      | [x]    |
-| H6  | Dynamic imports on every call                   | lib/feature-gate.ts:113            | S      | [x]    |
-| H7  | QStash scheduling failures silently ignored     | api/posts/schedule/route.ts        | M      | [x]    |
-| H8  | Non-null assertions on env vars (runtime crash) | lib/redis-rate-limiter.ts:140      | S      | [x]    |
-| H9  | CSP allows unsafe-eval and unsafe-inline        | next.config.js:34                  | M      | [x]    |
-| H10 | Console.log in 50+ files (bypasses logging)     | Multiple files                     | M      | [x]    |
-| H11 | SSRF DNS errors not logged                      | lib/ssrf-protection.ts:501-511     | S      | [x]    |
-| H12 | Database casts without validation (RBAC risk)   | lib/billing.ts:270, lib/rbac.ts    | M      | [x]    |
-| H13 | N+1 query pattern in analytics (150ms → 50ms)   | api/analytics/dashboard:176-202    | M      | [x]    |
-| H14 | Sequential DB writes in loop (4s → 0.5s)        | api/posts/schedule:338-480         | M      | [x]    |
-| H15 | Unbounded queries without pagination            | app/dashboard/newsletters:17-21    | S      | [x]    |
-| H16 | Missing database indexes on generation_events   | Database migration needed          | S      | [x]    |
+| ID  | Issue                                    | Value Drivers      | Effort | Score | Location             | Status   |
+| --- | ---------------------------------------- | ------------------ | ------ | ----- | -------------------- | -------- |
+| L1  | ESLint object injection warnings (15)    | Rev:1 Ret:3 Diff:2 | M      | 3.0   | Various              | Pending  |
+| L7  | Create shared types directory            | Rev:1 Ret:3 Diff:2 | M      | 3.0   | types/               | Pending  |
+| L8  | Service layer abstraction (refactor)     | Rev:2 Ret:3 Diff:3 | L      | 2.7   | lib/services/        | Pending  |
+| L10 | PBKDF2 iterations could be higher (600k) | Rev:1 Ret:3 Diff:2 | M      | 3.0   | lib/crypto.ts:92,151 | Pending  |
+| M1  | Dual rate limiter implementations        | Rev:1 Ret:2 Diff:2 | M      | 2.5   | lib/rate-limiter.ts  | Deferred |
 
-## 📊 Medium Priority - This Sprint
+### 📚 Low Value - When Needed
 
-> Architecture, code quality, performance
-
-| ID  | Issue                                                                                                                           | File:Line                                | Effort | Status |
-| --- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------ | ------ |
-| M1  | Dual rate limiter implementations (DEFERRED: would require significant refactoring of SSRF protection + extensive test updates) | lib/rate-limiter.ts                      | M      | [-]    |
-| M2  | Missing feature gate on scheduling                                                                                              | api/posts/schedule/route.ts              | S      | [x]    |
-| M3  | Service client used for user-scoped queries                                                                                     | lib/feature-gate.ts                      | M      | [x]    |
-| M4  | 400+ line schedule route needs extraction                                                                                       | api/posts/schedule/route.ts              | L      | [ ]    |
-| M5  | Dashboard makes 5 sequential queries                                                                                            | app/dashboard/page.tsx                   | M      | [ ]    |
-| M6  | Missing request validation (Zod) in generate-posts                                                                              | api/generate-posts/route.ts:204          | S      | [x]    |
-| M7  | Rollback logic doesn't check delete success                                                                                     | api/generate-posts/route.ts:343          | S      | [x]    |
-| M8  | Unsafe `as unknown as` double casts                                                                                             | api/posts/[postId]/variants/route.ts:193 | M      | [x]    |
-| M9  | Unsafe array assertions on metadata.variants                                                                                    | api/posts/[postId]/variants/route.ts:240 | S      | [x]    |
-| M10 | Request body casts without Zod validation                                                                                       | api/posts/schedule/route.ts:45           | S      | [x]    |
-| M11 | Worker request validation logic inconsistent                                                                                    | api/generate-posts/route.ts:175-189      | S      | [x]    |
-| M12 | Page reload after retry (poor UX)                                                                                               | components/post-scheduler.tsx:180        | S      | [x]    |
-| M13 | Hardcoded URLs in email templates                                                                                               | lib/email.ts:53                          | S      | [x]    |
-| M14 | Memory leak risk - setInterval without cleanup                                                                                  | lib/observability.ts:106                 | S      | [x]    |
-| M15 | Stripe webhook IP allowlist may be stale                                                                                        | api/webhooks/stripe/route.ts:24-35       | M      | [ ]    |
-| M16 | Database query failures lack error logging                                                                                      | dashboard pages (multiple)               | S      | [x]    |
-| M17 | Duplicate status calculation in analytics                                                                                       | api/analytics/dashboard:169-174          | S      | [x]    |
-| M18 | Preview page ignores posts fetch error                                                                                          | dashboard/newsletters/[id]/preview:45    | S      | [x]    |
-
-## 📚 Lower Priority - When Needed
-
-> Tech debt, nice-to-haves
-
-| ID  | Issue                                        | File:Line                        | Effort | Status |
-| --- | -------------------------------------------- | -------------------------------- | ------ | ------ |
-| L1  | ESLint object injection warnings (15)        | Various                          | M      | [ ]    |
-| L2  | Missing test coverage for post-scheduler     | components/post-scheduler.tsx    | M      | [ ]    |
-| L3  | Unused PLATFORM_OPTIMAL_TIMES constant       | components/post-scheduler.tsx:55 | S      | [ ]    |
-| L4  | Props drilling in PostPreviewCard            | components/post-preview-card.tsx | S      | [ ]    |
-| L5  | Client-side auth re-fetch in settings        | app/dashboard/settings/page.tsx  | S      | [ ]    |
-| L6  | Missing rate limit headers on some endpoints | Various API routes               | S      | [ ]    |
-| L7  | Create shared types directory                | types/                           | M      | [ ]    |
-| L8  | Service layer abstraction (refactor)         | lib/services/                    | L      | [ ]    |
-| L9  | Parallel rate limit/feature checks           | api/generate-posts/route.ts:213  | S      | [ ]    |
-| L10 | PBKDF2 iterations could be higher (600k)     | lib/crypto.ts:92,151             | M      | [ ]    |
-| L11 | Weak regex in SSRF IPv6 validation           | lib/ssrf-protection.ts:626       | S      | [ ]    |
-| L12 | Missing cache invalidation for trial limits  | lib/trial-guard.ts:35-87         | S      | [ ]    |
-| L13 | Alert system failures not escalated          | lib/alerts.ts:51-62              | M      | [ ]    |
-| L14 | User profile caching opportunity (Redis)     | Multiple API routes              | M      | [ ]    |
-| L15 | Dynamic imports for heavy components         | components/newsletter-editor.tsx | S      | [ ]    |
+| ID  | Issue                                        | Value Drivers      | Effort | Score | Location                         | Status  |
+| --- | -------------------------------------------- | ------------------ | ------ | ----- | -------------------------------- | ------- |
+| L3  | Unused PLATFORM_OPTIMAL_TIMES constant       | Rev:0 Ret:1 Diff:1 | S      | 2.0   | components/post-scheduler.tsx:55 | Pending |
+| L4  | Props drilling in PostPreviewCard            | Rev:0 Ret:2 Diff:1 | S      | 3.0   | components/post-preview-card.tsx | Pending |
+| L5  | Client-side auth re-fetch in settings        | Rev:0 Ret:2 Diff:1 | S      | 3.0   | app/dashboard/settings/page.tsx  | Pending |
+| L6  | Missing rate limit headers on some endpoints | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Various API routes               | Pending |
+| L9  | Parallel rate limit/feature checks           | Rev:1 Ret:2 Diff:1 | S      | 4.0   | api/generate-posts/route.ts:213  | Pending |
+| L11 | Weak regex in SSRF IPv6 validation           | Rev:1 Ret:2 Diff:2 | S      | 5.0   | lib/ssrf-protection.ts:626       | Pending |
+| L12 | Missing cache invalidation for trial limits  | Rev:1 Ret:2 Diff:1 | S      | 4.0   | lib/trial-guard.ts:35-87         | Pending |
+| L15 | Dynamic imports for heavy components         | Rev:1 Ret:2 Diff:1 | S      | 4.0   | components/newsletter-editor.tsx | Pending |
 
 ---
 
-## Completed (2025-12-31 Deep Review)
+## Completed ✅
 
-- [x] C4: Fixed vitest.config.ts minWorkers invalid option
+### Critical & High Priority (All Resolved)
 
-## Completed (Previous)
-
-- [x] Security headers (CSP, HSTS, X-Frame-Options)
-- [x] CORS configuration in middleware
-- [x] Color contrast fixes
-- [x] OG image compression
-- [x] aria-live on error messages
-- [x] Skip links
-- [x] JSON-LD schema
-- [x] Lazy load TipTap
-- [x] Per-page metadata
-- [x] Trial/welcome/renewal emails
-- [x] Usage analytics dashboard
-- [x] Fieldset/legend for inputs
-- [x] Time elements for dates
-- [x] Structured logging
-- [x] Error boundary
-- [x] Stripe billing infrastructure
-- [x] Feature gating
+| ID     | Issue                                           | Completed  |
+| ------ | ----------------------------------------------- | ---------- |
+| C1-C9  | All critical security & build blockers          | 2026-01-02 |
+| H1-H16 | All high priority security/performance/type     | 2026-01-03 |
+| M2-M18 | All medium priority architecture/code quality   | 2026-01-03 |
+| -      | Production-ready quality (98% standard reached) | 2026-01-03 |
+| -      | WCAG 2.1 AA compliance (95%)                    | 2026-01-03 |
+| -      | Security headers (CSP, HSTS, X-Frame-Options)   | 2025-12-30 |
+| -      | Structured logging & error handling             | 2025-12-31 |
+| -      | Stripe billing infrastructure                   | 2025-12-30 |
+| -      | Feature gating & trial system                   | 2025-12-30 |
 
 ---
 
