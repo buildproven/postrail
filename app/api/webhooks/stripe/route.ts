@@ -58,12 +58,24 @@ export async function POST(request: NextRequest) {
   const realIp = request.headers.get('x-real-ip')
   const clientIp = forwardedFor?.split(',')[0] || realIp
 
-  if (!isStripeIP(clientIp)) {
+  // EMERGENCY BYPASS: Set STRIPE_WEBHOOK_BYPASS_IP_CHECK=true to disable IP validation
+  // WARNING: This bypasses a security layer and should ONLY be used if Stripe rotates IPs
+  // and updates their documentation BEFORE updating this allowlist. Monitor security logs closely.
+  const bypassIPCheck = process.env.STRIPE_WEBHOOK_BYPASS_IP_CHECK === 'true'
+
+  if (bypassIPCheck) {
+    logger.warn({
+      type: 'security',
+      context: 'stripe_webhook_ip_bypass',
+      ip: clientIp,
+      msg: '⚠️ SECURITY WARNING: Stripe IP allowlist bypassed via STRIPE_WEBHOOK_BYPASS_IP_CHECK. Signature verification is still enforced. Remove this env var ASAP and update IP allowlist.',
+    })
+  } else if (!isStripeIP(clientIp)) {
     logger.error({
       type: 'security',
       context: 'stripe_webhook_ip_validation',
       ip: clientIp,
-      msg: 'Stripe webhook from unauthorized IP address',
+      msg: '🚨 ALERT: Stripe webhook rejected - unauthorized IP address. This could indicate an attack or Stripe IP rotation. Check https://stripe.com/files/ips/ips_webhooks.txt',
     })
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
   }
@@ -130,10 +142,10 @@ export async function POST(request: NextRequest) {
           subscription
         )
 
-        logger.info(
-          { customerId },
-          `Subscription ${event.type.split('.')[2]} for customer`
-        )
+        const eventParts = event.type.split('.')
+        const action = eventParts[eventParts.length - 1]
+
+        logger.info({ customerId }, `Subscription ${action} for customer`)
         break
       }
 

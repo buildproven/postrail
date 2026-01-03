@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // Allowlist of safe redirect paths within our app
 const ALLOWED_REDIRECTS = [
@@ -46,6 +47,25 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}${next}`)
       }
     }
+
+    // OAuth exchange failed - log detailed error and redirect with reason
+    logger.error(
+      {
+        error: error,
+        code: code?.substring(0, 10) + '...', // Log partial code for debugging
+        message: error.message,
+        status: error.status,
+      },
+      'OAuth code exchange failed'
+    )
+
+    // Provide user-friendly error reason in URL
+    const errorReason = encodeURIComponent(
+      error.message || 'Authentication failed'
+    )
+    return NextResponse.redirect(
+      `${origin}/auth/auth-code-error?reason=${errorReason}`
+    )
   }
 
   // return the user to an error page with instructions

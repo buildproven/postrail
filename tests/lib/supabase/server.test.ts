@@ -91,7 +91,7 @@ describe('lib/supabase/server', () => {
       })
     })
 
-    it('should handle setAll errors gracefully (Server Component scenario)', async () => {
+    it('should throw setAll errors (Server Component scenario)', async () => {
       const mockClient = { from: vi.fn() }
       mockCreateServerClient.mockReturnValue(mockClient)
 
@@ -104,12 +104,12 @@ describe('lib/supabase/server', () => {
 
       const cookieConfig = mockCreateServerClient.mock.calls[0][2] as any
 
-      // Should not throw when setAll fails
+      // Should throw when setAll fails (critical for auth)
       expect(() => {
         cookieConfig.cookies.setAll?.([
           { name: 'session', value: 'token', options: {} },
         ])
-      }).not.toThrow()
+      }).toThrow('Cannot set cookies from Server Component')
     })
 
     it('should return Supabase server client', async () => {

@@ -99,10 +99,19 @@ export function PostPreviewCard({ post }: PostPreviewCardProps) {
           </p>
         </div>
         <div className="flex gap-2 mt-4 pt-4 border-t">
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            aria-label={`Edit ${config.name} post`}
+          >
             Edit
           </Button>
-          <Button variant="ghost" size="sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Regenerate ${config.name} post`}
+          >
             Regenerate
           </Button>
         </div>

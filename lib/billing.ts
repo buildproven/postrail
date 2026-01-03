@@ -121,11 +121,21 @@ class BillingService {
     const stripe = this.getStripe()
 
     // Check if user already has a Stripe customer ID
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('stripe_customer_id')
       .eq('id', userId)
       .single()
+
+    if (profileError) {
+      logger.error(
+        { error: profileError, userId },
+        'Failed to fetch user profile for Stripe customer creation'
+      )
+      throw new Error(
+        'Unable to access your account information. Please try again or contact support.'
+      )
+    }
 
     if (profile?.stripe_customer_id) {
       return profile.stripe_customer_id
@@ -138,10 +148,20 @@ class BillingService {
     })
 
     // Store customer ID
-    await supabase
+    const { error: updateError } = await supabase
       .from('user_profiles')
       .update({ stripe_customer_id: customer.id })
       .eq('id', userId)
+
+    if (updateError) {
+      logger.error(
+        { error: updateError, userId, customerId: customer.id },
+        'Failed to store Stripe customer ID in database'
+      )
+      throw new Error(
+        'Your billing account was created but could not be linked to your profile. Please contact support with error: Failed to save customer ID'
+      )
+    }
 
     return customer.id
   }
@@ -334,7 +354,7 @@ class BillingService {
     const firstItem = subscription.items?.data?.[0]
     const currentPeriodEnd = firstItem?.current_period_end
 
-    await supabase
+    const { error: updateError } = await supabase
       .from('user_profiles')
       .update({
         subscription_status: statusMap[subscription.status] || 'trial',
@@ -346,6 +366,22 @@ class BillingService {
         subscription_cancel_at_period_end: subscription.cancel_at_period_end,
       })
       .eq('stripe_customer_id', customerId)
+
+    if (updateError) {
+      logger.error(
+        {
+          error: updateError,
+          customerId,
+          subscriptionId: subscription.id,
+          tier,
+          status: subscription.status,
+        },
+        'Failed to update subscription status from webhook - billing data may be inconsistent'
+      )
+      throw new Error(
+        `Failed to update subscription status for customer ${customerId}. Database update failed: ${updateError.message}`
+      )
+    }
   }
 
   /**

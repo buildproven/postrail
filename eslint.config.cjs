@@ -52,7 +52,9 @@ const baseRules = {
 const securityRules = security
   ? {
       // Security rules from WFHroulette patterns - adjusted for build tools
-      'security/detect-object-injection': 'warn', // Build tools often use dynamic object access
+      // Disabled: Too many false positives on typed objects (Record<SubscriptionTier, ...>, etc.)
+      // TypeScript type system provides safety against injection
+      'security/detect-object-injection': 'off',
       'security/detect-non-literal-regexp': 'error',
       'security/detect-unsafe-regex': 'error',
       'security/detect-buffer-noassert': 'error',

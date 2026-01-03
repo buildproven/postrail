@@ -8,6 +8,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { observability } from '@/lib/observability'
 import { requireAdmin } from '@/lib/rbac'
+import { RedisRateLimiter } from '@/lib/redis-rate-limiter'
+
+// Rate limiting for monitoring endpoint to prevent DoS via expensive log queries
+const monitoringRateLimiter = new RedisRateLimiter()
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,7 +34,40 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const user = { id: adminCheck.userId! }
+    const userId = adminCheck.userId!
+
+    // Apply rate limiting even for admin users to prevent DoS via expensive log queries
+    // Admin users get higher limits than regular users, but still need protection
+    const rateLimitResult = await monitoringRateLimiter.checkRateLimit(userId)
+    if (!rateLimitResult.allowed) {
+      observability.warn('Admin monitoring endpoint rate limited', {
+        userId,
+        event: 'monitoring_rate_limited',
+        metadata: {
+          reason: rateLimitResult.reason,
+          retryAfter: rateLimitResult.retryAfter,
+          requestsRemaining: rateLimitResult.requestsRemaining,
+        },
+      })
+
+      return NextResponse.json(
+        {
+          error: 'Too many monitoring requests',
+          retryAfter: rateLimitResult.retryAfter,
+          requestsRemaining: rateLimitResult.requestsRemaining,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitResult.retryAfter || 60),
+            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
+            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
+          },
+        }
+      )
+    }
+
+    const user = { id: userId }
 
     // Parse query parameters
     const url = new URL(request.url)
@@ -69,12 +106,16 @@ export async function GET(request: NextRequest) {
       // Get logs with optional filtering
       const levelParam = url.searchParams.get('level')
       const validLevels = ['debug', 'info', 'warn', 'error', 'fatal'] as const
-      const level = levelParam && validLevels.includes(levelParam as typeof validLevels[number])
-        ? (levelParam as typeof validLevels[number])
-        : undefined
+      const level =
+        levelParam &&
+        validLevels.includes(levelParam as (typeof validLevels)[number])
+          ? (levelParam as (typeof validLevels)[number])
+          : undefined
       const eventParam = url.searchParams.get('event')
       // Cast to EventType - invalid values will just return no results
-      const event = eventParam as import('@/lib/observability').EventType | undefined
+      const event = eventParam as
+        | import('@/lib/observability').EventType
+        | undefined
       const requestId = url.searchParams.get('requestId') || undefined
 
       response.logs = observability.getLogs({

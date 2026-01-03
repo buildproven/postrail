@@ -62,19 +62,39 @@ async function getLinkedInCredentials(
 
   // OAuth format: accessToken is in metadata
   if (metadata.accessToken) {
-    return {
-      accessToken: decrypt(metadata.accessToken),
-      organizations: metadata.organizations,
-      organizationId: metadata.organizationId,
+    try {
+      return {
+        accessToken: decrypt(metadata.accessToken),
+        organizations: metadata.organizations,
+        organizationId: metadata.organizationId,
+      }
+    } catch (decryptError) {
+      logger.error(
+        { error: decryptError, userId },
+        'Failed to decrypt LinkedIn access token'
+      )
+      throw new Error(
+        'Unable to access your LinkedIn credentials. Please reconnect your LinkedIn account in Settings → Connected Accounts'
+      )
     }
   }
 
   // Fallback: token might be in oauth_token field
   if (connection.oauth_token) {
-    return {
-      accessToken: decrypt(connection.oauth_token),
-      organizations: metadata.organizations,
-      organizationId: metadata.organizationId,
+    try {
+      return {
+        accessToken: decrypt(connection.oauth_token),
+        organizations: metadata.organizations,
+        organizationId: metadata.organizationId,
+      }
+    } catch (decryptError) {
+      logger.error(
+        { error: decryptError, userId },
+        'Failed to decrypt LinkedIn oauth_token'
+      )
+      throw new Error(
+        'Unable to access your LinkedIn credentials. Please reconnect your LinkedIn account in Settings → Connected Accounts'
+      )
     }
   }
 
