@@ -370,7 +370,6 @@ export async function POST(request: NextRequest) {
     const expectedPosts = PLATFORMS.flatMap(platform =>
       POST_TYPES.map(postType => ({ platform, postType }))
     )
-    // eslint-disable-next-line security/detect-object-injection -- False positive: index is array index from filter, not user input
     const failures = expectedPosts.filter(
       (expected, index) => results[index] === null
     )
