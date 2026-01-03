@@ -1,4 +1,21 @@
 export default function Home() {
+  /**
+   * SECURITY WARNING - JSON-LD XSS Risk:
+   * This structured data is rendered using dangerouslySetInnerHTML to comply with
+   * search engine requirements. ONLY hardcoded static data is safe to use here.
+   *
+   * DO NOT INCLUDE:
+   * - User-generated content
+   * - Data from URL parameters or query strings
+   * - Database values that could contain user input
+   * - Any external or dynamic data sources
+   *
+   * Any violation of this rule creates a critical XSS vulnerability where attackers
+   * could inject malicious scripts that execute in victim browsers.
+   *
+   * Valid uses: Static application metadata (as shown below)
+   * Invalid uses: User names, descriptions, reviews, or any dynamic content
+   */
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -35,7 +52,10 @@ export default function Home() {
         Skip to main content
       </a>
       {/* Hero Section */}
-      <main id="main-content" className="flex-1 flex flex-col items-center justify-center px-6 py-16 sm:py-24">
+      <main
+        id="main-content"
+        className="flex-1 flex flex-col items-center justify-center px-6 py-16 sm:py-24"
+      >
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-6">
             Turn Your Newsletter Into
@@ -43,7 +63,7 @@ export default function Home() {
               8 Social Posts in Seconds
             </span>
           </h1>
-          <p className="text-xl sm:text-2xl text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl sm:text-2xl text-gray-700 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
             AI generates platform-perfect posts for Twitter, LinkedIn, Facebook,
             and Threads. Connect once, post everywhere.
           </p>
@@ -63,7 +83,7 @@ export default function Home() {
             </a>
           </div>
 
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-700 dark:text-gray-400">
             14-day free trial. No credit card required. 3 generations/day, 10
             total.
           </p>
@@ -80,7 +100,7 @@ export default function Home() {
                 </span>
               </div>
               <h3 className="text-xl font-semibold mb-2">Paste or Import</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-700 dark:text-gray-400">
                 Drop in your newsletter content or import directly from
                 Substack, Beehiiv, or any URL.
               </p>
@@ -92,7 +112,7 @@ export default function Home() {
                 </span>
               </div>
               <h3 className="text-xl font-semibold mb-2">AI Generates Posts</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-700 dark:text-gray-400">
                 Claude AI creates 8 optimized posts: pre-launch teasers and
                 post-publish highlights for each platform.
               </p>
@@ -104,7 +124,7 @@ export default function Home() {
                 </span>
               </div>
               <h3 className="text-xl font-semibold mb-2">Schedule & Publish</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-700 dark:text-gray-400">
                 Review, edit if needed, then schedule or publish instantly to
                 all connected platforms.
               </p>
@@ -120,19 +140,27 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div className="p-4 border rounded-lg dark:border-gray-700">
               <p className="font-semibold">Twitter/X</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">280 chars</p>
+              <p className="text-sm text-gray-700 dark:text-gray-400">
+                280 chars
+              </p>
             </div>
             <div className="p-4 border rounded-lg dark:border-gray-700">
               <p className="font-semibold">LinkedIn</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">3,000 chars</p>
+              <p className="text-sm text-gray-700 dark:text-gray-400">
+                3,000 chars
+              </p>
             </div>
             <div className="p-4 border rounded-lg dark:border-gray-700">
               <p className="font-semibold">Facebook</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">63,206 chars</p>
+              <p className="text-sm text-gray-700 dark:text-gray-400">
+                63,206 chars
+              </p>
             </div>
             <div className="p-4 border rounded-lg dark:border-gray-700">
               <p className="font-semibold">Threads</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">500 chars</p>
+              <p className="text-sm text-gray-700 dark:text-gray-400">
+                500 chars
+              </p>
             </div>
           </div>
         </div>
@@ -142,7 +170,7 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-center mb-4">
             Simple Pricing
           </h2>
-          <p className="text-center text-gray-600 dark:text-gray-400 mb-12">
+          <p className="text-center text-gray-700 dark:text-gray-400 mb-12">
             Start free, upgrade when you need more.
           </p>
           <div className="grid md:grid-cols-3 gap-8">
@@ -151,11 +179,11 @@ export default function Home() {
               <h3 className="text-xl font-bold mb-2">Free Trial</h3>
               <p className="text-3xl font-bold mb-4">
                 $0
-                <span className="text-base font-normal text-gray-600 dark:text-gray-400">
+                <span className="text-base font-normal text-gray-700 dark:text-gray-400">
                   /14 days
                 </span>
               </p>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
+              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-400 mb-6">
                 <li>3 generations per day</li>
                 <li>10 generations total</li>
                 <li>All 4 platforms</li>
@@ -177,9 +205,11 @@ export default function Home() {
               <h3 className="text-xl font-bold mb-2">Standard</h3>
               <p className="text-3xl font-bold mb-4">
                 $29
-                <span className="text-base font-normal text-gray-600 dark:text-gray-400">/mo</span>
+                <span className="text-base font-normal text-gray-700 dark:text-gray-400">
+                  /mo
+                </span>
               </p>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
+              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-400 mb-6">
                 <li>50 generations per day</li>
                 <li>Unlimited total</li>
                 <li>All 4 platforms</li>
@@ -199,9 +229,11 @@ export default function Home() {
               <h3 className="text-xl font-bold mb-2">Growth</h3>
               <p className="text-3xl font-bold mb-4">
                 $59
-                <span className="text-base font-normal text-gray-600 dark:text-gray-400">/mo</span>
+                <span className="text-base font-normal text-gray-700 dark:text-gray-400">
+                  /mo
+                </span>
               </p>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
+              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-400 mb-6">
                 <li>200 generations per day</li>
                 <li>Unlimited total</li>
                 <li>All platforms + API access</li>
@@ -221,7 +253,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="py-8 px-6 border-t dark:border-gray-800">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-700 dark:text-gray-400">
           <p>© 2025 Vibe Build Lab LLC. All rights reserved.</p>
           <div className="flex gap-6">
             <a

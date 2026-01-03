@@ -58,7 +58,13 @@ export function NewsletterEditor({
 
   return (
     <div className="space-y-2">
-      <EditorContent editor={editor} />
+      <label id="newsletter-editor-label" className="sr-only">
+        Newsletter content editor
+      </label>
+      <EditorContent
+        editor={editor}
+        aria-labelledby="newsletter-editor-label"
+      />
       <p className="text-xs text-muted-foreground">
         {editor.getText().split(/\s+/).filter(Boolean).length} words
       </p>

@@ -157,8 +157,7 @@ export function TwitterSetupGuide({ onSuccess }: TwitterSetupGuideProps) {
                   <p className="font-medium">Create a New App</p>
                   <p className="text-gray-600">
                     Click &quot;Create Project&quot; → Name it (e.g.,
-                    &quot;Postrail Bot&quot;) → Create an app within the
-                    project
+                    &quot;Postrail Bot&quot;) → Create an app within the project
                   </p>
                 </div>
               </div>
@@ -268,12 +267,15 @@ export function TwitterSetupGuide({ onSuccess }: TwitterSetupGuideProps) {
                     apiSecret: !showSecrets.apiSecret,
                   })
                 }
+                aria-label={
+                  showSecrets.apiSecret ? 'Hide API Secret' : 'Show API Secret'
+                }
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
                 {showSecrets.apiSecret ? (
-                  <EyeOff className="h-4 w-4" />
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
                 ) : (
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-4 w-4" aria-hidden="true" />
                 )}
               </button>
             </div>
@@ -318,12 +320,17 @@ export function TwitterSetupGuide({ onSuccess }: TwitterSetupGuideProps) {
                     accessTokenSecret: !showSecrets.accessTokenSecret,
                   })
                 }
+                aria-label={
+                  showSecrets.accessTokenSecret
+                    ? 'Hide Access Token Secret'
+                    : 'Show Access Token Secret'
+                }
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
                 {showSecrets.accessTokenSecret ? (
-                  <EyeOff className="h-4 w-4" />
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
                 ) : (
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-4 w-4" aria-hidden="true" />
                 )}
               </button>
             </div>

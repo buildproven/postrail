@@ -317,7 +317,7 @@ export default function NewNewsletterPage() {
       </Tabs>
 
       {error && (
-        <Card className="border-destructive">
+        <Card className="border-destructive" role="alert" aria-live="polite">
           <CardContent className="pt-6">
             <p className="text-sm text-destructive">{error}</p>
           </CardContent>

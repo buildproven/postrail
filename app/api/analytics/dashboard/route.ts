@@ -115,7 +115,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     // M1 fix: Parallelize independent database queries for performance
     const [
-      { data: userProfile },
+      { data: userProfile, error: profileError },
       { data: limits },
       { data: posts, error: postsError },
     ] = await Promise.all([
@@ -128,6 +128,34 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         .gte('created_at', fromDate.toISOString())
         .lte('created_at', toDate.toISOString()),
     ])
+
+    // Check for user profile error (orphaned user)
+    if (profileError) {
+      logger.error(
+        { error: profileError, userId: user.id },
+        'User profile not found - orphaned user account'
+      )
+      return NextResponse.json(
+        {
+          error: 'Account setup incomplete',
+          details:
+            'Your user profile was not found. Please contact support or try signing out and back in.',
+        },
+        { status: 404 }
+      )
+    }
+
+    if (!userProfile) {
+      logger.error({ userId: user.id }, 'User profile is null after query')
+      return NextResponse.json(
+        {
+          error: 'Account setup incomplete',
+          details:
+            'Your user profile could not be loaded. Please contact support.',
+        },
+        { status: 404 }
+      )
+    }
 
     if (postsError) {
       logger.error({ error: postsError }, 'Analytics query error')
