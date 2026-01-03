@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { TwitterApi } from 'twitter-api-v2'
 import { createClient } from '@/lib/supabase/server'
 import { encrypt, hash } from '@/lib/crypto'
+import { logger } from '@/lib/logger'
 
 /**
  * Twitter BYOK (Bring Your Own Keys) Connection Endpoint
@@ -39,12 +40,15 @@ export async function POST(request: NextRequest) {
     // CSRF Protection: Validate Origin header
     const origin = request.headers.get('origin')
     const host = request.headers.get('host')
-    
+
     // Allow requests with no origin (server-to-server) or matching origin
     // In production, strictly check that origin matches the host
     if (origin && host && !origin.includes(host)) {
-       console.error(`CSRF blocked: Origin ${origin} does not match Host ${host}`)
-       return NextResponse.json({ error: 'Forbidden - Invalid Origin' }, { status: 403 })
+      logger.error(`CSRF blocked: Origin ${origin} does not match Host ${host}`)
+      return NextResponse.json(
+        { error: 'Forbidden - Invalid Origin' },
+        { status: 403 }
+      )
     }
 
     const body = await request.json()
@@ -118,7 +122,10 @@ export async function POST(request: NextRequest) {
         )
 
       if (dbError) {
-        console.error('Database error saving Twitter connection:', dbError)
+        logger.error(
+          { error: dbError },
+          'Database error saving Twitter connection:'
+        )
         return NextResponse.json(
           { error: 'Failed to save Twitter connection' },
           { status: 500 }
@@ -133,7 +140,7 @@ export async function POST(request: NextRequest) {
         userId: twitterUser.id,
       })
     } catch (twitterError: unknown) {
-      console.error('Twitter API validation error:', twitterError)
+      logger.error({ error: twitterError }, 'Twitter API validation error:')
 
       // Check for specific error types
       if (twitterError instanceof Error) {
@@ -188,7 +195,7 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
-    console.error('Twitter connection error:', error)
+    logger.error({ error }, 'Twitter connection error:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -232,7 +239,7 @@ export async function GET() {
       isActive: connection.is_active,
     })
   } catch (error) {
-    console.error('Error fetching Twitter connection status:', error)
+    logger.error({ error }, 'Error fetching Twitter connection status:')
     return NextResponse.json(
       { error: 'Failed to fetch connection status' },
       { status: 500 }
@@ -262,7 +269,7 @@ export async function DELETE() {
       .eq('platform', 'twitter')
 
     if (dbError) {
-      console.error('Error disconnecting Twitter:', dbError)
+      logger.error({ error: dbError }, 'Error disconnecting Twitter:')
       return NextResponse.json(
         { error: 'Failed to disconnect Twitter' },
         { status: 500 }
@@ -274,7 +281,7 @@ export async function DELETE() {
       message: 'Twitter account disconnected',
     })
   } catch (error) {
-    console.error('Error disconnecting Twitter:', error)
+    logger.error({ error }, 'Error disconnecting Twitter:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

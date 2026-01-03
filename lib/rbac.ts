@@ -30,11 +30,23 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
 import { logger } from '@/lib/logger'
+import { z } from 'zod'
 
 /**
  * User role types
  */
 export type UserRole = 'admin' | 'user'
+
+// H12 FIX: Zod schemas for validating database casts
+const userRoleSchema = z.enum(['admin', 'user'])
+const userRoleRecordSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  role: userRoleSchema,
+  assigned_at: z.string(),
+  assigned_by: z.string().nullable(),
+  is_active: z.boolean(),
+})
 
 /**
  * Role check result
@@ -139,7 +151,10 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
       return null
     }
 
-    return (data?.role as UserRole) || null
+    // H12 FIX: Validate database value before using it
+    if (!data?.role) return null
+    const validated = userRoleSchema.safeParse(data.role)
+    return validated.success ? validated.data : null
   } catch (error) {
     logger.error({ error: error }, 'RBAC: Unexpected error in getUserRole')
     return null
@@ -410,7 +425,10 @@ export async function listUsersWithRoles(
       return []
     }
 
-    return (data as UserRoleRecord[]) || []
+    // H12 FIX: Validate database array before using it
+    if (!data || !Array.isArray(data)) return []
+    const validated = z.array(userRoleRecordSchema).safeParse(data)
+    return validated.success ? validated.data : []
   } catch (error) {
     logger.error(
       { error: error },

@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/logger'
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -59,7 +60,7 @@ export function TimezoneSettings() {
           setTimezone(browserTz)
         }
       } catch (error) {
-        console.error('Failed to fetch timezone:', error)
+        logger.error({ error }, 'Failed to fetch timezone:')
         setTimezone(browserTz)
       } finally {
         setLoading(false)

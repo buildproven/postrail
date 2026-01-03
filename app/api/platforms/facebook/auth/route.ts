@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createOAuthState } from '@/lib/cookie-signer'
+import { logger } from '@/lib/logger'
 
 /**
  * Facebook OAuth 2.0 Authorization Endpoint
@@ -92,7 +93,7 @@ export async function GET() {
 
     return response
   } catch (error) {
-    console.error('Facebook OAuth initiation error:', error)
+    logger.error({ error }, 'Facebook OAuth initiation error:')
     return NextResponse.json(
       { error: 'Failed to initiate Facebook OAuth' },
       { status: 500 }

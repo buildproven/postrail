@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { COMMON_TIMEZONES } from '@/lib/scheduling'
+import { logger } from '@/lib/logger'
 
 const timezoneSchema = z.object({
   timezone: z.string().min(1, 'Timezone is required'),
@@ -30,7 +31,7 @@ export async function GET() {
       .single()
 
     if (error) {
-      console.error('Failed to fetch timezone:', error)
+      logger.error({ error }, 'Failed to fetch timezone:')
       return NextResponse.json(
         { error: 'Failed to fetch timezone' },
         { status: 500 }
@@ -42,7 +43,7 @@ export async function GET() {
       availableTimezones: COMMON_TIMEZONES,
     })
   } catch (error) {
-    console.error('Get timezone error:', error)
+    logger.error({ error }, 'Get timezone error:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -91,7 +92,7 @@ export async function PUT(request: NextRequest) {
       .eq('id', user.id)
 
     if (error) {
-      console.error('Failed to update timezone:', error)
+      logger.error({ error }, 'Failed to update timezone:')
       return NextResponse.json(
         { error: 'Failed to update timezone' },
         { status: 500 }
@@ -103,7 +104,7 @@ export async function PUT(request: NextRequest) {
       timezone,
     })
   } catch (error) {
-    console.error('Update timezone error:', error)
+    logger.error({ error }, 'Update timezone error:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
       message: 'Timezone already set by user',
     })
   } catch (error) {
-    console.error('Detect timezone error:', error)
+    logger.error({ error }, 'Detect timezone error:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

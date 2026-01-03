@@ -28,16 +28,9 @@ export async function createClient() {
               msg: 'Failed to set authentication cookies',
             })
 
-            // Only suppress if middleware is handling session refresh
-            // Otherwise, cookie failures should be investigated
-            if (!process.env.SUPABASE_AUTH_MIDDLEWARE_ENABLED) {
-              // Re-throw in development or if middleware not configured
-              if (process.env.NODE_ENV === 'development') {
-                logger.warn(
-                  'Cookie setting failed - check middleware configuration'
-                )
-              }
-            }
+            // Re-throw to prevent silent authentication failures
+            // Cookie setting is critical for auth to work
+            throw error
           }
         },
       },

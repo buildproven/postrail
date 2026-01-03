@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendTrialExpiryWarning, sendTrialExpired } from '@/lib/email'
+import { logger } from '@/lib/logger'
 
 /**
  * Cron job: Check for trial expirations and send notification emails
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
       .is('trial_warning_sent_at', null)
 
     if (warningError) {
-      console.error('Error fetching warning users:', warningError)
+      logger.error({ error: warningError }, 'Error fetching warning users:')
     } else if (warningUsers) {
       for (const user of warningUsers) {
         if (!user.email) continue
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
       .is('trial_expired_sent_at', null)
 
     if (expiredError) {
-      console.error('Error fetching expired users:', expiredError)
+      logger.error({ error: expiredError }, 'Error fetching expired users:')
     } else if (expiredUsers) {
       for (const user of expiredUsers) {
         if (!user.email) continue
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     // Log error details server-side only (H5: don't leak to client)
-    console.error('Cron job error:', error)
+    logger.error({ error }, 'Cron job error:')
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

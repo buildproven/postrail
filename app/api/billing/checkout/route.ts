@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { billingService, SUBSCRIPTION_TIERS } from '@/lib/billing'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: result.url })
   } catch (error) {
-    console.error('Checkout error:', error)
+    logger.error({ error }, 'Checkout error')
     return NextResponse.json(
       { error: 'Failed to start checkout session' },
       { status: 500 }

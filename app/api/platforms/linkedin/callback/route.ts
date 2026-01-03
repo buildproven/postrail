@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { encrypt } from '@/lib/crypto'
 import { verifyOAuthState } from '@/lib/cookie-signer'
 import { logger } from '@/lib/logger'
+import { z } from 'zod'
 
 /**
  * LinkedIn OAuth 2.0 Callback Endpoint
@@ -18,36 +19,37 @@ import { logger } from '@/lib/logger'
 
 const LINKEDIN_TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken'
 
-interface LinkedInTokenResponse {
-  access_token: string
-  expires_in: number
-  refresh_token?: string
-  refresh_token_expires_in?: number
-  scope: string
-}
+const LinkedInTokenResponseSchema = z.object({
+  access_token: z.string(),
+  expires_in: z.number(),
+  refresh_token: z.string().optional(),
+  refresh_token_expires_in: z.number().optional(),
+  scope: z.string(),
+})
 
-interface LinkedInUserInfo {
-  sub: string
-  name: string
-  email?: string
-  picture?: string
-}
+const LinkedInUserInfoSchema = z.object({
+  sub: z.string(),
+  name: z.string(),
+  email: z.string().optional(),
+  picture: z.string().optional(),
+})
+
+const OrganizationElementSchema = z.object({
+  organization: z.string(),
+  role: z.string(),
+  state: z.string(),
+})
+
+const OrganizationsResponseSchema = z.object({
+  elements: z.array(OrganizationElementSchema),
+})
 
 interface LinkedInOrganization {
   id: number
   localizedName: string
   vanityName?: string
 }
-
-interface OrganizationElement {
-  organization: string
-  role: string
-  state: string
-}
-
-interface OrganizationsResponse {
-  elements: OrganizationElement[]
-}
+type OrganizationElement = z.infer<typeof OrganizationElementSchema>
 
 export async function GET(request: NextRequest) {
   try {
@@ -132,7 +134,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const tokenData: LinkedInTokenResponse = await tokenResponse.json()
+    const tokenJson = await tokenResponse.json()
+    const tokenValidation = LinkedInTokenResponseSchema.safeParse(tokenJson)
+
+    if (!tokenValidation.success) {
+      logger.error(
+        { validationError: tokenValidation.error.message },
+        'Invalid LinkedIn token response'
+      )
+      return NextResponse.redirect(
+        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Invalid response from LinkedIn')}`
+      )
+    }
+
+    const tokenData = tokenValidation.data
 
     // Get user info
     const userInfoResponse = await fetch(
@@ -158,7 +173,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const userInfo: LinkedInUserInfo = await userInfoResponse.json()
+    const userInfoJson = await userInfoResponse.json()
+    const userInfoValidation = LinkedInUserInfoSchema.safeParse(userInfoJson)
+
+    if (!userInfoValidation.success) {
+      logger.error(
+        { validationError: userInfoValidation.error.message },
+        'Invalid LinkedIn user info response'
+      )
+      return NextResponse.redirect(
+        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Invalid user data from LinkedIn')}`
+      )
+    }
+
+    const userInfo = userInfoValidation.data
 
     // Get organizations (company pages) the user can manage
     const orgsResponse = await fetch(
@@ -173,17 +201,27 @@ export async function GET(request: NextRequest) {
 
     let organizations: LinkedInOrganization[] = []
     if (orgsResponse.ok) {
-      const orgsData: OrganizationsResponse = await orgsResponse.json()
-      // Extract organization details from the response
-      organizations =
-        orgsData.elements?.map((elem: OrganizationElement) => {
-          const orgUrn = elem.organization
-          const orgId = orgUrn.replace('urn:li:organization:', '')
-          return {
-            id: parseInt(orgId),
-            localizedName: orgId, // Will be updated if we can fetch org details
-          }
-        }) || []
+      const orgsJson = await orgsResponse.json()
+      const orgsValidation = OrganizationsResponseSchema.safeParse(orgsJson)
+
+      if (!orgsValidation.success) {
+        logger.warn(
+          { validationError: orgsValidation.error.message },
+          'Invalid LinkedIn organizations response - skipping orgs'
+        )
+      } else {
+        const orgsData = orgsValidation.data
+        // Extract organization details from the response
+        organizations =
+          orgsData.elements?.map((elem: OrganizationElement) => {
+            const orgUrn = elem.organization
+            const orgId = orgUrn.replace('urn:li:organization:', '')
+            return {
+              id: parseInt(orgId),
+              localizedName: orgId, // Will be updated if we can fetch org details
+            }
+          }) || []
+      }
     }
 
     // Calculate token expiry

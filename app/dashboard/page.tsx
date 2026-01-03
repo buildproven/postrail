@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
+import { logger } from '@/lib/logger'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -18,14 +19,15 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser()
 
   // M5 fix: Parallelize independent dashboard queries for better performance
+  // M16 FIX: Add error logging for DB query failures
   const now = new Date()
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
   const [
-    { count: newsletterCount },
-    { data: connections },
-    { data: userProfile },
-    { data: recentPosts },
+    { count: newsletterCount, error: newsletterError },
+    { data: connections, error: connectionsError },
+    { data: userProfile, error: profileError },
+    { data: recentPosts, error: postsError },
   ] = await Promise.all([
     supabase
       .from('newsletters')
@@ -48,6 +50,32 @@ export default async function DashboardPage() {
       .eq('newsletters.user_id', user?.id)
       .gte('created_at', thirtyDaysAgo.toISOString()),
   ])
+
+  // Log any query errors
+  if (newsletterError) {
+    logger.error(
+      { error: newsletterError, userId: user?.id },
+      'Failed to fetch newsletter count for dashboard'
+    )
+  }
+  if (connectionsError) {
+    logger.error(
+      { error: connectionsError, userId: user?.id },
+      'Failed to fetch platform connections for dashboard'
+    )
+  }
+  if (profileError) {
+    logger.error(
+      { error: profileError, userId: user?.id },
+      'Failed to fetch user profile for dashboard'
+    )
+  }
+  if (postsError) {
+    logger.error(
+      { error: postsError, userId: user?.id },
+      'Failed to fetch recent posts for dashboard'
+    )
+  }
 
   const connectedPlatforms = new Map(
     connections?.map(c => [c.platform, c.is_active]) || []

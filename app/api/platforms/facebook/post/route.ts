@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
+import { logger } from '@/lib/logger'
 
 /**
  * Facebook Post Publishing Endpoint
@@ -287,7 +288,10 @@ export async function POST(request: NextRequest) {
 
       if (!response.ok) {
         const errorData = await response.json()
-        console.error('Facebook post error:', response.status, errorData)
+        logger.error(
+          { status: response.status, errorData },
+          'Facebook post error'
+        )
 
         // Handle specific Facebook errors
         if (errorData.error?.code === 190) {
@@ -329,7 +333,7 @@ export async function POST(request: NextRequest) {
         pageName: credentials.pageName,
       })
     } catch (facebookError: unknown) {
-      console.error('Facebook API error:', facebookError)
+      logger.error({ error: facebookError }, 'Facebook API error:')
 
       let errorMessage = 'Failed to post to Facebook'
       let errorDetails = 'Unknown error'
@@ -379,7 +383,7 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
-    console.error('Facebook post error:', error)
+    logger.error({ error }, 'Facebook post error:')
 
     if (error instanceof Error) {
       if (error.message.includes('not connected')) {

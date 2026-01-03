@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { encrypt, hash } from '@/lib/crypto'
+import { logger } from '@/lib/logger'
 
 /**
  * Facebook BYOK Connection Endpoint
@@ -42,9 +43,7 @@ export async function POST(request: NextRequest) {
     const host = request.headers.get('host')
 
     if (origin && host && !origin.includes(host)) {
-      console.error(
-        `CSRF blocked: Origin ${origin} does not match Host ${host}`
-      )
+      logger.error(`CSRF blocked: Origin ${origin} does not match Host ${host}`)
       return NextResponse.json(
         { error: 'Forbidden - Invalid Origin' },
         { status: 403 }
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest) {
 
       if (!pageResponse.ok) {
         const errorData = await pageResponse.json()
-        console.error('Facebook page error:', errorData)
+        logger.error({ error: errorData }, 'Facebook page error:')
 
         if (errorData.error?.code === 190) {
           return NextResponse.json(
@@ -98,7 +97,7 @@ export async function POST(request: NextRequest) {
       )
 
       if (!permissionsResponse.ok) {
-        console.warn('Could not verify page permissions, proceeding anyway')
+        logger.warn('Could not verify page permissions, proceeding anyway')
       }
 
       // Encrypt credentials for secure storage
@@ -132,7 +131,10 @@ export async function POST(request: NextRequest) {
         )
 
       if (dbError) {
-        console.error('Database error saving Facebook connection:', dbError)
+        logger.error(
+          { error: dbError },
+          'Database error saving Facebook connection:'
+        )
         return NextResponse.json(
           { error: 'Failed to save Facebook connection' },
           { status: 500 }
@@ -146,7 +148,7 @@ export async function POST(request: NextRequest) {
         pageId: pageInfo.id,
       })
     } catch (facebookError: unknown) {
-      console.error('Facebook API validation error:', facebookError)
+      logger.error({ error: facebookError }, 'Facebook API validation error:')
 
       if (facebookError instanceof Error) {
         const errorMessage = facebookError.message.toLowerCase()
@@ -187,7 +189,7 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
-    console.error('Facebook connection error:', error)
+    logger.error({ error }, 'Facebook connection error:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -235,7 +237,7 @@ export async function GET() {
       isActive: connection.is_active,
     })
   } catch (error) {
-    console.error('Error fetching Facebook connection status:', error)
+    logger.error({ error }, 'Error fetching Facebook connection status:')
     return NextResponse.json(
       { error: 'Failed to fetch connection status' },
       { status: 500 }
@@ -265,7 +267,7 @@ export async function DELETE() {
       .eq('platform', 'facebook')
 
     if (dbError) {
-      console.error('Error disconnecting Facebook:', dbError)
+      logger.error({ error: dbError }, 'Error disconnecting Facebook:')
       return NextResponse.json(
         { error: 'Failed to disconnect Facebook' },
         { status: 500 }
@@ -277,7 +279,7 @@ export async function DELETE() {
       message: 'Facebook page disconnected',
     })
   } catch (error) {
-    console.error('Error disconnecting Facebook:', error)
+    logger.error({ error }, 'Error disconnecting Facebook:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

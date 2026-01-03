@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 /**
  * AI Tone Settings Schema
@@ -53,7 +54,7 @@ export async function GET() {
       .single()
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching AI tone:', error)
+      logger.error({ error }, 'Error fetching AI tone:')
       return NextResponse.json(
         { error: 'Failed to fetch settings' },
         { status: 500 }
@@ -135,7 +136,7 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('AI tone GET error:', error)
+    logger.error({ error }, 'AI tone GET error:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -175,7 +176,7 @@ export async function PUT(request: NextRequest) {
       .eq('user_id', user.id)
 
     if (error) {
-      console.error('Error updating AI tone:', error)
+      logger.error({ error }, 'Error updating AI tone:')
       return NextResponse.json(
         { error: 'Failed to update settings' },
         { status: 500 }
@@ -187,7 +188,7 @@ export async function PUT(request: NextRequest) {
       tone: result.data,
     })
   } catch (error) {
-    console.error('AI tone PUT error:', error)
+    logger.error({ error }, 'AI tone PUT error:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

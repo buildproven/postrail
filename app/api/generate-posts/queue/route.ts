@@ -5,6 +5,7 @@ import { publishGenerationJob } from '@/lib/platforms/qstash'
 import { checkFeatureAccess, checkUsageLimits } from '@/lib/feature-gate'
 import { checkTrialAccess } from '@/lib/trial-guard'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 // Zod schema for request validation
 const queueRequestSchema = z.object({
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ jobId: job.id, status: 'queued' })
   } catch (error) {
-    console.error('Queue enqueue error:', error)
+    logger.error({ error }, 'Queue enqueue error')
     return NextResponse.json(
       { error: 'Failed to enqueue generation' },
       { status: 500 }

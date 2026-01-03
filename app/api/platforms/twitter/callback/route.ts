@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { encrypt } from '@/lib/crypto'
 import { verifyValue } from '@/lib/cookie-signer'
 import { logger } from '@/lib/logger'
+import { z } from 'zod'
 
 /**
  * Twitter/X OAuth 2.0 Callback Endpoint
@@ -18,21 +19,21 @@ import { logger } from '@/lib/logger'
 
 const TWITTER_TOKEN_URL = 'https://api.twitter.com/2/oauth2/token'
 
-interface TwitterTokenResponse {
-  access_token: string
-  refresh_token?: string
-  expires_in: number
-  token_type: string
-  scope: string
-}
+const TwitterTokenResponseSchema = z.object({
+  access_token: z.string(),
+  refresh_token: z.string().optional(),
+  expires_in: z.number(),
+  token_type: z.string(),
+  scope: z.string(),
+})
 
-interface TwitterUserResponse {
-  data: {
-    id: string
-    name: string
-    username: string
-  }
-}
+const TwitterUserResponseSchema = z.object({
+  data: z.object({
+    id: z.string(),
+    name: z.string(),
+    username: z.string(),
+  }),
+})
 
 export async function GET(request: NextRequest) {
   try {
@@ -136,7 +137,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const tokenData: TwitterTokenResponse = await tokenResponse.json()
+    const tokenJson = await tokenResponse.json()
+    const tokenValidation = TwitterTokenResponseSchema.safeParse(tokenJson)
+
+    if (!tokenValidation.success) {
+      logger.error(
+        { validationError: tokenValidation.error.message },
+        'Invalid Twitter token response'
+      )
+      return NextResponse.redirect(
+        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Invalid response from Twitter')}`
+      )
+    }
+
+    const tokenData = tokenValidation.data
 
     // Get user info
     const userResponse = await fetch('https://api.twitter.com/2/users/me', {
@@ -159,7 +173,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const userData: TwitterUserResponse = await userResponse.json()
+    const userJson = await userResponse.json()
+    const userValidation = TwitterUserResponseSchema.safeParse(userJson)
+
+    if (!userValidation.success) {
+      logger.error(
+        { validationError: userValidation.error.message },
+        'Invalid Twitter user response'
+      )
+      return NextResponse.redirect(
+        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Invalid user data from Twitter')}`
+      )
+    }
+
+    const userData = userValidation.data
 
     // Calculate token expiry
     const expiresAt = new Date(

@@ -11,6 +11,7 @@
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import { logger } from '@/lib/logger'
+import { z } from 'zod'
 
 // Subscription tiers
 export const SUBSCRIPTION_TIERS = {
@@ -59,6 +60,16 @@ export const SUBSCRIPTION_TIERS = {
 } as const
 
 export type SubscriptionTier = keyof typeof SUBSCRIPTION_TIERS
+
+// H12 FIX: Zod schema for validating database casts
+const subscriptionTierSchema = z.enum(['trial', 'standard', 'growth'])
+const subscriptionStatusSchema = z.enum([
+  'trial',
+  'active',
+  'cancelled',
+  'past_due',
+  'expired',
+])
 
 export interface SubscriptionStatus {
   tier: SubscriptionTier
@@ -266,9 +277,17 @@ class BillingService {
       }
     }
 
+    // H12 FIX: Validate database values before using them
+    const validatedTier = subscriptionTierSchema.safeParse(
+      profile.subscription_tier
+    )
+    const validatedStatus = subscriptionStatusSchema.safeParse(
+      profile.subscription_status
+    )
+
     return {
-      tier: (profile.subscription_tier as SubscriptionTier) || 'trial',
-      status: profile.subscription_status || 'trial',
+      tier: validatedTier.success ? validatedTier.data : 'trial',
+      status: validatedStatus.success ? validatedStatus.data : 'trial',
       stripeCustomerId: profile.stripe_customer_id,
       stripeSubscriptionId: profile.subscription_id,
       currentPeriodEnd: profile.subscription_current_period_end

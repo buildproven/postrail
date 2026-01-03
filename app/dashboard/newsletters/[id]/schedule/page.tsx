@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PostScheduler } from '@/components/post-scheduler'
+import { logger } from '@/lib/logger'
 
 export default async function SchedulePage({
   params,
@@ -20,7 +21,8 @@ export default async function SchedulePage({
   }
 
   // Fetch newsletter
-  const { data: newsletter } = await supabase
+  // M16 FIX: Add error logging for DB query failures
+  const { data: newsletter, error: newsletterError } = await supabase
     .from('newsletters')
     .select('*')
     .eq('id', id)
@@ -28,21 +30,41 @@ export default async function SchedulePage({
     .single()
 
   if (!newsletter) {
+    if (newsletterError) {
+      logger.error(
+        { error: newsletterError, newsletterId: id, userId: user.id },
+        'Failed to fetch newsletter for schedule page'
+      )
+    }
     redirect('/dashboard/newsletters')
   }
 
   // Fetch posts
-  const { data: posts } = await supabase
+  const { data: posts, error: postsError } = await supabase
     .from('social_posts')
     .select('*')
     .eq('newsletter_id', id)
     .order('platform')
 
+  if (postsError) {
+    logger.error(
+      { error: postsError, newsletterId: id, userId: user.id },
+      'Failed to fetch posts for schedule page'
+    )
+  }
+
   // Check platform connections
-  const { data: connections } = await supabase
+  const { data: connections, error: connectionsError } = await supabase
     .from('platform_connections')
     .select('platform, is_active')
     .eq('user_id', user.id)
+
+  if (connectionsError) {
+    logger.error(
+      { error: connectionsError, userId: user.id },
+      'Failed to fetch platform connections for schedule page'
+    )
+  }
 
   const connectionMap = [
     {

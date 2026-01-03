@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { billingService } from '@/lib/billing'
+import { logger } from '@/lib/logger'
 
 export async function POST() {
   try {
@@ -27,7 +28,7 @@ export async function POST() {
 
     return NextResponse.json({ url: result.url })
   } catch (error) {
-    console.error('Portal session error:', error)
+    logger.error({ error }, 'Portal session error')
     return NextResponse.json(
       { error: 'Failed to create portal session' },
       { status: 500 }

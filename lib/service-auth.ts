@@ -236,6 +236,10 @@ async function checkServiceRateLimitRedis(
   context: ServiceContext,
   now: number
 ): Promise<ServiceRateLimitResult> {
+  if (!serviceRedis) {
+    throw new Error('Redis client not initialized')
+  }
+
   const minuteKey = getRateLimitKey(
     context.serviceId,
     SERVICE_RATE_LIMIT_WINDOW_MINUTE,
@@ -256,7 +260,7 @@ async function checkServiceRateLimitRedis(
     Math.floor(now / SERVICE_RATE_LIMIT_WINDOW_HOUR + 1) *
     SERVICE_RATE_LIMIT_WINDOW_HOUR
 
-  const pipeline = serviceRedis!.pipeline()
+  const pipeline = serviceRedis.pipeline()
   pipeline.get(minuteKey)
   pipeline.get(hourKey)
   const results = (await pipeline.exec()) as [Error | null, string | null][]
@@ -286,7 +290,7 @@ async function checkServiceRateLimitRedis(
     }
   }
 
-  const updatePipeline = serviceRedis!.pipeline()
+  const updatePipeline = serviceRedis.pipeline()
   updatePipeline.incr(minuteKey)
   updatePipeline.expire(
     minuteKey,

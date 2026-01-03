@@ -3,9 +3,14 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { observability, withObservability } from '@/lib/observability'
 import { POST as generatePostsHandler } from '../route'
 import { verifyQStashSignature } from '@/lib/platforms/qstash'
+import { z } from 'zod'
 
 // QStash will POST here with a signed request containing jobId.
 // We reuse the existing generate-posts logic by crafting a Request-like object.
+
+const QStashRequestSchema = z.object({
+  jobId: z.string(),
+})
 
 export async function POST(request: NextRequest) {
   return withObservability.trace('ai_generation_worker', async requestId => {
@@ -27,13 +32,25 @@ export async function POST(request: NextRequest) {
 
       const supabase = createServiceClient()
 
-      const { jobId } = JSON.parse(rawBody)
-      if (!jobId) {
+      let parsedBody
+      try {
+        parsedBody = JSON.parse(rawBody)
+      } catch {
         return NextResponse.json(
-          { error: 'jobId is required' },
+          { error: 'Invalid JSON in request body' },
           { status: 400 }
         )
       }
+
+      const validation = QStashRequestSchema.safeParse(parsedBody)
+      if (!validation.success) {
+        return NextResponse.json(
+          { error: 'Invalid request body', details: validation.error.message },
+          { status: 400 }
+        )
+      }
+
+      const { jobId } = validation.data
 
       // Fetch job
       const { data: job, error: jobError } = await supabase

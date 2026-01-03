@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { logger } from '@/lib/logger'
 
 export default async function NewslettersPage() {
   const supabase = await createClient()
@@ -13,12 +14,21 @@ export default async function NewslettersPage() {
     redirect('/auth/login')
   }
 
-  // Fetch user's newsletters
-  const { data: newsletters } = await supabase
+  // Fetch user's newsletters (limit to 100 most recent)
+  // M16 FIX: Add error logging for DB query failures
+  const { data: newsletters, error: newslettersError } = await supabase
     .from('newsletters')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
+    .limit(100)
+
+  if (newslettersError) {
+    logger.error(
+      { error: newslettersError, userId: user.id },
+      'Failed to fetch newsletters'
+    )
+  }
 
   return (
     <div className="space-y-6">

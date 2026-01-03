@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 /**
  * Twitter Posting Status API
  *
@@ -124,7 +125,7 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Twitter status error:', error)
+    logger.error({ error }, 'Twitter status error:')
     return NextResponse.json(
       { error: 'Failed to get Twitter status' },
       { status: 500 }

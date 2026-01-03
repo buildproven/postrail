@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
+import { logger } from '@/lib/logger'
 
 /**
  * LinkedIn Post Publishing Endpoint
@@ -302,7 +303,10 @@ export async function POST(request: NextRequest) {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('LinkedIn post error:', response.status, errorText)
+        logger.error(
+          { status: response.status, errorText },
+          'LinkedIn post error'
+        )
         throw new Error(`LinkedIn API error: ${response.status} - ${errorText}`)
       }
 
@@ -332,7 +336,7 @@ export async function POST(request: NextRequest) {
         activityId: activityId,
       })
     } catch (linkedinError: unknown) {
-      console.error('LinkedIn API error:', linkedinError)
+      logger.error({ error: linkedinError }, 'LinkedIn API error:')
 
       let errorMessage = 'Failed to post to LinkedIn'
       let errorDetails = 'Unknown error'
@@ -378,7 +382,7 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
-    console.error('LinkedIn post error:', error)
+    logger.error({ error }, 'LinkedIn post error:')
 
     if (error instanceof Error) {
       if (error.message.includes('not connected')) {

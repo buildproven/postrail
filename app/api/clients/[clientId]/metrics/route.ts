@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { logger } from '@/lib/logger'
 import {
   authenticateService,
   hasPermission,
@@ -154,7 +155,7 @@ export async function GET(
       .lte('created_at', toDate.toISOString())
 
     if (postsError) {
-      console.error('Metrics query error:', postsError)
+      logger.error({ error: postsError }, 'Metrics query error:')
       return NextResponse.json(
         { error: 'Failed to fetch metrics' },
         { status: 500 }
@@ -287,7 +288,7 @@ export async function GET(
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Metrics endpoint error:', error)
+    logger.error({ error }, 'Metrics endpoint error:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

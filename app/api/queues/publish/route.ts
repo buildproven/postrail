@@ -4,6 +4,7 @@ import { verifyQStashSignature, schedulePost } from '@/lib/platforms/qstash'
 import { TwitterApi } from 'twitter-api-v2'
 import { decrypt } from '@/lib/crypto'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 // Exponential backoff delays in seconds: 1min, 5min, 30min
 const RETRY_DELAYS = [60, 300, 1800] as const
@@ -244,7 +245,7 @@ export async function POST(request: NextRequest) {
           )
         }
       } catch (err) {
-        console.error('QStash signature verification failed', err)
+        logger.error({ error: err }, 'QStash signature verification failed')
         return NextResponse.json(
           { error: 'Invalid signature' },
           { status: 401 }
@@ -259,7 +260,10 @@ export async function POST(request: NextRequest) {
       const validation = webhookPayloadSchema.safeParse(rawPayload)
 
       if (!validation.success) {
-        console.error('Invalid webhook payload:', validation.error.flatten())
+        logger.error(
+          { validationError: validation.error.flatten() },
+          'Invalid webhook payload'
+        )
         return NextResponse.json(
           {
             error: 'Invalid webhook payload',
@@ -271,7 +275,7 @@ export async function POST(request: NextRequest) {
 
       payload = validation.data
     } catch (parseError) {
-      console.error('Failed to parse webhook body:', parseError)
+      logger.error({ error: parseError }, 'Failed to parse webhook body:')
       return NextResponse.json(
         { error: 'Invalid JSON payload' },
         { status: 400 }
@@ -363,9 +367,14 @@ export async function POST(request: NextRequest) {
       const newRetryCount = retryCount + 1
       const canRetry = newRetryCount < maxRetries
 
-      console.error(
-        `Failed to publish ${post.platform} post (attempt ${newRetryCount}/${maxRetries}):`,
-        publishError
+      logger.error(
+        {
+          error: publishError,
+          platform: post.platform,
+          attempt: newRetryCount,
+          maxRetries,
+        },
+        `Failed to publish ${post.platform} post (attempt ${newRetryCount}/${maxRetries})`
       )
 
       if (canRetry) {
@@ -387,9 +396,14 @@ export async function POST(request: NextRequest) {
         // Schedule retry via QStash
         try {
           const retryResult = await schedulePost(post.id, retryTime)
-          console.log(
-            `Scheduled retry ${newRetryCount} for post ${post.id} in ${delaySeconds}s`,
-            retryResult.messageId
+          logger.info(
+            {
+              postId: post.id,
+              retryCount: newRetryCount,
+              delaySeconds,
+              messageId: retryResult.messageId,
+            },
+            `Scheduled retry ${newRetryCount} for post ${post.id} in ${delaySeconds}s`
           )
 
           // Store the QStash message ID for potential cancellation
@@ -398,7 +412,10 @@ export async function POST(request: NextRequest) {
             .update({ qstash_message_id: retryResult.messageId })
             .eq('id', post.id)
         } catch (qstashError) {
-          console.error('Failed to schedule retry via QStash:', qstashError)
+          logger.error(
+            { error: qstashError },
+            'Failed to schedule retry via QStash:'
+          )
         }
 
         return NextResponse.json({
@@ -428,7 +445,7 @@ export async function POST(request: NextRequest) {
       }
     }
   } catch (error) {
-    console.error('Queue processing error:', error)
+    logger.error({ error }, 'Queue processing error:')
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }

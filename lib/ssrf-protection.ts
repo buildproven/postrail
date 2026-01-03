@@ -13,6 +13,8 @@
  * Solution: Multi-layered protection with strict controls
  */
 
+import { logger } from '@/lib/logger'
+
 interface SSRFValidationResult {
   allowed: boolean
   error?: string
@@ -203,7 +205,7 @@ class SSRFProtection {
    * @example
    * const result = await checkRateLimit('user123', '203.0.113.42')
    * if (!result.allowed) {
-   *   console.log(`Rate limited: ${result.reason}, retry after ${result.retryAfter}s`)
+   *   logger.info(`Rate limited: ${result.reason}, retry after ${result.retryAfter}s`)
    * }
    */
   async checkRateLimit(
@@ -445,7 +447,7 @@ class SSRFProtection {
    * @example
    * const validation = await validateUrl('https://example.com/article')
    * if (!validation.allowed) {
-   *   console.error(`Blocked: ${validation.error}`)
+   *   logger.error(`Blocked: ${validation.error}`)
    * }
    *
    * @example
@@ -498,12 +500,26 @@ class SSRFProtection {
         // Try IPv4 first
         const ipv4Addresses = await dns.resolve4(hostname)
         resolvedIPs = ipv4Addresses
-      } catch {
+      } catch (ipv4Error) {
         // If IPv4 fails, try IPv6
         try {
           const ipv6Addresses = await dns.resolve6(hostname)
           resolvedIPs = ipv6Addresses
-        } catch {
+        } catch (ipv6Error) {
+          // Log DNS resolution failures for security monitoring
+          logger.warn({
+            type: 'warn',
+            msg: 'DNS resolution failed for URL validation',
+            hostname,
+            ipv4Error:
+              ipv4Error instanceof Error
+                ? ipv4Error.message
+                : String(ipv4Error),
+            ipv6Error:
+              ipv6Error instanceof Error
+                ? ipv6Error.message
+                : String(ipv6Error),
+          })
           return {
             allowed: false,
             error: 'DNS resolution failed',
@@ -615,8 +631,8 @@ class SSRFProtection {
     // IPv4 validation: Safe regex with bounded quantifiers ({3}, {1,4}) and anchored pattern
     // No catastrophic backtracking risk - alternation groups are non-overlapping
     // Verified safe: bounded quantifiers, anchored, non-overlapping alternation
-    // eslint-disable-next-line security/detect-unsafe-regex
     const ipv4Regex =
+      // eslint-disable-next-line security/detect-unsafe-regex
       /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
 
     // IPv6 validation: Safe regex with bounded quantifiers ({7}, {1,4}) and anchored pattern
@@ -678,8 +694,8 @@ class SSRFProtection {
    *
    * @example
    * const stats = getStats()
-   * console.log(`Active rate limits: ${stats.activeUserLimits} users, ${stats.activeIPLimits} IPs`)
-   * console.log(`Blocking ${stats.blockedDomains} domains on ports ${stats.allowedPorts.join(', ')}`)
+   * logger.info(`Active rate limits: ${stats.activeUserLimits} users, ${stats.activeIPLimits} IPs`)
+   * logger.info(`Blocking ${stats.blockedDomains} domains on ports ${stats.allowedPorts.join(', ')}`)
    */
   getStats() {
     return {

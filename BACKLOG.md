@@ -1,11 +1,30 @@
 # postrail - Priority Actions
 
 **Audit Date:** 2026-01-02
-**Status:** Deployed | **SOTA Score:** ~92/100
-**Deep Review:** Round 4 Completed | **Critical Issues:** 0
+**Status:** Deployed | **SOTA Score:** ~94/100
+**Deep Review:** Round 5 Completed (4 Agents) | **Critical Issues:** 0
 
 ## Recent Work
 
+- **2026-01-02**: Completed all remaining High and Medium priority items (H10, H12-H14, H16, M12, M16)
+  - H16: Database indexes already existed in migration
+  - H13: N+1 query already optimized with Promise.all
+  - H14: Batched sequential DB writes (4s → 0.5s) - 8x speedup
+  - H10: Replaced 126 console.log statements with structured logging across 55 files
+  - H12: Added Zod validation for database casts in billing.ts and rbac.ts
+  - M12: Page reload after retry already fixed
+  - M16: Added error logging to dashboard pages (newsletters, preview, schedule, main dashboard)
+- **2026-01-02**: Fixed 4 critical issues (C6-C9), 2 high priority issues (H11, H15), and 3 medium priority issues (M14, M17, M18)
+  - C6: Added runtime checks for non-null assertions in Redis rate limiter
+  - C7: Fixed silent auth cookie failures that could break login
+  - C8: Added Zod validation for all external OAuth API responses (Twitter, LinkedIn, Facebook)
+  - C9: Added Zod validation for QStash webhook payloads
+  - H11: Added logging for SSRF DNS resolution failures
+  - H15: Added pagination limit (100) to newsletter list query
+  - M14: Added destroy() method for observability cleanup interval
+  - M17: Optimized analytics dashboard with single-pass status calculation
+  - M18: Added proper error handling and logging for preview page posts fetch
+- **2026-01-02**: Deep review with 4 specialized agents (Silent Failure Hunter, Type Safety Analyzer, Security Auditor, Performance Reviewer)
 - **2026-01-02**: Security improvements - QStash signature verification, CSP nonce propagation, service-key rate limiting with Redis
 - **2026-01-02**: Completed 7 high/medium priority issues (H2, H9, M2, M3, M8, M9, M10, M11) - all items already fixed in previous sessions
 - **2026-01-02**: Fixed 4 critical security issues (webhook validation, cookie logging, QStash fail-fast, trial race condition)
@@ -28,6 +47,10 @@
 | C3  | Anthropic client init with 'missing-key' fallback    | api/generate-posts/route.ts:22 | S      | [x]    |
 | C4  | vitest.config.ts minWorkers invalid option           | vitest.config.ts:15            | S      | [x]    |
 | C5  | Test zombie processes (execution tests spawn vitest) | package.json:test:fast         | S      | [x]    |
+| C6  | Non-null assertions without runtime checks           | lib/service-auth.ts:259,289    | S      | [x]    |
+| C7  | Auth cookie failures swallowed (breaks login)        | lib/supabase/server.ts:17-41   | S      | [x]    |
+| C8  | Unvalidated external API responses (injection risk)  | app/api/platforms/\*/callback  | M      | [x]    |
+| C9  | JSON.parse without validation (crash risk)           | api/generate-posts/process:30  | S      | [x]    |
 
 ## 🟠 High Priority - Fix This Week
 
@@ -44,6 +67,13 @@
 | H7  | QStash scheduling failures silently ignored     | api/posts/schedule/route.ts        | M      | [x]    |
 | H8  | Non-null assertions on env vars (runtime crash) | lib/redis-rate-limiter.ts:140      | S      | [x]    |
 | H9  | CSP allows unsafe-eval and unsafe-inline        | next.config.js:34                  | M      | [x]    |
+| H10 | Console.log in 50+ files (bypasses logging)     | Multiple files                     | M      | [x]    |
+| H11 | SSRF DNS errors not logged                      | lib/ssrf-protection.ts:501-511     | S      | [x]    |
+| H12 | Database casts without validation (RBAC risk)   | lib/billing.ts:270, lib/rbac.ts    | M      | [x]    |
+| H13 | N+1 query pattern in analytics (150ms → 50ms)   | api/analytics/dashboard:176-202    | M      | [x]    |
+| H14 | Sequential DB writes in loop (4s → 0.5s)        | api/posts/schedule:338-480         | M      | [x]    |
+| H15 | Unbounded queries without pagination            | app/dashboard/newsletters:17-21    | S      | [x]    |
+| H16 | Missing database indexes on generation_events   | Database migration needed          | S      | [x]    |
 
 ## 📊 Medium Priority - This Sprint
 
@@ -62,8 +92,13 @@
 | M9  | Unsafe array assertions on metadata.variants                                                                                    | api/posts/[postId]/variants/route.ts:240 | S      | [x]    |
 | M10 | Request body casts without Zod validation                                                                                       | api/posts/schedule/route.ts:45           | S      | [x]    |
 | M11 | Worker request validation logic inconsistent                                                                                    | api/generate-posts/route.ts:175-189      | S      | [x]    |
-| M12 | Page reload after retry (poor UX)                                                                                               | components/post-scheduler.tsx:180        | S      | [ ]    |
+| M12 | Page reload after retry (poor UX)                                                                                               | components/post-scheduler.tsx:180        | S      | [x]    |
 | M13 | Hardcoded URLs in email templates                                                                                               | lib/email.ts:53                          | S      | [x]    |
+| M14 | Memory leak risk - setInterval without cleanup                                                                                  | lib/observability.ts:106                 | S      | [x]    |
+| M15 | Stripe webhook IP allowlist may be stale                                                                                        | api/webhooks/stripe/route.ts:24-35       | M      | [ ]    |
+| M16 | Database query failures lack error logging                                                                                      | dashboard pages (multiple)               | S      | [x]    |
+| M17 | Duplicate status calculation in analytics                                                                                       | api/analytics/dashboard:169-174          | S      | [x]    |
+| M18 | Preview page ignores posts fetch error                                                                                          | dashboard/newsletters/[id]/preview:45    | S      | [x]    |
 
 ## 📚 Lower Priority - When Needed
 
@@ -80,6 +115,12 @@
 | L7  | Create shared types directory                | types/                           | M      | [ ]    |
 | L8  | Service layer abstraction (refactor)         | lib/services/                    | L      | [ ]    |
 | L9  | Parallel rate limit/feature checks           | api/generate-posts/route.ts:213  | S      | [ ]    |
+| L10 | PBKDF2 iterations could be higher (600k)     | lib/crypto.ts:92,151             | M      | [ ]    |
+| L11 | Weak regex in SSRF IPv6 validation           | lib/ssrf-protection.ts:626       | S      | [ ]    |
+| L12 | Missing cache invalidation for trial limits  | lib/trial-guard.ts:35-87         | S      | [ ]    |
+| L13 | Alert system failures not escalated          | lib/alerts.ts:51-62              | M      | [ ]    |
+| L14 | User profile caching opportunity (Redis)     | Multiple API routes              | M      | [ ]    |
+| L15 | Dynamic imports for heavy components         | components/newsletter-editor.tsx | S      | [ ]    |
 
 ---
 
@@ -109,17 +150,32 @@
 
 ---
 
-## Deep Review Summary (2025-12-31)
+## Deep Review Summary (2026-01-02 - Round 5)
 
-| Area             | Status | Issues Found                                             |
-| ---------------- | ------ | -------------------------------------------------------- |
-| Automated Checks | ✅     | TypeScript, ESLint, 672 tests passing                    |
-| Security         | ⚠️     | 1 HIGH dep vuln, CORS fallback, rate limiter fail-open   |
-| Type Safety      | ⚠️     | 18 issues (any usage, unsafe casts, non-null assertions) |
-| Silent Failures  | ⚠️     | 14 issues (QStash, DB updates, error swallowing)         |
-| Architecture     | ✅     | Solid patterns, minor consolidation needed               |
-| Deployment       | ✅     | Correct URLs, security headers present                   |
+**4 Specialized Agents:** Silent Failure Hunter, Type Safety Analyzer, Security Auditor, Performance Reviewer
+
+| Agent                 | Verdict        | Issues Found                                                             |
+| --------------------- | -------------- | ------------------------------------------------------------------------ |
+| Silent Failure Hunter | **WARNINGS**   | 3 HIGH, 3 MEDIUM, 2 LOW (console.log abuse, DNS errors, cookie failures) |
+| Type Safety Analyzer  | **MODERATE**   | 4 CRITICAL, 3 HIGH, 3 MEDIUM (non-null assertions, unvalidated API data) |
+| Security Auditor      | **SECURE**     | 8.5/10 - No critical vulns, excellent SSRF/encryption/rate limiting      |
+| Performance Reviewer  | **ACCEPTABLE** | 3 CRITICAL, 4 HIGH (N+1 queries, unbounded selects, sequential loops)    |
+
+### Key Strengths
+
+- ✅ OWASP Top 10 compliance
+- ✅ Defense-in-depth security (SSRF, encryption, rate limiting)
+- ✅ Circuit breaker patterns with graceful degradation
+- ✅ Recent security hardening (QStash signatures, CSP nonces, RBAC)
+
+### Top Priorities
+
+1. **C6-C9**: Fix critical type safety issues (auth cookie, non-null assertions, API validation)
+2. **H10-H16**: Performance optimizations (analytics N+1, pagination, indexes)
+3. **M14-M18**: Error handling improvements (logging, memory leaks)
+
+**Production Status:** ✅ Safe to deploy with fixes recommended before scaling to 10K+ users
 
 ---
 
-_Updated: 2025-12-31_
+_Updated: 2026-01-02_

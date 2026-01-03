@@ -101,9 +101,25 @@ class ObservabilityManager {
     { startTime: number; type: string }
   >()
 
+  // Cleanup interval reference for graceful shutdown
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null
+
   constructor() {
     // Periodic cleanup of old logs and metrics
-    setInterval(() => this.cleanup(), this.CLEANUP_INTERVAL)
+    this.cleanupInterval = setInterval(
+      () => this.cleanup(),
+      this.CLEANUP_INTERVAL
+    )
+  }
+
+  /**
+   * Stop the cleanup interval (for graceful shutdown or testing)
+   */
+  destroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval)
+      this.cleanupInterval = null
+    }
   }
 
   /**
@@ -184,8 +200,7 @@ class ObservabilityManager {
 
     const logMessage = `${timestamp} ${logLevel} ${requestId}${userId}${duration} ${message}`
 
-    // Output to console based on level
-
+    // Output to console based on level (using native console for observability layer)
     switch (level) {
       case 'debug':
         console.debug(logMessage, options.metadata || '')

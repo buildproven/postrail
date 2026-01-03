@@ -25,7 +25,7 @@ const MAX_DERIVED_KEY_CACHE_SIZE = 100
  * Get encryption key from environment variable with validation
  *
  * CRITICAL: Key must be 32 bytes (64 hex characters) for AES-256-GCM.
- * Generate with: `node -e "console.log(crypto.randomBytes(32).toString('hex'))"`
+ * Generate with: `node -e "logger.info(crypto.randomBytes(32).toString('hex'))"`
  *
  * Performance: Caches the parsed key to avoid repeated hex parsing
  *
@@ -124,7 +124,7 @@ export function encrypt(text: string): string {
  * try {
  *   decrypt('tampered:data:here')
  * } catch (err) {
- *   console.error('Data was tampered with or wrong key')
+ *   logger.error('Data was tampered with or wrong key')
  * }
  */
 export function decrypt(encryptedData: string): string {
@@ -183,12 +183,12 @@ export function decrypt(encryptedData: string): string {
  * @example
  * // Run once during setup:
  * const key = generateEncryptionKey()
- * console.log(`ENCRYPTION_KEY=${key}`)
+ * logger.info(`ENCRYPTION_KEY=${key}`)
  * // Copy to .env.local
  *
  * @example
  * // Or use Node.js directly:
- * // node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+ * // node -e "logger.info(require('crypto').randomBytes(32).toString('hex'))"
  */
 export function generateEncryptionKey(): string {
   return crypto.randomBytes(32).toString('hex')

@@ -3,6 +3,7 @@ import { TwitterApi } from 'twitter-api-v2'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
+import { logger } from '@/lib/logger'
 
 /**
  * Twitter Post Publishing Endpoint
@@ -274,7 +275,7 @@ export async function POST(request: NextRequest) {
         url: `https://twitter.com/i/web/status/${tweet.id}`,
       })
     } catch (twitterError: unknown) {
-      console.error('Twitter API error:', twitterError)
+      logger.error({ error: twitterError }, 'Twitter API error:')
 
       let errorMessage = 'Failed to post to Twitter'
       let errorDetails = 'Unknown error'
@@ -324,7 +325,7 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
-    console.error('Twitter post error:', error)
+    logger.error({ error }, 'Twitter post error:')
 
     if (error instanceof Error) {
       if (error.message.includes('not connected')) {

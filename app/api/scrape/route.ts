@@ -8,6 +8,7 @@ import https from 'https'
 import net from 'net'
 import { createClient } from '@/lib/supabase/server'
 import { ssrfProtection } from '@/lib/ssrf-protection'
+import { logger } from '@/lib/logger'
 
 // Enhanced SSRF Protection Strategy:
 // Uses comprehensive multi-layered protection via ssrfProtection module:
@@ -106,12 +107,14 @@ export async function POST(request: NextRequest) {
     if (!urlValidation.allowed) {
       try {
         const hostname = new URL(url).hostname
-        console.log(
-          `SSRF protection blocked request to ${hostname}: ${urlValidation.error}`
+        logger.warn(
+          { hostname, reason: urlValidation.error },
+          'SSRF protection blocked request'
         )
       } catch {
-        console.log(
-          `SSRF protection blocked invalid URL request: ${urlValidation.error}`
+        logger.warn(
+          { reason: urlValidation.error },
+          'SSRF protection blocked invalid URL request'
         )
       }
       return NextResponse.json(
@@ -228,7 +231,7 @@ export async function POST(request: NextRequest) {
       wordCount: content.split(/\s+/).length,
     })
   } catch (error) {
-    console.error('Scraping error:', error)
+    logger.error({ error }, 'Scraping error')
 
     if (axios.isAxiosError(error)) {
       if (error.code === 'ECONNABORTED') {

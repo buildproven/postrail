@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 /**
  * SSRF Protection Status API
  *
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('SSRF status error:', error)
+    logger.error({ error }, 'SSRF status error:')
     return NextResponse.json(
       { error: 'Failed to get SSRF protection status' },
       { status: 500 }

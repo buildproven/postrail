@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { schedulePost, isQStashConfigured } from '@/lib/platforms/qstash'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ postId: string }>
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .eq('id', postId)
 
     if (updateError) {
-      console.error('Failed to reset post for retry:', updateError)
+      logger.error({ error: updateError }, 'Failed to reset post for retry:')
       return NextResponse.json(
         { error: 'Failed to schedule retry' },
         { status: 500 }
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           .update({ qstash_message_id: qstashMessageId })
           .eq('id', postId)
       } catch (qstashError) {
-        console.error('QStash scheduling failed:', qstashError)
+        logger.error({ error: qstashError }, 'QStash scheduling failed:')
         // Continue anyway - manual trigger can still work
       }
     }
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       message: 'Post scheduled for immediate retry',
     })
   } catch (error) {
-    console.error('Retry post error:', error)
+    logger.error({ error }, 'Retry post error:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -166,7 +167,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       canRetry: post.status === 'failed',
     })
   } catch (error) {
-    console.error('Get retry status error:', error)
+    logger.error({ error }, 'Get retry status error:')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

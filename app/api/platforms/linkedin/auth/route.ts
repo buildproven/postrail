@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createOAuthState } from '@/lib/cookie-signer'
+import { logger } from '@/lib/logger'
 
 /**
  * LinkedIn OAuth 2.0 Authorization Endpoint
@@ -89,7 +90,7 @@ export async function GET() {
 
     return response
   } catch (error) {
-    console.error('LinkedIn OAuth initiation error:', error)
+    logger.error({ error }, 'LinkedIn OAuth initiation error:')
     return NextResponse.json(
       { error: 'Failed to initiate LinkedIn OAuth' },
       { status: 500 }

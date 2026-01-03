@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/logger'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -164,7 +165,7 @@ export default function NewNewsletterPage() {
       // Redirect to preview page with generated posts
       router.push(`/dashboard/newsletters/${newsletterId}/preview`)
     } catch (err) {
-      console.error('❌ Post generation failed:', err)
+      logger.error({ error: err }, '❌ Post generation failed:')
       setError(err instanceof Error ? err.message : 'Failed to generate posts')
     } finally {
       setLoading(false)

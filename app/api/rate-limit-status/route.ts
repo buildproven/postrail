@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { checkPermission } from '@/lib/rbac'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -88,7 +89,7 @@ export async function GET() {
 
     return NextResponse.json(response, { headers })
   } catch (error) {
-    console.error('Rate limit status error:', error)
+    logger.error({ error }, 'Rate limit status error')
     return NextResponse.json(
       { error: 'Failed to get rate limit status' },
       { status: 500 }

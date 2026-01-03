@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
 import { signValue } from '@/lib/cookie-signer'
+import { logger } from '@/lib/logger'
 
 /**
  * Twitter/X OAuth 2.0 Authorization Endpoint (PKCE Flow)
@@ -112,7 +113,7 @@ export async function GET() {
 
     return response
   } catch (error) {
-    console.error('Twitter OAuth initiation error:', error)
+    logger.error({ error }, 'Twitter OAuth initiation error')
     return NextResponse.json(
       { error: 'Failed to initiate Twitter OAuth' },
       { status: 500 }

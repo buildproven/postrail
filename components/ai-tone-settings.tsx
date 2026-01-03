@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/logger'
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -65,7 +66,7 @@ export function AiToneSettings() {
           setCustomInstructions(data.tone.custom_instructions || '')
         }
       } catch (error) {
-        console.error('Failed to fetch AI tone:', error)
+        logger.error({ error }, 'Failed to fetch AI tone:')
       } finally {
         setLoading(false)
       }

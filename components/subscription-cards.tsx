@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/logger'
 
 import { Button } from '@/components/ui/button'
 
@@ -23,7 +24,7 @@ export function SubscriptionCards({
         alert('Failed to start checkout')
       }
     } catch (e) {
-      console.error(e)
+      logger.error(e)
       alert('Error starting checkout')
     }
   }

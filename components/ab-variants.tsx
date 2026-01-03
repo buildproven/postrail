@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/logger'
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -51,7 +52,7 @@ export function ABVariants({
         setVariants(data.variants || [])
       }
     } catch (e) {
-      console.error('Failed to fetch variants:', e)
+      logger.error({ error: e }, 'Failed to fetch variants:')
     }
   }
 

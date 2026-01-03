@@ -6,6 +6,7 @@ import {
   canAccessClient,
   checkServiceRateLimit,
 } from '@/lib/service-auth'
+import { logger } from '@/lib/logger'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60 // Allow up to 60s for bulk operations
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
       .select('id, platform, status, scheduled_time')
 
     if (insertError) {
-      console.error('Bulk post insert error:', insertError)
+      logger.error({ error: insertError }, 'Bulk post insert error')
       return NextResponse.json(
         { error: 'Failed to create posts' },
         { status: 500 }
@@ -179,7 +180,7 @@ export async function POST(request: NextRequest) {
       posts: results,
     })
   } catch (error) {
-    console.error('Bulk post error:', error)
+    logger.error({ error }, 'Bulk post error')
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

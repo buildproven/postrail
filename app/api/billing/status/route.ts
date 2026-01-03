@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { billingService, SUBSCRIPTION_TIERS } from '@/lib/billing'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -36,7 +37,7 @@ export async function GET() {
       cancelAtPeriodEnd: status.cancelAtPeriodEnd,
     })
   } catch (error) {
-    console.error('Status fetch error:', error)
+    logger.error({ error }, 'Status fetch error')
     return NextResponse.json(
       { error: 'Failed to fetch subscription status' },
       { status: 500 }

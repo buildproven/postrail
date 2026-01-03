@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/logger'
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
@@ -135,7 +136,7 @@ export default function PlatformsPage() {
         }
       }
     } catch (error) {
-      console.error('Error checking connections:', error)
+      logger.error({ error }, 'Error checking connections:')
     } finally {
       setLoading(false)
     }
@@ -179,7 +180,7 @@ export default function PlatformsPage() {
         })
       }
     } catch (error) {
-      console.error('Error disconnecting:', error)
+      logger.error({ error }, 'Error disconnecting:')
       setMessage({ type: 'error', text: 'Failed to disconnect platform' })
     } finally {
       setDisconnecting(null)
@@ -321,7 +322,7 @@ export default function PlatformsPage() {
         })
       }
     } catch (error) {
-      console.error('Error saving BYOK credentials:', error)
+      logger.error({ error }, 'Error saving BYOK credentials:')
       setMessage({ type: 'error', text: 'Failed to save credentials' })
     } finally {
       setByokSaving(false)

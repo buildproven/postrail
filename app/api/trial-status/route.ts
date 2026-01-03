@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTrialStatusForUser } from '@/lib/trial-guard'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/trial-status - Get current user's trial status
@@ -54,7 +55,7 @@ export async function GET() {
 
     return NextResponse.json(response, { headers })
   } catch (error) {
-    console.error('Error getting trial status:', error)
+    logger.error({ error }, 'Error getting trial status')
     return NextResponse.json(
       { error: 'Failed to get trial status' },
       { status: 500 }

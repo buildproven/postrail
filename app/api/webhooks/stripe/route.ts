@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
             subscription
           )
 
-          console.log(`Checkout completed for customer ${customerId}`)
+          logger.info({ customerId }, 'Checkout completed for customer')
         }
         break
       }
@@ -130,8 +130,9 @@ export async function POST(request: NextRequest) {
           subscription
         )
 
-        console.log(
-          `Subscription ${event.type.split('.')[2]} for customer ${customerId}`
+        logger.info(
+          { customerId },
+          `Subscription ${event.type.split('.')[2]} for customer`
         )
         break
       }
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest) {
 
         await billingService.handleSubscriptionCancelled(customerId)
 
-        console.log(`Subscription cancelled for customer ${customerId}`)
+        logger.info({ customerId }, 'Subscription cancelled for customer')
         break
       }
 
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        console.log(`Payment succeeded for customer ${customerId}`)
+        logger.info({ customerId }, 'Payment succeeded for customer')
         break
       }
 
@@ -176,17 +177,17 @@ export async function POST(request: NextRequest) {
           .update({ subscription_status: 'past_due' })
           .eq('stripe_customer_id', customerId)
 
-        console.log(`Payment failed for customer ${customerId}`)
+        logger.warn({ customerId }, 'Payment failed for customer')
         break
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`)
+        logger.info({ eventType: event.type }, 'Unhandled Stripe event type')
     }
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Webhook handler error:', error)
+    logger.error({ error }, 'Webhook handler error')
     return NextResponse.json(
       { error: 'Webhook handler failed' },
       { status: 500 }

@@ -165,39 +165,63 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const allPosts = posts || []
 
-    // Calculate post stats by status
+    // Calculate post stats in a single pass (avoid multiple filter iterations)
     const byStatus = {
-      draft: allPosts.filter(p => p.status === 'draft').length,
-      scheduled: allPosts.filter(p => p.status === 'scheduled').length,
-      published: allPosts.filter(p => p.status === 'published').length,
-      failed: allPosts.filter(p => p.status === 'failed').length,
+      draft: 0,
+      scheduled: 0,
+      published: 0,
+      failed: 0,
     }
 
-    // Calculate post stats by platform
     const platforms = ['linkedin', 'threads', 'facebook', 'x', 'twitter']
     const byPlatform: Record<string, number> = {}
     const platformStats: Record<string, PlatformStats> = {}
 
+    // Initialize platform stats
     for (const platform of platforms) {
-      const platformPosts = allPosts.filter(p => p.platform === platform)
-      if (platformPosts.length > 0) {
-        byPlatform[platform] = platformPosts.length
-        platformStats[platform] = {
-          posts: platformPosts.length,
-          published: platformPosts.filter(p => p.status === 'published').length,
-          scheduled: platformPosts.filter(p => p.status === 'scheduled').length,
-          draft: platformPosts.filter(p => p.status === 'draft').length,
-          failed: platformPosts.filter(p => p.status === 'failed').length,
-          impressions: platformPosts.reduce(
-            (sum, p) => sum + (p.impressions || 0),
-            0
-          ),
-          engagements: platformPosts.reduce(
-            (sum, p) => sum + (p.engagements || 0),
-            0
-          ),
-          clicks: platformPosts.reduce((sum, p) => sum + (p.clicks || 0), 0),
+      platformStats[platform] = {
+        posts: 0,
+        published: 0,
+        scheduled: 0,
+        draft: 0,
+        failed: 0,
+        impressions: 0,
+        engagements: 0,
+        clicks: 0,
+      }
+    }
+
+    // Single pass through all posts to calculate stats
+    for (const post of allPosts) {
+      // Count by status
+      if (post.status === 'draft') byStatus.draft++
+      else if (post.status === 'scheduled') byStatus.scheduled++
+      else if (post.status === 'published') byStatus.published++
+      else if (post.status === 'failed') byStatus.failed++
+
+      // Count by platform
+      if (platforms.includes(post.platform)) {
+        if (!byPlatform[post.platform]) {
+          byPlatform[post.platform] = 0
         }
+        byPlatform[post.platform]++
+        platformStats[post.platform].posts++
+
+        // Update status counts
+        if (post.status === 'published') {
+          platformStats[post.platform].published++
+        } else if (post.status === 'scheduled') {
+          platformStats[post.platform].scheduled++
+        } else if (post.status === 'draft') {
+          platformStats[post.platform].draft++
+        } else if (post.status === 'failed') {
+          platformStats[post.platform].failed++
+        }
+
+        // Accumulate engagement metrics
+        platformStats[post.platform].impressions += post.impressions || 0
+        platformStats[post.platform].engagements += post.engagements || 0
+        platformStats[post.platform].clicks += post.clicks || 0
       }
     }
 

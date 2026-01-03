@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { PostPreviewCard } from '@/components/post-preview-card'
 import Link from 'next/link'
+import { logger } from '@/lib/logger'
 
 interface PageProps {
   params: {
@@ -30,6 +31,7 @@ export default async function PreviewPage({ params }: PageProps) {
   }
 
   // Fetch newsletter
+  // M16 FIX: Add error logging for DB query failures
   const { data: newsletter, error: newsletterError } = await supabase
     .from('newsletters')
     .select('*')
@@ -38,6 +40,12 @@ export default async function PreviewPage({ params }: PageProps) {
     .single()
 
   if (newsletterError || !newsletter) {
+    if (newsletterError) {
+      logger.error(
+        { error: newsletterError, newsletterId: id, userId: user.id },
+        'Failed to fetch newsletter for preview'
+      )
+    }
     redirect('/dashboard')
   }
 
@@ -50,14 +58,15 @@ export default async function PreviewPage({ params }: PageProps) {
     .order('post_type')
 
   if (postsError) {
-    console.error('Posts fetch error:', postsError)
+    logger.error({
+      type: 'error',
+      error: postsError,
+      msg: 'Failed to fetch posts for newsletter preview',
+      newsletterId: id,
+      userId: user.id,
+    })
+    redirect('/dashboard')
   }
-
-  // DEBUG: Log what we got
-  console.log('DEBUG - Newsletter ID:', id)
-  console.log('DEBUG - Posts:', posts)
-  console.log('DEBUG - Posts error:', postsError)
-  console.log('DEBUG - Posts count:', posts?.length || 0)
 
   // Group posts by type
   const preCTAPosts = posts?.filter(p => p.post_type === 'pre_cta') || []

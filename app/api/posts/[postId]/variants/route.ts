@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { checkFeatureAccess } from '@/lib/feature-gate'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const ANTHROPIC_MODEL =
   process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514'
@@ -284,7 +285,10 @@ export async function POST(
             characterCount: content.length,
           } as Variant
         } catch (error) {
-          console.error(`Failed to generate ${style.id} variant:`, error)
+          logger.error(
+            { error, styleId: style.id },
+            `Failed to generate ${style.id} variant`
+          )
           return null
         }
       })
@@ -311,7 +315,7 @@ export async function POST(
       .eq('id', postId)
 
     if (updateError) {
-      console.error('Failed to save variants:', updateError)
+      logger.error({ error: updateError }, 'Failed to save variants:')
       // Still return the variants even if save failed
     }
 
@@ -325,7 +329,7 @@ export async function POST(
       totalVariants: updatedVariants.length,
     })
   } catch (error) {
-    console.error('Variant generation error:', error)
+    logger.error({ error }, 'Variant generation error:')
     return NextResponse.json(
       { error: 'Failed to generate variants' },
       { status: 500 }
@@ -382,7 +386,7 @@ export async function GET(
       availableStyles: VARIANT_STYLES,
     })
   } catch (error) {
-    console.error('Get variants error:', error)
+    logger.error({ error }, 'Get variants error:')
     return NextResponse.json(
       { error: 'Failed to get variants' },
       { status: 500 }
@@ -482,7 +486,7 @@ export async function PUT(
       variantsCount: updatedVariants.length,
     })
   } catch (error) {
-    console.error('Swap variant error:', error)
+    logger.error({ error }, 'Swap variant error:')
     return NextResponse.json(
       { error: 'Failed to swap variant' },
       { status: 500 }

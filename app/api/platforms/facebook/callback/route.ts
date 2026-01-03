@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { encrypt } from '@/lib/crypto'
 import { verifyOAuthState } from '@/lib/cookie-signer'
 import { logger } from '@/lib/logger'
+import { z } from 'zod'
 
 /**
  * Facebook OAuth 2.0 Callback Endpoint
@@ -16,28 +17,30 @@ import { logger } from '@/lib/logger'
  * - NEXT_PUBLIC_APP_URL: Your app's base URL
  */
 
-interface FacebookTokenResponse {
-  access_token: string
-  token_type: string
-  expires_in?: number
-}
+const FacebookTokenResponseSchema = z.object({
+  access_token: z.string(),
+  token_type: z.string(),
+  expires_in: z.number().optional(),
+})
 
-interface FacebookPage {
-  id: string
-  name: string
-  access_token: string
-  category?: string
-}
+const FacebookPageSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  access_token: z.string(),
+  category: z.string().optional(),
+})
 
-interface FacebookPagesResponse {
-  data: FacebookPage[]
-}
+const FacebookPagesResponseSchema = z.object({
+  data: z.array(FacebookPageSchema),
+})
 
-interface FacebookUserInfo {
-  id: string
-  name: string
-  email?: string
-}
+const FacebookUserInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().optional(),
+})
+
+type FacebookPage = z.infer<typeof FacebookPageSchema>
 
 export async function GET(request: NextRequest) {
   try {
@@ -124,7 +127,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const tokenData: FacebookTokenResponse = await tokenResponse.json()
+    const tokenJson = await tokenResponse.json()
+    const tokenValidation = FacebookTokenResponseSchema.safeParse(tokenJson)
+
+    if (!tokenValidation.success) {
+      logger.error(
+        { validationError: tokenValidation.error.message },
+        'Invalid Facebook token response'
+      )
+      return NextResponse.redirect(
+        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Invalid response from Facebook')}`
+      )
+    }
+
+    const tokenData = tokenValidation.data
 
     // Exchange for long-lived token (lasts ~60 days instead of ~1 hour)
     const longLivedTokenResponse = await fetch(
@@ -141,10 +157,15 @@ export async function GET(request: NextRequest) {
     let expiresIn = tokenData.expires_in || 3600
 
     if (longLivedTokenResponse.ok) {
-      const longLivedData: FacebookTokenResponse =
-        await longLivedTokenResponse.json()
-      longLivedToken = longLivedData.access_token
-      expiresIn = longLivedData.expires_in || 5184000 // ~60 days
+      const longLivedJson = await longLivedTokenResponse.json()
+      const longLivedValidation =
+        FacebookTokenResponseSchema.safeParse(longLivedJson)
+
+      if (longLivedValidation.success) {
+        const longLivedData = longLivedValidation.data
+        longLivedToken = longLivedData.access_token
+        expiresIn = longLivedData.expires_in || 5184000 // ~60 days
+      }
     }
 
     // Get user info
@@ -166,7 +187,18 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const _userInfo: FacebookUserInfo = await userInfoResponse.json()
+    const userInfoJson = await userInfoResponse.json()
+    const userInfoValidation = FacebookUserInfoSchema.safeParse(userInfoJson)
+
+    if (!userInfoValidation.success) {
+      logger.error(
+        { validationError: userInfoValidation.error.message },
+        'Invalid Facebook user info response'
+      )
+      return NextResponse.redirect(
+        `${appUrl}/dashboard/platforms?error=${encodeURIComponent('Invalid user data from Facebook')}`
+      )
+    }
 
     // Get pages the user manages
     const pagesResponse = await fetch(
@@ -177,12 +209,17 @@ export async function GET(request: NextRequest) {
     let selectedPage: FacebookPage | null = null
 
     if (pagesResponse.ok) {
-      const pagesData: FacebookPagesResponse = await pagesResponse.json()
-      pages = pagesData.data || []
+      const pagesJson = await pagesResponse.json()
+      const pagesValidation = FacebookPagesResponseSchema.safeParse(pagesJson)
 
-      // Auto-select first page (user can change later)
-      if (pages.length > 0) {
-        selectedPage = pages[0]
+      if (pagesValidation.success) {
+        const pagesData = pagesValidation.data
+        pages = pagesData.data || []
+
+        // Auto-select first page (user can change later)
+        if (pages.length > 0) {
+          selectedPage = pages[0]
+        }
       }
     }
 

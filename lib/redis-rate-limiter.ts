@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 /**
  * Redis-based Rate Limiter
  *
@@ -347,7 +348,7 @@ export class RedisRateLimiter {
             }
           )
           // Log to console as last resort
-          console.error(
+          logger.error(
             'ALERTING SYSTEM FAILED - manual intervention required',
             alertError
           )
