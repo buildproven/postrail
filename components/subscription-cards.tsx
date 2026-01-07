@@ -24,8 +24,15 @@ export function SubscriptionCards({
         alert('Failed to start checkout')
       }
     } catch (e) {
-      logger.error(e)
-      alert('Error starting checkout')
+      const errorMessage =
+        e instanceof Error ? e.message : 'Unknown error occurred'
+      logger.error(
+        { error: e, tier },
+        'Checkout initiation failed - unable to reach billing API'
+      )
+      alert(
+        `Failed to start checkout: ${errorMessage}. Please try again or contact support if the problem persists.`
+      )
     }
   }
 

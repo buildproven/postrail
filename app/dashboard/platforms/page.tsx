@@ -136,7 +136,14 @@ export default function PlatformsPage() {
         }
       }
     } catch (error) {
-      logger.error({ error }, 'Error checking connections:')
+      logger.error(
+        { error },
+        'Failed to check platform connections - network or server error'
+      )
+      setMessage({
+        type: 'error',
+        text: 'Unable to load platform connections. Please refresh the page or check your internet connection.',
+      })
     } finally {
       setLoading(false)
     }

@@ -60,8 +60,15 @@ export function TimezoneSettings() {
           setTimezone(browserTz)
         }
       } catch (error) {
-        logger.error({ error }, 'Failed to fetch timezone:')
+        logger.error(
+          { error },
+          'Failed to fetch saved timezone from server - using browser detected timezone as fallback'
+        )
         setTimezone(browserTz)
+        setMessage({
+          type: 'error',
+          text: 'Unable to load saved timezone. Using browser-detected timezone as fallback.',
+        })
       } finally {
         setLoading(false)
       }
@@ -86,8 +93,17 @@ export function TimezoneSettings() {
         const data = await res.json()
         setMessage({ type: 'error', text: data.error || 'Failed to save' })
       }
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to save timezone' })
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error'
+      logger.error(
+        { error, timezone },
+        'Failed to save timezone setting - API request failed'
+      )
+      setMessage({
+        type: 'error',
+        text: `Failed to save timezone: ${errorMessage}. Please try again.`,
+      })
     } finally {
       setSaving(false)
     }

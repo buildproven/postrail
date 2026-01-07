@@ -66,18 +66,66 @@ interface CachedDedupResult {
 
 type MemoryStoreValue = number | CachedDedupResult
 
+class CircuitBreaker {
+  private isOpen = false
+  private consecutiveFailures = 0
+  private lastFailureTime = 0
+  private readonly threshold: number
+  private readonly resetMs: number
+
+  constructor(threshold = 3, resetMs = 30000) {
+    this.threshold = threshold
+    this.resetMs = resetMs
+  }
+
+  shouldTryOperation(): boolean {
+    if (!this.isOpen) return true
+
+    const timeSinceLastFailure = Date.now() - this.lastFailureTime
+    if (timeSinceLastFailure > this.resetMs) {
+      observability.info('🔄 Circuit breaker: attempting recovery')
+      this.isOpen = false
+      return true
+    }
+
+    return false
+  }
+
+  recordSuccess(): void {
+    if (this.consecutiveFailures > 0) {
+      observability.info('✅ Circuit breaker recovered, resetting')
+      this.consecutiveFailures = 0
+      this.isOpen = false
+    }
+  }
+
+  recordFailure(): boolean {
+    this.consecutiveFailures++
+    this.lastFailureTime = Date.now()
+
+    if (this.consecutiveFailures >= this.threshold) {
+      this.isOpen = true
+      return true
+    }
+    return false
+  }
+
+  get state() {
+    return {
+      isOpen: this.isOpen,
+      consecutiveFailures: this.consecutiveFailures,
+      lastFailureTime: this.lastFailureTime,
+    }
+  }
+}
+
 export class RedisRateLimiter {
   private redis: Redis | null = null
   private readonly config: RateLimitConfig
   private readonly enabled: boolean
   private degradedNotified = false
 
-  // Circuit breaker state
-  private circuitBreakerOpen = false
-  private consecutiveFailures = 0
-  private lastFailureTime = 0
-  private readonly CIRCUIT_BREAKER_THRESHOLD = 3 // Open circuit after 3 failures
-  private readonly CIRCUIT_BREAKER_RESET_MS = 30000 // Try Redis again after 30s
+  private readonly circuitBreaker = new CircuitBreaker(3, 30000)
 
   // Fallback to in-memory when Redis unavailable (development)
   private readonly memoryStore: Map<string, MemoryStoreValue> = new Map()
@@ -180,18 +228,7 @@ export class RedisRateLimiter {
     userId: string,
     contentHash?: string
   ): Promise<RateLimitResult> {
-    // Check if circuit breaker should be reset (half-open state)
-    if (this.circuitBreakerOpen) {
-      const timeSinceLastFailure = Date.now() - this.lastFailureTime
-      if (timeSinceLastFailure > this.CIRCUIT_BREAKER_RESET_MS) {
-        // Try Redis again (half-open state)
-        observability.info('🔄 Circuit breaker: attempting Redis recovery')
-        this.circuitBreakerOpen = false
-      }
-    }
-
-    // Use memory fallback if circuit breaker is open
-    if (this.circuitBreakerOpen) {
+    if (!this.circuitBreaker.shouldTryOperation()) {
       return this.checkRateLimitMemory(userId, contentHash)
     }
 
@@ -279,13 +316,8 @@ export class RedisRateLimiter {
 
       await incrementPipeline.exec()
 
-      // Reset circuit breaker on success
-      if (this.consecutiveFailures > 0) {
-        observability.info(
-          '✅ Redis rate limiter recovered, resetting circuit breaker'
-        )
-        this.consecutiveFailures = 0
-        this.circuitBreakerOpen = false
+      this.circuitBreaker.recordSuccess()
+      if (this.degradedNotified) {
         this.degradedNotified = false
       }
 
@@ -298,42 +330,37 @@ export class RedisRateLimiter {
         backend: 'redis',
       }
     } catch (error) {
-      // Track consecutive failures for circuit breaker
-      this.consecutiveFailures++
-      this.lastFailureTime = Date.now()
+      const state = this.circuitBreaker.state
+      const thresholdReached = this.circuitBreaker.recordFailure()
 
       observability.error(
-        `🔴 Redis rate limit check failed (failure ${this.consecutiveFailures}/${this.CIRCUIT_BREAKER_THRESHOLD})`,
+        `🔴 Redis rate limit check failed (failure ${state.consecutiveFailures + 1}/3)`,
         { error: error instanceof Error ? error : new Error(String(error)) }
       )
 
-      // Open circuit breaker if threshold reached
-      if (this.consecutiveFailures >= this.CIRCUIT_BREAKER_THRESHOLD) {
-        this.circuitBreakerOpen = true
+      if (thresholdReached) {
         observability.fatal(
           '🔴 CIRCUIT BREAKER OPEN: Redis failures exceeded threshold, switching to memory fallback',
           {
             metadata: {
-              consecutiveFailures: this.consecutiveFailures,
+              consecutiveFailures: state.consecutiveFailures,
               error: error instanceof Error ? error.message : 'unknown',
             },
           }
         )
 
-        // Send critical alert to monitoring systems (Slack/PagerDuty)
         sendCriticalAlert(
           'Redis Rate Limiter Circuit Breaker Opened',
-          `Rate limiting has degraded to memory-only mode after ${this.consecutiveFailures} consecutive Redis failures. This means rate limits are NOT shared across server instances and can be bypassed with multiple instances.`,
+          `Rate limiting has degraded to memory-only mode after ${state.consecutiveFailures} consecutive Redis failures. This means rate limits are NOT shared across server instances and can be bypassed with multiple instances.`,
           {
-            consecutiveFailures: this.consecutiveFailures,
-            threshold: this.CIRCUIT_BREAKER_THRESHOLD,
+            consecutiveFailures: state.consecutiveFailures,
+            threshold: 3,
             error: error instanceof Error ? error.message : 'unknown',
             impact:
               'Rate limits per-instance only - production security degraded',
             action: 'Check Redis/Upstash health immediately',
           }
         ).catch(alertError => {
-          // CRITICAL: Alert failures must be surfaced - operators need to know about circuit breaker
           observability.fatal(
             'CRITICAL: Alert system failure during circuit breaker',
             {
@@ -347,7 +374,6 @@ export class RedisRateLimiter {
               },
             }
           )
-          // Log to console as last resort
           logger.error(
             'ALERTING SYSTEM FAILED - manual intervention required',
             alertError

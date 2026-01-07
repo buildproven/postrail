@@ -73,8 +73,6 @@ class SSRFProtection {
   ]
 
   constructor() {
-    // Periodic cleanup of expired rate limit records
-    // Store handle to prevent memory leaks on module reload
     this.cleanupIntervalHandle = setInterval(
       () => this.cleanup(),
       this.CLEANUP_INTERVAL
@@ -586,41 +584,39 @@ class SSRFProtection {
     const trustProxy = process.env.NEXT_TRUST_PROXY === 'true'
 
     if (trustProxy) {
-      // Try multiple standard headers in order of preference
-
-      // 1. Cloudflare: cf-connecting-ip (most reliable when behind Cloudflare)
-      const cfConnectingIp = request.headers.get('cf-connecting-ip')
-      if (cfConnectingIp && this.isValidPublicIP(cfConnectingIp.trim())) {
-        return cfConnectingIp.trim()
-      }
-
-      // 2. X-Real-IP: Set by nginx and other reverse proxies
-      const xRealIp = request.headers.get('x-real-ip')
-      if (xRealIp && this.isValidPublicIP(xRealIp.trim())) {
-        return xRealIp.trim()
-      }
-
-      // 3. X-Forwarded-For: Standard header (take leftmost IP = original client)
-      const xForwardedFor = request.headers.get('x-forwarded-for')
-      if (xForwardedFor) {
-        const ips = xForwardedFor.split(',').map(ip => ip.trim())
-        for (const ip of ips) {
-          if (this.isValidPublicIP(ip)) {
-            return ip
-          }
-        }
-      }
+      const ip = this.extractIPFromHeaders(request)
+      if (ip) return ip
     }
 
-    // Development mode: allow localhost
     if (process.env.NODE_ENV === 'development') {
       return '127.0.0.1'
     }
 
-    // SECURITY: Don't fallback to private IP in production
-    // Return indicator that IP could not be determined
-    // Caller should handle this case (e.g., use user-only rate limiting)
     return 'unknown'
+  }
+
+  private extractIPFromHeaders(request: Request): string | null {
+    const cfConnectingIp = request.headers.get('cf-connecting-ip')
+    if (cfConnectingIp && this.isValidPublicIP(cfConnectingIp.trim())) {
+      return cfConnectingIp.trim()
+    }
+
+    const xRealIp = request.headers.get('x-real-ip')
+    if (xRealIp && this.isValidPublicIP(xRealIp.trim())) {
+      return xRealIp.trim()
+    }
+
+    const xForwardedFor = request.headers.get('x-forwarded-for')
+    if (xForwardedFor) {
+      const ips = xForwardedFor.split(',').map(ip => ip.trim())
+      for (const ip of ips) {
+        if (this.isValidPublicIP(ip)) {
+          return ip
+        }
+      }
+    }
+
+    return null
   }
 
   /**

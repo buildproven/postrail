@@ -241,24 +241,49 @@ export function PostScheduler({
   }
 
   const getPlatformIcon = (platform: string) => {
-    switch (platform) {
-      case 'twitter':
-      case 'x':
-        return '𝕏'
-      case 'linkedin':
-        return '💼'
-      case 'facebook':
-        return '👥'
-      case 'threads':
-        return '🧵'
-      default:
-        return '📱'
+    const icons: Record<string, string> = {
+      twitter: '𝕏',
+      x: '𝕏',
+      linkedin: '💼',
+      facebook: '👥',
+      threads: '🧵',
     }
+    return icons[platform] || '📱'
   }
 
   const isConnected = (platform: string) => {
     const normalized = platform === 'x' ? 'twitter' : platform
     return connectedPlatforms.has(normalized)
+  }
+
+  const getAlertClassName = (type: 'success' | 'error' | 'info') => {
+    if (type === 'success') return 'bg-green-50 border-green-200'
+    if (type === 'info') return 'bg-blue-50 border-blue-200'
+    return ''
+  }
+
+  const getAlertTextClassName = (type: 'success' | 'error' | 'info') => {
+    if (type === 'success') return 'text-green-800'
+    if (type === 'info') return 'text-blue-800'
+    return ''
+  }
+
+  const getAlertIcon = (type: 'success' | 'error' | 'info') => {
+    if (type === 'success')
+      return <CheckCircle2 className="h-4 w-4 text-green-600" />
+    if (type === 'info') return <Info className="h-4 w-4 text-blue-600" />
+    return <XCircle className="h-4 w-4" />
+  }
+
+  const getPostCardClassName = (
+    result: ScheduleResult | null,
+    connected: boolean
+  ) => {
+    if (result?.status === 'scheduled') return 'bg-green-50 border-green-200'
+    if (result?.status === 'skipped' || result?.status === 'failed')
+      return 'bg-red-50 border-red-200'
+    if (!connected) return 'bg-gray-100 border-gray-300'
+    return 'bg-white'
   }
 
   return (
@@ -443,30 +468,10 @@ export function PostScheduler({
       {message && (
         <Alert
           variant={message.type === 'error' ? 'destructive' : 'default'}
-          className={
-            message.type === 'success'
-              ? 'bg-green-50 border-green-200'
-              : message.type === 'info'
-                ? 'bg-blue-50 border-blue-200'
-                : ''
-          }
+          className={getAlertClassName(message.type)}
         >
-          {message.type === 'success' ? (
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-          ) : message.type === 'info' ? (
-            <Info className="h-4 w-4 text-blue-600" />
-          ) : (
-            <XCircle className="h-4 w-4" />
-          )}
-          <AlertDescription
-            className={
-              message.type === 'success'
-                ? 'text-green-800'
-                : message.type === 'info'
-                  ? 'text-blue-800'
-                  : ''
-            }
-          >
+          {getAlertIcon(message.type)}
+          <AlertDescription className={getAlertTextClassName(message.type)}>
             {message.text}
           </AlertDescription>
         </Alert>
@@ -549,16 +554,7 @@ export function PostScheduler({
               return (
                 <div
                   key={post.id}
-                  className={`p-4 border rounded-lg ${
-                    result?.status === 'scheduled'
-                      ? 'bg-green-50 border-green-200'
-                      : result?.status === 'skipped' ||
-                          result?.status === 'failed'
-                        ? 'bg-red-50 border-red-200'
-                        : !connected
-                          ? 'bg-gray-100 border-gray-300'
-                          : 'bg-white'
-                  }`}
+                  className={`p-4 border rounded-lg ${getPostCardClassName(result, connected)}`}
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
@@ -638,16 +634,7 @@ export function PostScheduler({
               return (
                 <div
                   key={post.id}
-                  className={`p-4 border rounded-lg ${
-                    result?.status === 'scheduled'
-                      ? 'bg-green-50 border-green-200'
-                      : result?.status === 'skipped' ||
-                          result?.status === 'failed'
-                        ? 'bg-red-50 border-red-200'
-                        : !connected
-                          ? 'bg-gray-100 border-gray-300'
-                          : 'bg-white'
-                  }`}
+                  className={`p-4 border rounded-lg ${getPostCardClassName(result, connected)}`}
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">

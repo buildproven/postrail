@@ -66,7 +66,14 @@ export function AiToneSettings() {
           setCustomInstructions(data.tone.custom_instructions || '')
         }
       } catch (error) {
-        logger.error({ error }, 'Failed to fetch AI tone:')
+        logger.error(
+          { error },
+          'Failed to fetch AI tone settings from server - network or API error'
+        )
+        setMessage({
+          type: 'error',
+          text: 'Unable to load AI tone settings. Using defaults. Please refresh the page to try again.',
+        })
       } finally {
         setLoading(false)
       }
@@ -96,8 +103,17 @@ export function AiToneSettings() {
         const data = await res.json()
         setMessage({ type: 'error', text: data.error || 'Failed to save' })
       }
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to save settings' })
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error'
+      logger.error(
+        { error, tone },
+        'Failed to save AI tone settings - API request failed'
+      )
+      setMessage({
+        type: 'error',
+        text: `Failed to save settings: ${errorMessage}. Please try again.`,
+      })
     } finally {
       setSaving(false)
     }
