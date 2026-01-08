@@ -46,7 +46,18 @@
     "type-check:tests": "tsc --noEmit --project tests/tsconfig.json",
     "type-check:all": "npm run type-check && npm run type-check:tests",
     "quality:check": "npm run type-check:all && npm run lint && npm run test",
-    "quality:ci": "npm run quality:check && npm run security:audit"
+    "quality:ci": "npm run quality:check && npm run security:audit",
+    "python:format": "black .",
+    "python:format:check": "black --check .",
+    "python:lint": "ruff check .",
+    "python:lint:fix": "ruff check --fix .",
+    "python:type-check": "mypy .",
+    "python:quality": "black --check . && ruff check . && isort --check-only . && mypy .",
+    "python:test": "pytest",
+    "size": "size-limit",
+    "size:why": "size-limit --why",
+    "test:a11y": "vitest run tests/accessibility.test.js",
+    "test:coverage:check": "vitest run --coverage --coverage.thresholds.lines=70 --coverage.thresholds.functions=70"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.69.0",
@@ -100,6 +111,7 @@
     "@typescript-eslint/parser": "^8.9.0",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^4.0.10",
+    "create-qa-architect": "^5.4.3",
     "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "15.1.4",
@@ -117,7 +129,12 @@
     "stylelint-config-standard": "^37.0.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.0.9"
+    "vitest": "^4.0.9",
+    "size-limit": "^11.0.0",
+    "@size-limit/file": "^11.0.0",
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "axe-core": "^4.10.0"
   },
   "lint-staged": {
     "package.json": [
@@ -144,11 +161,18 @@
     ],
     "**/*.{ts,tsx}": [
       "eslint --fix",
-      "prettier --write"
+      "prettier --write",
+      "tsc --noEmit --skipLibCheck"
     ],
     "tests/**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
-      "prettier --write"
+      "prettier --write",
+      "tsc --noEmit --project tests/tsconfig.json"
+    ],
+    "**/*.py": [
+      "black --check --diff",
+      "ruff check --fix",
+      "isort --check-only --diff"
     ]
   },
   "volta": {
