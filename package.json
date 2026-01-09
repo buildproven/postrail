@@ -181,5 +181,12 @@
   },
   "overrides": {
     "tmp": "^0.2.4"
-  }
+  },
+  "size-limit": [
+    {
+      "path": ".next/static/**/*.js",
+      "limit": "300 kB",
+      "webpack": false
+    }
+  ]
 }
