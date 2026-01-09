@@ -1,3 +1,6 @@
+export const dynamic = 'force-static'
+export const revalidate = false
+
 export default function Home() {
   /**
    * SECURITY WARNING - JSON-LD XSS Risk:
@@ -90,8 +93,16 @@ export default function Home() {
         </div>
 
         {/* How It Works */}
-        <div className="max-w-5xl mx-auto mt-20 w-full">
-          <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
+        <section
+          className="max-w-5xl mx-auto mt-20 w-full"
+          aria-labelledby="how-it-works-heading"
+        >
+          <h2
+            id="how-it-works-heading"
+            className="text-3xl font-bold text-center mb-12"
+          >
+            How It Works
+          </h2>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center p-6">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -130,11 +141,17 @@ export default function Home() {
               </p>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Platforms */}
-        <div className="max-w-4xl mx-auto mt-20 w-full">
-          <h2 className="text-3xl font-bold text-center mb-8">
+        <section
+          className="max-w-4xl mx-auto mt-20 w-full"
+          aria-labelledby="platforms-heading"
+        >
+          <h2
+            id="platforms-heading"
+            className="text-3xl font-bold text-center mb-8"
+          >
             Connected Platforms
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
@@ -163,11 +180,17 @@ export default function Home() {
               </p>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Pricing */}
-        <div className="max-w-5xl mx-auto mt-20 w-full">
-          <h2 className="text-3xl font-bold text-center mb-4">
+        <section
+          className="max-w-5xl mx-auto mt-20 w-full"
+          aria-labelledby="pricing-heading"
+        >
+          <h2
+            id="pricing-heading"
+            className="text-3xl font-bold text-center mb-4"
+          >
             Simple Pricing
           </h2>
           <p className="text-center text-gray-700 dark:text-gray-400 mb-12">
@@ -248,11 +271,14 @@ export default function Home() {
               </a>
             </div>
           </div>
-        </div>
+        </section>
       </main>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t dark:border-gray-800">
+      <footer
+        className="py-8 px-6 border-t dark:border-gray-800"
+        role="contentinfo"
+      >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-700 dark:text-gray-400">
           <p>© 2025 Vibe Build Lab LLC. All rights reserved.</p>
           <div className="flex gap-6">

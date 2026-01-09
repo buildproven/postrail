@@ -6,6 +6,8 @@ import { ActivityTimeline } from '@/components/analytics/activity-timeline'
 import { PlatformChart } from '@/components/analytics/platform-chart'
 import { EngagementPlaceholder } from '@/components/analytics/engagement-placeholder'
 
+export const revalidate = 300
+
 export default async function AnalyticsPage() {
   const supabase = await createClient()
 

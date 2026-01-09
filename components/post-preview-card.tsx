@@ -67,7 +67,10 @@ export function PostPreviewCard({ post }: PostPreviewCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <div className={`${config.color} p-1.5 rounded text-white`}>
+            <div
+              className={`${config.color} p-1.5 rounded text-white`}
+              aria-hidden="true"
+            >
               <Icon className="h-4 w-4" />
             </div>
             <div>

@@ -1,10 +1,11 @@
 /**
  * Frontend Application Integration Test Template
- * Real browser testing with user interactions
+ * Component integration testing with Vitest
+ *
+ * Note: For real browser E2E tests, see e2e/ directory with Playwright.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { test } from '@playwright/test'
 
 // Example: Adjust imports based on your frontend framework
 // React Testing Library example
@@ -145,96 +146,8 @@ describe('Frontend Application Integration Tests', () => {
   })
 })
 
-// Playwright E2E Tests (real browser testing)
-test.describe('Frontend E2E Tests', () => {
-  test.beforeEach(async ({ page }) => {
-    // Navigate to app
-    await page.goto('http://localhost:3000')
-  })
-
-  test('should complete user signup and onboarding', async ({ page }) => {
-    // Click signup button
-    await page.click('text=Sign Up')
-
-    // Fill registration form
-    await page.fill('[data-testid=email-input]', 'test@example.com')
-    await page.fill('[data-testid=password-input]', 'SecurePassword123!')
-    await page.fill(
-      '[data-testid=confirm-password-input]',
-      'SecurePassword123!'
-    )
-
-    // Submit form
-    await page.click('[data-testid=signup-button]')
-
-    // Wait for redirect to onboarding
-    await page.waitForURL('**/onboarding')
-
-    // Complete onboarding steps
-    await page.fill('[data-testid=first-name]', 'Test')
-    await page.fill('[data-testid=last-name]', 'User')
-    await page.click('[data-testid=continue-button]')
-
-    // Verify dashboard access
-    await page.waitForURL('**/dashboard')
-    await expect(page.locator('h1')).toContainText('Welcome, Test!')
-  })
-
-  test('should handle responsive design across devices', async ({ page }) => {
-    // Test mobile viewport
-    await page.setViewportSize({ width: 375, height: 667 })
-
-    // Mobile navigation should be collapsed
-    await expect(page.locator('[data-testid=mobile-menu-button]')).toBeVisible()
-    await expect(page.locator('[data-testid=desktop-nav]')).not.toBeVisible()
-
-    // Test tablet viewport
-    await page.setViewportSize({ width: 768, height: 1024 })
-
-    // Test desktop viewport
-    await page.setViewportSize({ width: 1920, height: 1080 })
-
-    // Desktop navigation should be visible
-    await expect(page.locator('[data-testid=desktop-nav]')).toBeVisible()
-  })
-
-  test('should handle network failures gracefully', async ({ page }) => {
-    // Simulate offline mode
-    await page.context().setOffline(true)
-
-    // Try to navigate or perform action
-    await page.click('[data-testid=load-data-button]')
-
-    // Should show offline message
-    await expect(page.locator('[data-testid=offline-banner]')).toContainText(
-      'You are offline'
-    )
-
-    // Restore connection
-    await page.context().setOffline(false)
-
-    // Should automatically retry and succeed
-    await expect(page.locator('[data-testid=data-loaded]')).toBeVisible()
-  })
-
-  test('should maintain performance under load', async ({ page }) => {
-    // Navigate to data-heavy page
-    await page.goto('http://localhost:3000/dashboard/analytics')
-
-    // Measure page load performance
-    const navigationPromise = page.waitForLoadState('networkidle')
-    await navigationPromise
-
-    // Check that page loaded within reasonable time
-    const metrics = await page.evaluate(() =>
-      JSON.stringify(window.performance.timing)
-    )
-    const timing = JSON.parse(metrics)
-
-    const loadTime = timing.loadEventEnd - timing.navigationStart
-    expect(loadTime).toBeLessThan(3000) // 3 seconds max
-  })
-})
+// Note: Playwright E2E tests should be in e2e/ directory
+// See e2e/example.spec.ts for real browser testing examples
 
 // Example test helpers (create in tests/helpers/)
 /*

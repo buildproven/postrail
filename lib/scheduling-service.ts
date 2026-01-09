@@ -62,6 +62,76 @@ export interface SchedulingError {
 }
 
 /**
+ * Calculate scheduled time for a post based on timing strategy
+ */
+function calculateScheduledTime(params: {
+  post: { post_type: string; platform: string }
+  customTimes?: { preCTA?: string; postCTA?: string }
+  customPreCTA: Date | null
+  customPostCTA: Date | null
+  fixedPreCTATime: Date
+  fixedPostCTATime: Date
+  useSmartTiming: boolean
+  publishDate: Date
+  userTimezone: string
+}): {
+  scheduledTime: Date
+  localTime?: string
+  isOptimal: boolean
+  reason: string
+} {
+  const {
+    post,
+    customTimes,
+    customPreCTA,
+    customPostCTA,
+    fixedPreCTATime,
+    fixedPostCTATime,
+    useSmartTiming,
+    publishDate,
+    userTimezone,
+  } = params
+
+  if (customTimes) {
+    const scheduledTime =
+      post.post_type === 'pre_cta'
+        ? customPreCTA || fixedPreCTATime
+        : customPostCTA || fixedPostCTATime
+
+    return {
+      scheduledTime,
+      isOptimal: false,
+      reason: 'Custom time specified',
+    }
+  }
+
+  if (useSmartTiming) {
+    const smartResult = calculateOptimalTime({
+      newsletterPublishDate: publishDate,
+      postType: post.post_type as PostType,
+      platform: post.platform as Platform,
+      timezone: userTimezone,
+    })
+
+    return {
+      scheduledTime: smartResult.scheduledTime,
+      localTime: smartResult.localTime,
+      isOptimal: smartResult.isOptimal,
+      reason: smartResult.reason,
+    }
+  }
+
+  const scheduledTime =
+    post.post_type === 'pre_cta' ? fixedPreCTATime : fixedPostCTATime
+
+  return {
+    scheduledTime,
+    isOptimal: false,
+    reason: 'Fixed timing (24h before / 48h after)',
+  }
+}
+
+/**
  * Schedule a single post
  */
 export async function scheduleSinglePost(
@@ -235,17 +305,14 @@ export async function scheduleBulkPosts(
 
   const connectedPlatforms = new Set(connections?.map(c => c.platform) || [])
 
-  // Pre-calculate custom times if provided
+  const fixedPreCTATime = new Date(publishDate.getTime() - 24 * 60 * 60 * 1000)
+  const fixedPostCTATime = new Date(publishDate.getTime() + 48 * 60 * 60 * 1000)
+
   const customPreCTA = customTimes?.preCTA ? new Date(customTimes.preCTA) : null
   const customPostCTA = customTimes?.postCTA
     ? new Date(customTimes.postCTA)
     : null
 
-  // Fallback fixed times (legacy behavior)
-  const fixedPreCTATime = new Date(publishDate.getTime() - 24 * 60 * 60 * 1000)
-  const fixedPostCTATime = new Date(publishDate.getTime() + 48 * 60 * 60 * 1000)
-
-  // Step 1: Calculate scheduled times and prepare batch updates
   const postsToSchedule: Array<{
     id: string
     platform: string
@@ -261,7 +328,6 @@ export async function scheduleBulkPosts(
     {}
   const now = new Date()
 
-  // Process all posts to determine scheduled times
   for (const post of posts) {
     const normalizedPlatform = post.platform === 'x' ? 'twitter' : post.platform
 
@@ -285,35 +351,19 @@ export async function scheduleBulkPosts(
       continue
     }
 
-    let scheduledTime: Date
-    let localTime: string | undefined
-    let isOptimal = false
-    let reason: string
+    const timeResult = calculateScheduledTime({
+      post,
+      customTimes,
+      customPreCTA,
+      customPostCTA,
+      fixedPreCTATime,
+      fixedPostCTATime,
+      useSmartTiming,
+      publishDate,
+      userTimezone,
+    })
 
-    if (customTimes) {
-      scheduledTime =
-        post.post_type === 'pre_cta'
-          ? customPreCTA || fixedPreCTATime
-          : customPostCTA || fixedPostCTATime
-      reason = 'Custom time specified'
-    } else if (useSmartTiming) {
-      const smartResult = calculateOptimalTime({
-        newsletterPublishDate: publishDate,
-        postType: post.post_type as PostType,
-        platform: post.platform as Platform,
-        timezone: userTimezone,
-      })
-      scheduledTime = smartResult.scheduledTime
-      localTime = smartResult.localTime
-      isOptimal = smartResult.isOptimal
-      reason = smartResult.reason
-    } else {
-      scheduledTime =
-        post.post_type === 'pre_cta' ? fixedPreCTATime : fixedPostCTATime
-      reason = 'Fixed timing (24h before / 48h after)'
-    }
-
-    if (scheduledTime <= now) {
+    if (timeResult.scheduledTime <= now) {
       results.push({
         postId: post.id,
         platform: post.platform,
@@ -327,10 +377,7 @@ export async function scheduleBulkPosts(
       id: post.id,
       platform: post.platform,
       post_type: post.post_type,
-      scheduledTime,
-      localTime,
-      isOptimal,
-      reason,
+      ...timeResult,
     })
   }
 

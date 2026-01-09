@@ -12,7 +12,9 @@ afterEach(() => {
 // Note: COOKIE_SECRET is set in vitest.config.ts env to ensure it's available before module load
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key'
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key'
 process.env.ANTHROPIC_API_KEY = 'test-anthropic-key'
+process.env.ENCRYPTION_KEY = 'a'.repeat(64) // 64 hex chars for AES-256
 
 // Suppress console noise in tests
 vi.spyOn(console, 'log').mockImplementation(() => {})

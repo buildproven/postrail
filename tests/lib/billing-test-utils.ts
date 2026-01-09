@@ -42,12 +42,10 @@ export function createStripeMock(): StripeMock {
   return {
     checkout: {
       sessions: {
-        create: vi
-          .fn()
-          .mockResolvedValue({
-            id: 'cs_test_123',
-            url: 'https://checkout.stripe.com/test',
-          }),
+        create: vi.fn().mockResolvedValue({
+          id: 'cs_test_123',
+          url: 'https://checkout.stripe.com/test',
+        }),
       },
     },
     billingPortal: {
@@ -123,7 +121,7 @@ export function createCheckoutEvent(
     livemode: false,
     pending_webhooks: 0,
     request: null,
-  }
+  } as any
 }
 
 export function createSubscriptionEvent(
@@ -167,7 +165,7 @@ export function createSubscriptionEvent(
     livemode: false,
     pending_webhooks: 0,
     request: null,
-  }
+  } as any
 }
 
 export function createSubscriptionCreatedEvent(
@@ -213,7 +211,7 @@ export function createPaymentSucceededEvent(
     livemode: false,
     pending_webhooks: 0,
     request: null,
-  }
+  } as any
 }
 
 export function createPaymentFailedEvent(
@@ -241,7 +239,7 @@ export function createPaymentFailedEvent(
     livemode: false,
     pending_webhooks: 0,
     request: null,
-  }
+  } as any
 }
 
 export function createInvoiceEvent(

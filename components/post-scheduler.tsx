@@ -257,32 +257,35 @@ export function PostScheduler({
   }
 
   const getAlertClassName = (type: 'success' | 'error' | 'info') => {
-    if (type === 'success') return 'bg-green-50 border-green-200'
-    if (type === 'info') return 'bg-blue-50 border-blue-200'
+    if (type === 'success') return 'bg-green-50 border-green-300'
+    if (type === 'info') return 'bg-blue-50 border-blue-300'
     return ''
   }
 
   const getAlertTextClassName = (type: 'success' | 'error' | 'info') => {
-    if (type === 'success') return 'text-green-800'
-    if (type === 'info') return 'text-blue-800'
+    if (type === 'success') return 'text-green-900'
+    if (type === 'info') return 'text-blue-900'
     return ''
   }
 
   const getAlertIcon = (type: 'success' | 'error' | 'info') => {
     if (type === 'success')
-      return <CheckCircle2 className="h-4 w-4 text-green-600" />
-    if (type === 'info') return <Info className="h-4 w-4 text-blue-600" />
-    return <XCircle className="h-4 w-4" />
+      return (
+        <CheckCircle2 className="h-4 w-4 text-green-700" aria-hidden="true" />
+      )
+    if (type === 'info')
+      return <Info className="h-4 w-4 text-blue-700" aria-hidden="true" />
+    return <XCircle className="h-4 w-4" aria-hidden="true" />
   }
 
   const getPostCardClassName = (
     result: ScheduleResult | null,
     connected: boolean
   ) => {
-    if (result?.status === 'scheduled') return 'bg-green-50 border-green-200'
+    if (result?.status === 'scheduled') return 'bg-green-50 border-green-300'
     if (result?.status === 'skipped' || result?.status === 'failed')
-      return 'bg-red-50 border-red-200'
-    if (!connected) return 'bg-gray-100 border-gray-300'
+      return 'bg-red-50 border-red-300'
+    if (!connected) return 'bg-gray-100 border-gray-400'
     return 'bg-white'
   }
 
@@ -291,13 +294,13 @@ export function PostScheduler({
       {/* Timezone Display */}
       {timezone && (
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Globe className="h-4 w-4" />
+          <Globe className="h-4 w-4" aria-hidden="true" />
           <span>Times shown in {timezone.replace(/_/g, ' ')}</span>
           <a
             href="/dashboard/settings"
             className="text-blue-600 hover:underline"
           >
-            Change
+            Change timezone
           </a>
         </div>
       )}
@@ -306,7 +309,7 @@ export function PostScheduler({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+            <Calendar className="h-5 w-5" aria-hidden="true" />
             Newsletter Publish Date
           </CardTitle>
         </CardHeader>
@@ -314,7 +317,7 @@ export function PostScheduler({
           {/* Smart Timing Toggle */}
           <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
             <div className="flex items-center gap-3">
-              <Sparkles className="h-5 w-5 text-blue-600" />
+              <Sparkles className="h-5 w-5 text-blue-600" aria-hidden="true" />
               <div>
                 <Label
                   htmlFor="smartTiming"
@@ -339,7 +342,7 @@ export function PostScheduler({
           {useSmartTiming && (
             <div className="p-4 bg-gray-50 rounded-lg text-sm">
               <div className="flex items-center gap-2 mb-2 text-gray-700">
-                <Info className="h-4 w-4" />
+                <Info className="h-4 w-4" aria-hidden="true" />
                 <span className="font-medium">Platform optimal times:</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-gray-600">
@@ -429,7 +432,7 @@ export function PostScheduler({
           {publishDate && useSmartTiming && (
             <div className="bg-blue-50 p-4 rounded-lg text-sm border border-blue-100">
               <p className="font-medium mb-2 text-blue-800">
-                <Sparkles className="h-4 w-4 inline mr-1" />
+                <Sparkles className="h-4 w-4 inline mr-1" aria-hidden="true" />
                 Smart Timing will find the best times for each platform
               </p>
               <p className="text-blue-700">
@@ -446,15 +449,18 @@ export function PostScheduler({
           >
             {scheduling ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2
+                  className="mr-2 h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
                 Scheduling...
               </>
             ) : (
               <>
                 {useSmartTiming ? (
-                  <Sparkles className="mr-2 h-4 w-4" />
+                  <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
                 ) : (
-                  <Clock className="mr-2 h-4 w-4" />
+                  <Clock className="mr-2 h-4 w-4" aria-hidden="true" />
                 )}
                 Schedule All Posts
                 {useSmartTiming && ' (Smart Timing)'}
@@ -482,7 +488,7 @@ export function PostScheduler({
         <Card className="border-red-200 bg-red-50">
           <CardHeader>
             <CardTitle className="text-red-800 flex items-center gap-2">
-              <XCircle className="h-5 w-5" />
+              <XCircle className="h-5 w-5" aria-hidden="true" />
               Failed Posts
             </CardTitle>
             <p className="text-sm text-red-600">
@@ -520,12 +526,22 @@ export function PostScheduler({
                     variant="outline"
                     onClick={() => handleRetry(post.id)}
                     disabled={retrying === post.id}
+                    aria-label={`Retry failed ${post.platform} post`}
                   >
                     {retrying === post.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2
+                          className="h-4 w-4 animate-spin"
+                          aria-hidden="true"
+                        />
+                        <span className="sr-only">Retrying...</span>
+                      </>
                     ) : (
                       <>
-                        <RefreshCw className="h-4 w-4 mr-1" />
+                        <RefreshCw
+                          className="h-4 w-4 mr-1"
+                          aria-hidden="true"
+                        />
                         Retry
                       </>
                     )}
@@ -575,8 +591,13 @@ export function PostScheduler({
                     <div className="text-right">
                       {result?.status === 'scheduled' && (
                         <div className="flex items-center gap-1 text-green-600 text-sm">
-                          {result.isOptimal && <Sparkles className="h-3 w-3" />}
-                          <CheckCircle2 className="h-4 w-4" />
+                          {result.isOptimal && (
+                            <Sparkles className="h-3 w-3" aria-hidden="true" />
+                          )}
+                          <CheckCircle2
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
                           Scheduled
                         </div>
                       )}
@@ -604,7 +625,7 @@ export function PostScheduler({
                       </p>
                       {result.reason && result.isOptimal && (
                         <p className="text-xs text-blue-600 flex items-center gap-1 mt-1">
-                          <Sparkles className="h-3 w-3" />
+                          <Sparkles className="h-3 w-3" aria-hidden="true" />
                           {result.reason}
                         </p>
                       )}
@@ -655,8 +676,13 @@ export function PostScheduler({
                     <div className="text-right">
                       {result?.status === 'scheduled' && (
                         <div className="flex items-center gap-1 text-green-600 text-sm">
-                          {result.isOptimal && <Sparkles className="h-3 w-3" />}
-                          <CheckCircle2 className="h-4 w-4" />
+                          {result.isOptimal && (
+                            <Sparkles className="h-3 w-3" aria-hidden="true" />
+                          )}
+                          <CheckCircle2
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
                           Scheduled
                         </div>
                       )}
@@ -684,7 +710,7 @@ export function PostScheduler({
                       </p>
                       {result.reason && result.isOptimal && (
                         <p className="text-xs text-blue-600 flex items-center gap-1 mt-1">
-                          <Sparkles className="h-3 w-3" />
+                          <Sparkles className="h-3 w-3" aria-hidden="true" />
                           {result.reason}
                         </p>
                       )}

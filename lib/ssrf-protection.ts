@@ -218,45 +218,51 @@ class SSRFProtection {
       process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
     const enforceInTests = process.env.ENFORCE_SSRF_RATE_LIMIT_TESTS === 'true'
 
-    // Default: bypass in test to keep integration tests stable; security race tests can
-    // opt-in via ENFORCE_SSRF_RATE_LIMIT_TESTS=true
     if (isTestEnv && !enforceInTests) {
       return { allowed: true }
     }
 
     const now = Date.now()
 
-    // Check user rate limit
-    const userKey = `scrape_user:${userId}`
-    const userRecord = await this.checkAndUpdateRateLimit(
-      userKey,
+    const userResult = await this.checkSingleRateLimit(
+      `scrape_user:${userId}`,
       this.userLimits,
       this.SCRAPE_REQUESTS_PER_USER_PER_MINUTE,
-      now
+      now,
+      'User'
     )
 
-    if (!userRecord.allowed) {
-      return {
-        allowed: false,
-        retryAfter: Math.ceil(userRecord.retryAfter! / 1000),
-        reason: `User rate limit exceeded: ${this.SCRAPE_REQUESTS_PER_USER_PER_MINUTE} requests per minute`,
-      }
+    if (!userResult.allowed) {
+      return userResult
     }
 
-    // Check IP rate limit
-    const ipKey = `scrape_ip:${clientIP}`
-    const ipRecord = await this.checkAndUpdateRateLimit(
-      ipKey,
+    return this.checkSingleRateLimit(
+      `scrape_ip:${clientIP}`,
       this.ipLimits,
       this.SCRAPE_REQUESTS_PER_IP_PER_MINUTE,
-      now
+      now,
+      'IP'
     )
+  }
 
-    if (!ipRecord.allowed) {
+  private async checkSingleRateLimit(
+    key: string,
+    limitMap: Map<string, RateLimitRecord>,
+    limit: number,
+    now: number,
+    type: 'User' | 'IP'
+  ): Promise<{
+    allowed: boolean
+    retryAfter?: number
+    reason?: string
+  }> {
+    const record = await this.checkAndUpdateRateLimit(key, limitMap, limit, now)
+
+    if (!record.allowed) {
       return {
         allowed: false,
-        retryAfter: Math.ceil(ipRecord.retryAfter! / 1000),
-        reason: `IP rate limit exceeded: ${this.SCRAPE_REQUESTS_PER_IP_PER_MINUTE} requests per minute`,
+        retryAfter: Math.ceil(record.retryAfter! / 1000),
+        reason: `${type} rate limit exceeded: ${limit} requests per minute`,
       }
     }
 
@@ -276,27 +282,25 @@ class SSRFProtection {
   } {
     const now = Date.now()
 
-    const userKey = `scrape_user:${userId}`
     const userStatus = this.peekRateLimit(
-      userKey,
+      `scrape_user:${userId}`,
       this.userLimits,
       this.SCRAPE_REQUESTS_PER_USER_PER_MINUTE,
       now,
       'User'
     )
-    if (!userStatus.allowed) return userStatus
 
-    const ipKey = `scrape_ip:${clientIP}`
-    const ipStatus = this.peekRateLimit(
-      ipKey,
+    if (!userStatus.allowed) {
+      return userStatus
+    }
+
+    return this.peekRateLimit(
+      `scrape_ip:${clientIP}`,
       this.ipLimits,
       this.SCRAPE_REQUESTS_PER_IP_PER_MINUTE,
       now,
       'IP'
     )
-    if (!ipStatus.allowed) return ipStatus
-
-    return { allowed: true }
   }
 
   private peekRateLimit(
@@ -307,6 +311,7 @@ class SSRFProtection {
     label: 'User' | 'IP'
   ): { allowed: boolean; retryAfter?: number; reason?: string } {
     const record = limitMap.get(key)
+
     if (!record || now > record.resetTime) {
       return { allowed: true }
     }

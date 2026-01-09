@@ -14,14 +14,10 @@ import {
 } from '@/lib/billing'
 import { NextResponse } from 'next/server'
 import { checkTrialAccess } from '@/lib/trial-guard'
-import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-// M3 fix: Type for either server or service client
-type AnySupabaseClient =
-  | SupabaseClient
-  | Awaited<ReturnType<typeof createServiceClient>>
+type AnySupabaseClient = SupabaseClient
 
 export type Feature =
   | 'basic_generation'
@@ -106,6 +102,30 @@ export function requireFeature(feature: Feature) {
 }
 
 /**
+ * Get or create Supabase client for server operations
+ * Throws if server client cannot be created (authentication context missing)
+ */
+async function getServerClient(
+  providedClient?: AnySupabaseClient
+): Promise<AnySupabaseClient> {
+  if (providedClient) {
+    return providedClient
+  }
+
+  try {
+    return await createClient()
+  } catch (serverClientError) {
+    const error =
+      serverClientError instanceof Error
+        ? serverClientError
+        : new Error(String(serverClientError))
+    throw new Error(
+      `Unable to access database - authentication context missing: ${error.message}`
+    )
+  }
+}
+
+/**
  * Check usage limits (daily generations)
  * M3 fix: Accept optional supabase client to prefer server client (RLS) over service client
  */
@@ -121,7 +141,6 @@ export async function checkUsageLimits(
   const status = await billingService.getSubscriptionStatus(userId)
   const limits = await billingService.getUsageLimits(userId)
 
-  // For trial users, use the trial guard
   if (status.tier === 'trial') {
     const trialCheck = await checkTrialAccess(userId)
 
@@ -135,24 +154,7 @@ export async function checkUsageLimits(
     }
   }
 
-  // M3 fix: Use provided client or create server client (respects RLS)
-  let supabase: AnySupabaseClient
-  if (supabaseClient) {
-    supabase = supabaseClient
-  } else {
-    try {
-      supabase = await createClient()
-    } catch (serverClientError) {
-      // CRITICAL: Never silently fall back to service client - this bypasses RLS!
-      const error =
-        serverClientError instanceof Error
-          ? serverClientError
-          : new Error(String(serverClientError))
-      throw new Error(
-        `Unable to validate usage limits - authentication context missing: ${error.message}`
-      )
-    }
-  }
+  const supabase = await getServerClient(supabaseClient)
 
   const startOfDay = new Date()
   startOfDay.setUTCHours(0, 0, 0, 0)
@@ -188,25 +190,7 @@ export async function checkPlatformLimits(
   tier: SubscriptionTier
 }> {
   const limits = await billingService.getUsageLimits(userId)
-
-  // M3 fix: Use provided client or create server client (respects RLS)
-  let supabase: AnySupabaseClient
-  if (supabaseClient) {
-    supabase = supabaseClient
-  } else {
-    try {
-      supabase = await createClient()
-    } catch (serverClientError) {
-      // CRITICAL: Never silently fall back to service client - this bypasses RLS!
-      const error =
-        serverClientError instanceof Error
-          ? serverClientError
-          : new Error(String(serverClientError))
-      throw new Error(
-        `Unable to check platform limits - authentication context missing: ${error.message}`
-      )
-    }
-  }
+  const supabase = await getServerClient(supabaseClient)
 
   const { count } = await supabase
     .from('platform_connections')

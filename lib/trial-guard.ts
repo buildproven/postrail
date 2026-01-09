@@ -133,6 +133,38 @@ export async function checkTrialAccess(
   return checkTrialAccessWithProfile(profile, limits)
 }
 
+function calculateDaysRemaining(trialEndsAt: Date, now: Date): number {
+  return Math.ceil(
+    (trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+  )
+}
+
+function buildTrialStatus(
+  allowed: boolean,
+  profile: { trial_total_generations: number; trial_ends_at: string },
+  limits: Awaited<ReturnType<typeof getSystemLimits>>,
+  generationsToday: number,
+  reason?: string
+): TrialStatus {
+  const now = new Date()
+  const trialEndsAt = new Date(profile.trial_ends_at)
+  const trialEnded = now > trialEndsAt
+
+  return {
+    allowed,
+    reason,
+    isTrial: true,
+    trialEnded,
+    trialDaysRemaining: trialEnded
+      ? 0
+      : calculateDaysRemaining(trialEndsAt, now),
+    generationsToday,
+    generationsTotal: profile.trial_total_generations,
+    dailyLimit: limits.trialDailyLimitPerUser,
+    totalLimit: limits.trialTotalLimitPerUser,
+  }
+}
+
 async function checkTrialAccessWithProfile(
   profile: {
     user_id: string
@@ -149,7 +181,6 @@ async function checkTrialAccessWithProfile(
   const trialEndsAt = new Date(profile.trial_ends_at)
   const trialEnded = now > trialEndsAt
 
-  // If paid user, allow
   if (!profile.is_trial && profile.plan !== 'trial') {
     return {
       allowed: true,
@@ -166,47 +197,28 @@ async function checkTrialAccessWithProfile(
     }
   }
 
-  // 2. Check if trial has expired
   if (trialEnded) {
     return {
       allowed: false,
       error: 'Trial expired. Please upgrade to continue.',
-      status: {
-        allowed: false,
-        reason: 'trial_expired',
-        isTrial: true,
-        trialEnded: true,
-        trialDaysRemaining: 0,
-        generationsToday: 0,
-        generationsTotal: profile.trial_total_generations,
-        dailyLimit: limits.trialDailyLimitPerUser,
-        totalLimit: limits.trialTotalLimitPerUser,
-      },
+      status: buildTrialStatus(false, profile, limits, 0, 'trial_expired'),
     }
   }
 
-  // 3. Check total trial limit
   if (profile.trial_total_generations >= limits.trialTotalLimitPerUser) {
     return {
       allowed: false,
       error: `Trial limit reached (${limits.trialTotalLimitPerUser} generations). Please upgrade to continue.`,
-      status: {
-        allowed: false,
-        reason: 'total_limit_reached',
-        isTrial: true,
-        trialEnded: false,
-        trialDaysRemaining: Math.ceil(
-          (trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-        ),
-        generationsToday: 0,
-        generationsTotal: profile.trial_total_generations,
-        dailyLimit: limits.trialDailyLimitPerUser,
-        totalLimit: limits.trialTotalLimitPerUser,
-      },
+      status: buildTrialStatus(
+        false,
+        profile,
+        limits,
+        0,
+        'total_limit_reached'
+      ),
     }
   }
 
-  // 4. Check daily limit
   const startOfDay = new Date()
   startOfDay.setUTCHours(0, 0, 0, 0)
 
@@ -219,23 +231,16 @@ async function checkTrialAccessWithProfile(
 
   if (countError) {
     logger.error({ error: countError }, 'Error counting daily generations')
-    // CRITICAL: Fail closed - deny access if we can't verify limits
     return {
       allowed: false,
       error: 'Unable to verify trial limits. Please try again.',
-      status: {
-        allowed: false,
-        reason: 'verification_failed',
-        isTrial: true,
-        trialEnded: false,
-        trialDaysRemaining: Math.ceil(
-          (trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-        ),
-        generationsToday: 0,
-        generationsTotal: profile.trial_total_generations,
-        dailyLimit: limits.trialDailyLimitPerUser,
-        totalLimit: limits.trialTotalLimitPerUser,
-      },
+      status: buildTrialStatus(
+        false,
+        profile,
+        limits,
+        0,
+        'verification_failed'
+      ),
     }
   }
 
@@ -245,23 +250,16 @@ async function checkTrialAccessWithProfile(
     return {
       allowed: false,
       error: `Daily trial limit reached (${limits.trialDailyLimitPerUser} generations). Try again tomorrow.`,
-      status: {
-        allowed: false,
-        reason: 'daily_limit_reached',
-        isTrial: true,
-        trialEnded: false,
-        trialDaysRemaining: Math.ceil(
-          (trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-        ),
+      status: buildTrialStatus(
+        false,
+        profile,
+        limits,
         generationsToday,
-        generationsTotal: profile.trial_total_generations,
-        dailyLimit: limits.trialDailyLimitPerUser,
-        totalLimit: limits.trialTotalLimitPerUser,
-      },
+        'daily_limit_reached'
+      ),
     }
   }
 
-  // 5. Check global daily cap
   const { count: globalCount } = await supabase
     .from('generation_events')
     .select('*', { count: 'exact', head: true })
@@ -272,37 +270,21 @@ async function checkTrialAccessWithProfile(
     return {
       allowed: false,
       error: 'Trial capacity reached for today. Please try again tomorrow.',
-      status: {
-        allowed: false,
-        reason: 'global_cap_reached',
-        isTrial: true,
-        trialEnded: false,
-        trialDaysRemaining: Math.ceil(
-          (trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-        ),
+      status: buildTrialStatus(
+        false,
+        profile,
+        limits,
         generationsToday,
-        generationsTotal: profile.trial_total_generations,
-        dailyLimit: limits.trialDailyLimitPerUser,
-        totalLimit: limits.trialTotalLimitPerUser,
-      },
+        'global_cap_reached'
+      ),
     }
   }
 
-  // All checks passed
+  const daysRemaining = calculateDaysRemaining(trialEndsAt, now)
+
   return {
     allowed: true,
-    status: {
-      allowed: true,
-      isTrial: true,
-      trialEnded: false,
-      trialDaysRemaining: Math.ceil(
-        (trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-      ),
-      generationsToday,
-      generationsTotal: profile.trial_total_generations,
-      dailyLimit: limits.trialDailyLimitPerUser,
-      totalLimit: limits.trialTotalLimitPerUser,
-    },
+    status: buildTrialStatus(true, profile, limits, generationsToday),
     headers: {
       'X-Trial-Remaining-Today': String(
         limits.trialDailyLimitPerUser - generationsToday
@@ -310,11 +292,7 @@ async function checkTrialAccessWithProfile(
       'X-Trial-Remaining-Total': String(
         limits.trialTotalLimitPerUser - profile.trial_total_generations
       ),
-      'X-Trial-Days-Remaining': String(
-        Math.ceil(
-          (trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-        )
-      ),
+      'X-Trial-Days-Remaining': String(daysRemaining),
     },
   }
 }

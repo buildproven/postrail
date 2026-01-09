@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { logger } from '@/lib/logger'
 
+export const revalidate = 60
+
 export default async function DashboardPage() {
   const supabase = await createClient()
 

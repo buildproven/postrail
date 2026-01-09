@@ -224,3 +224,21 @@ export function generateEncryptionKey(): string {
 export function hash(text: string): string {
   return crypto.createHash('sha256').update(text).digest('hex')
 }
+
+/**
+ * Reset crypto caches - FOR TESTING ONLY
+ *
+ * Clears cached encryption key and derived keys to ensure test isolation.
+ * Call in test teardown when manipulating process.env.ENCRYPTION_KEY.
+ *
+ * @internal
+ * @example
+ * // In test file:
+ * afterEach(() => {
+ *   __resetCryptoCache()
+ * })
+ */
+export function __resetCryptoCache(): void {
+  cachedEncryptionKey = null
+  derivedKeyCache.clear()
+}

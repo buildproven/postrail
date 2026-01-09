@@ -232,10 +232,17 @@ export default function NewNewsletterPage() {
                     onChange={e => setUrl(e.target.value)}
                     disabled={loading}
                   />
-                  <Button onClick={handleUrlImport} disabled={loading || !url}>
+                  <Button
+                    onClick={handleUrlImport}
+                    disabled={loading || !url}
+                    aria-busy={loading}
+                  >
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2
+                          className="mr-2 h-4 w-4 animate-spin"
+                          aria-hidden="true"
+                        />
                         Importing...
                       </>
                     ) : (
@@ -332,10 +339,14 @@ export default function NewNewsletterPage() {
           onClick={handleGenerate}
           disabled={loading || !content}
           size="lg"
+          aria-busy={loading}
         >
           {loading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2
+                className="mr-2 h-4 w-4 animate-spin"
+                aria-hidden="true"
+              />
               Generating Posts...
             </>
           ) : (

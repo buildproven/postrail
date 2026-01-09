@@ -25,6 +25,7 @@ export async function GET() {
       status,
       headers: {
         'X-RateLimit-Backend': rateLimitHealth.backend,
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30',
         ...(isDegraded && { 'X-RateLimit-Degraded': 'true' }),
       },
     }
