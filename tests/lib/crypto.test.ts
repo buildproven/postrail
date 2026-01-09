@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest'
-import { encrypt, decrypt, hash } from '@/lib/crypto'
+import { describe, it, expect, beforeAll, afterEach } from 'vitest'
+import { encrypt, decrypt, hash, __resetCryptoCache } from '@/lib/crypto'
 
 /**
  * Unit tests for encryption utilities
@@ -146,9 +146,15 @@ describe('Crypto Utilities - Hashing', () => {
 })
 
 describe('Crypto Utilities - Error Handling', () => {
+  afterEach(() => {
+    __resetCryptoCache()
+    process.env.ENCRYPTION_KEY = 'a'.repeat(64)
+  })
+
   it('should throw error if ENCRYPTION_KEY is missing', () => {
     const originalKey = process.env.ENCRYPTION_KEY
     delete process.env.ENCRYPTION_KEY
+    __resetCryptoCache()
 
     expect(() => encrypt('test')).toThrow('ENCRYPTION_KEY')
 
@@ -159,6 +165,7 @@ describe('Crypto Utilities - Error Handling', () => {
   it('should throw error if ENCRYPTION_KEY is wrong length', () => {
     const originalKey = process.env.ENCRYPTION_KEY
     process.env.ENCRYPTION_KEY = 'too-short' // Not 64 characters
+    __resetCryptoCache()
 
     expect(() => encrypt('test')).toThrow('64 hex characters')
 
