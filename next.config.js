@@ -4,6 +4,7 @@ const { withSentryConfig } = require('@sentry/nextjs')
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  compress: true,
   async headers() {
     return [
       {
@@ -30,6 +31,33 @@ const nextConfig = {
             value: 'camera=(), microphone=(), geolocation=()',
           },
           // H9 fix: CSP moved to middleware.ts for dynamic nonce generation
+        ],
+      },
+      {
+        source: '/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/:path*.{jpg,jpeg,png,gif,webp,svg,ico}',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
         ],
       },
     ]

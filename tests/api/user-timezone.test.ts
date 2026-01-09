@@ -76,7 +76,7 @@ describe('User Timezone API', () => {
     })
 
     it('should return default timezone for new user', () => {
-      const profile = null
+      const profile = null as { timezone?: string } | null
       const result = profile?.timezone || 'America/New_York'
 
       expect(result).toBe('America/New_York')
@@ -119,12 +119,12 @@ describe('User Timezone API', () => {
     })
 
     it('should not override user-set timezone', () => {
-      const currentTimezone = 'Europe/London'
+      const currentTimezone: string = 'Europe/London'
       const _detectedTimezone = 'America/Denver'
 
       // Only set if default
       const shouldSet =
-        !currentTimezone || currentTimezone === 'America/New_York'
+        !currentTimezone || currentTimezone === ('America/New_York' as string)
 
       expect(shouldSet).toBe(false)
     })

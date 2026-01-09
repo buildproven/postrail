@@ -22,7 +22,9 @@ export function createMockMessagesCreate() {
 /**
  * Create mock Anthropic SDK module
  */
-export function createMockAnthropicModule(mockMessagesCreate: ReturnType<typeof vi.fn>) {
+export function createMockAnthropicModule(
+  mockMessagesCreate: ReturnType<typeof vi.fn>
+) {
   class MockAPIError extends Error {
     constructor(message: string) {
       super(message)
@@ -33,7 +35,7 @@ export function createMockAnthropicModule(mockMessagesCreate: ReturnType<typeof 
   return {
     default: class MockAnthropic {
       messages = {
-        create: ((...args: any[]) => mockMessagesCreate(...args)) as any,
+        create: mockMessagesCreate as any,
       }
     },
     APIError: MockAPIError,
@@ -43,11 +45,16 @@ export function createMockAnthropicModule(mockMessagesCreate: ReturnType<typeof 
 /**
  * Create mock response for different post types
  */
-export function createMockPostResponse(platform: string, postType: string): string {
+export function createMockPostResponse(
+  platform: string,
+  postType: string
+): string {
   const templates = {
     linkedin: {
-      'pre-cta': 'Professional LinkedIn post introducing the topic. #Business #Tech',
-      'post-cta': 'Follow-up LinkedIn post with insights and next steps. #Growth',
+      'pre-cta':
+        'Professional LinkedIn post introducing the topic. #Business #Tech',
+      'post-cta':
+        'Follow-up LinkedIn post with insights and next steps. #Growth',
     },
     twitter: {
       'pre-cta': 'Engaging Twitter thread starter about the topic. #Tech',
@@ -55,7 +62,8 @@ export function createMockPostResponse(platform: string, postType: string): stri
     },
     facebook: {
       'pre-cta': 'Friendly Facebook post introducing the newsletter topic.',
-      'post-cta': 'Facebook post with detailed insights and community engagement.',
+      'post-cta':
+        'Facebook post with detailed insights and community engagement.',
     },
     threads: {
       'pre-cta': 'Threads post introducing the topic in a conversational way.',

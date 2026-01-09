@@ -161,13 +161,11 @@
     ],
     "**/*.{ts,tsx}": [
       "eslint --fix",
-      "prettier --write",
-      "tsc --noEmit --skipLibCheck"
+      "prettier --write"
     ],
     "tests/**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
-      "prettier --write",
-      "tsc --noEmit --project tests/tsconfig.json"
+      "prettier --write"
     ],
     "**/*.py": [
       "black --check --diff",

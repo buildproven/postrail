@@ -5,11 +5,15 @@ import './globals.css'
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
+  display: 'swap',
+  preload: true,
 })
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+  display: 'swap',
+  preload: true,
 })
 
 export const metadata: Metadata = {
@@ -37,10 +41,11 @@ export const metadata: Metadata = {
       'AI-powered social media automation for newsletter creators. Generate platform-perfect posts for LinkedIn, Twitter, Threads, and Facebook in seconds.',
     images: [
       {
-        url: '/og-image.jpg',
+        url: '/og-image.webp',
         width: 1200,
         height: 630,
         alt: 'Postrail - Newsletter to Social Media Automation',
+        type: 'image/webp',
       },
     ],
   },
@@ -49,7 +54,7 @@ export const metadata: Metadata = {
     title: 'Postrail - Automate Your Newsletter Social Posts',
     description:
       'AI-powered social media automation for newsletter creators. Generate and schedule posts automatically.',
-    images: ['/og-image.jpg'],
+    images: ['/og-image.webp'],
     creator: '@vibebuildlab',
   },
   robots: {
@@ -82,6 +87,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

@@ -1,34 +1,68 @@
 module.exports = {
   ci: {
     collect: {
-      url: ['http://localhost:3000'],
       startServerCommand: 'npm run start',
       startServerReadyPattern: 'ready|listening|started',
-      startServerReadyTimeout: 30000,
+      startServerReadyTimeout: 60000,
+      url: [
+        'http://localhost:3000',
+        'http://localhost:3000/auth/login',
+        'http://localhost:3000/auth/signup',
+      ],
       numberOfRuns: 3,
-    },
-    upload: {
-      target: 'temporary-public-storage',
+      settings: {
+        preset: 'desktop',
+        throttling: {
+          rttMs: 40,
+          throughputKbps: 10240,
+          cpuSlowdownMultiplier: 1,
+        },
+        screenEmulation: {
+          mobile: false,
+          width: 1350,
+          height: 940,
+          deviceScaleFactor: 1,
+          disabled: false,
+        },
+        formFactor: 'desktop',
+      },
     },
     assert: {
       preset: 'lighthouse:recommended',
       assertions: {
-        // Performance
-        'first-contentful-paint': ['warn', { maxNumericValue: 2000 }],
+        'categories:performance': ['error', { minScore: 0.9 }],
+        'categories:accessibility': ['error', { minScore: 0.9 }],
+        'categories:best-practices': ['error', { minScore: 0.9 }],
+        'categories:seo': ['error', { minScore: 0.9 }],
+        'first-contentful-paint': ['error', { maxNumericValue: 2000 }],
         'largest-contentful-paint': ['error', { maxNumericValue: 2500 }],
         'cumulative-layout-shift': ['error', { maxNumericValue: 0.1 }],
-        'total-blocking-time': ['warn', { maxNumericValue: 300 }],
-
-        // Categories (0-1 scale)
-        'categories:performance': ['warn', { minScore: 0.8 }],
-        'categories:accessibility': ['error', { minScore: 0.9 }],
-        'categories:best-practices': ['warn', { minScore: 0.9 }],
-        'categories:seo': ['warn', { minScore: 0.9 }],
-
-        // Allow some common warnings
+        'total-blocking-time': ['error', { maxNumericValue: 300 }],
+        'max-potential-fid': ['error', { maxNumericValue: 130 }],
+        'speed-index': ['error', { maxNumericValue: 3000 }],
+        interactive: ['error', { maxNumericValue: 3500 }],
+        'uses-responsive-images': 'warn',
+        'offscreen-images': 'warn',
+        'unminified-css': 'error',
+        'unminified-javascript': 'error',
+        'unused-css-rules': 'warn',
+        'unused-javascript': 'warn',
+        'modern-image-formats': 'warn',
+        'uses-optimized-images': 'warn',
+        'uses-text-compression': 'error',
+        'uses-rel-preconnect': 'warn',
+        'font-display': 'warn',
+        'uses-http2': 'warn',
+        'efficient-animated-content': 'warn',
+        'duplicated-javascript': 'warn',
+        'legacy-javascript': 'warn',
+        'total-byte-weight': ['warn', { maxNumericValue: 512000 }],
+        'dom-size': ['warn', { maxNumericValue: 1500 }],
         'unsized-images': 'off',
-        'uses-responsive-images': 'off',
       },
+    },
+    upload: {
+      target: 'temporary-public-storage',
     },
   },
 }

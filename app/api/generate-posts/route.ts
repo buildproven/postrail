@@ -175,9 +175,59 @@ Generate a ${postType} post for ${platform}.`
   }
 }
 
+interface AuthResult {
+  supabase:
+    | Awaited<ReturnType<typeof createClient>>
+    | ReturnType<typeof createServiceClient>
+  userId: string
+  error?: NextResponse
+}
+
+async function authenticateRequest(request: NextRequest): Promise<AuthResult> {
+  const workerToken = request.headers.get('x-worker-token')
+  const serviceUserId = request.headers.get('x-service-user-id')
+  const isWorkerRequest = Boolean(workerToken && serviceUserId)
+
+  if (isWorkerRequest) {
+    if (
+      !process.env.INTERNAL_WORKER_TOKEN ||
+      workerToken !== process.env.INTERNAL_WORKER_TOKEN ||
+      !serviceUserId
+    ) {
+      return {
+        supabase: createServiceClient(),
+        userId: '',
+        error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      }
+    }
+
+    return {
+      supabase: createServiceClient(),
+      userId: serviceUserId,
+    }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return {
+      supabase,
+      userId: '',
+      error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    }
+  }
+
+  return {
+    supabase,
+    userId: user.id,
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Runtime validation: fail fast if API key missing
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
         {
@@ -188,39 +238,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const workerToken = request.headers.get('x-worker-token')
-    const serviceUserId = request.headers.get('x-service-user-id')
-    // M11 fix: Require BOTH headers for worker request, not just one
-    const isWorkerRequest = Boolean(workerToken && serviceUserId)
-
-    let supabase:
-      | Awaited<ReturnType<typeof createClient>>
-      | ReturnType<typeof createServiceClient>
-    let userId: string
-
-    if (isWorkerRequest) {
-      if (
-        !process.env.INTERNAL_WORKER_TOKEN ||
-        workerToken !== process.env.INTERNAL_WORKER_TOKEN ||
-        !serviceUserId
-      ) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-      supabase = createServiceClient()
-      userId = serviceUserId
-    } else {
-      supabase = await createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-      userId = user.id
+    const auth = await authenticateRequest(request)
+    if (auth.error) {
+      return auth.error
     }
 
-    // M6 fix: Validate request body with Zod
+    const { supabase, userId } = auth
+
     const rawBody = await request.json()
     const parseResult = generatePostsRequestSchema.safeParse(rawBody)
 
