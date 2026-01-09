@@ -1,11 +1,15 @@
 # Postrail
 
 [![CI](https://github.com/vibebuildlab/postrail/actions/workflows/ci.yml/badge.svg)](https://github.com/vibebuildlab/postrail/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Built with VBL](https://img.shields.io/badge/Built%20with-Vibe%20Build%20Lab-blueviolet)](https://vibebuildlab.com)
 [![Node.js 20+](https://img.shields.io/badge/node-20%2B-brightgreen)](https://nodejs.org)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org)
 
 AI-powered social media automation for newsletter creators. Automatically generate and schedule social media posts to promote your newsletters across LinkedIn, Facebook, and Twitter/X.
+
+**Open Source Showcase** - This is a production-ready SaaS application built in under a week using AI-assisted development. Feel free to fork, self-host, or use as a reference for your own projects.
 
 ---
 
@@ -36,19 +40,19 @@ AI-powered social media automation for newsletter creators. Automatically genera
 - **Solopreneurs** who need to automate repetitive posting tasks
 - **Agencies** managing multiple newsletter clients
 
-## Pricing
+## Self-Hosting
 
-| Tier         | Price  | Limits          | Features                                         |
-| ------------ | ------ | --------------- | ------------------------------------------------ |
-| **Trial**    | Free   | 3/day, 10 total | All platforms, manual posting                    |
-| **Standard** | $29/mo | 50/day          | Scheduling, basic analytics                      |
-| **Growth**   | $59/mo | 200/day         | API access, advanced analytics, priority support |
+This project is **open source** and can be self-hosted for free. You'll need:
 
-**Free Trial**: 14 days, no credit card required.
+- Supabase account (free tier available)
+- Anthropic API key (pay-as-you-go)
+- Social platform OAuth credentials
+
+See the [Installation](#installation) section for setup instructions.
 
 ### License
 
-Commercial License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE) for details. Free to use, modify, and distribute.
 
 ## Tech Stack
 
@@ -150,6 +154,9 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 | `npm run test:e2e`       | Playwright E2E tests            |
 | `npm run test:coverage`  | Generate coverage report        |
 | `npm run security:audit` | Check npm dependencies          |
+| `npm run ci:local`       | Run all CI checks locally       |
+
+**Note:** If GitHub Actions CI fails due to billing issues, run `npm run ci:local` to verify all checks pass locally before merging.
 
 ## Roadmap
 
@@ -200,11 +207,15 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ## Contributing
 
-This is currently a personal project. If you're interested in contributing, please open an issue first to discuss proposed changes.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+- Open an issue to discuss proposed changes
+- Fork the repo and submit a pull request
+- Follow the existing code style and test requirements
 
 ## License
 
-Commercial License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ## Legal
 
