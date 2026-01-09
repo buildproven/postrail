@@ -26,19 +26,21 @@ export default function Home() {
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web Browser',
     description:
-      'AI-powered social media automation for newsletter creators. Turn your newsletter into 8 platform-optimized posts in seconds.',
+      'Open source AI-powered social media automation for newsletter creators. Turn your newsletter into 8 platform-optimized posts in seconds.',
     offers: {
-      '@type': 'AggregateOffer',
+      '@type': 'Offer',
       priceCurrency: 'USD',
-      lowPrice: '29',
-      highPrice: '59',
-      offerCount: '2',
+      price: '0',
+      description:
+        'Free and open source - self-host on your own infrastructure',
     },
     creator: {
       '@type': 'Organization',
       name: 'Vibe Build Lab LLC',
       url: 'https://vibebuildlab.com',
     },
+    license: 'https://opensource.org/licenses/MIT',
+    codeRepository: 'https://github.com/vibebuildlab/postrail',
   }
 
   return (
@@ -67,28 +69,32 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-xl sm:text-2xl text-gray-700 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
-            AI generates platform-perfect posts for Twitter, LinkedIn, Facebook,
-            and Threads. Connect once, post everywhere.
+            Open source AI-powered automation for newsletter creators. Self-host
+            and customize to your needs.
           </p>
 
           <div className="flex gap-4 items-center justify-center flex-col sm:flex-row mb-12">
             <a
               className="rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors text-lg font-medium h-12 px-8 flex items-center justify-center"
-              href="/auth/signup"
+              href="https://github.com/vibebuildlab/postrail"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              Start Free Trial
+              Fork on GitHub
             </a>
             <a
               className="rounded-full border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-lg h-12 px-8 flex items-center justify-center"
-              href="/auth/login"
+              href="https://github.com/vibebuildlab/postrail#installation"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              Log In
+              Get Started
             </a>
           </div>
 
           <p className="text-sm text-gray-700 dark:text-gray-400">
-            14-day free trial. No credit card required. 3 generations/day, 10
-            total.
+            MIT License. Free forever. Built in under a week with AI-assisted
+            development.
           </p>
         </div>
 

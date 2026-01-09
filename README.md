@@ -48,6 +48,8 @@ This project is **open source** and can be self-hosted for free. You'll need:
 - Anthropic API key (pay-as-you-go)
 - Social platform OAuth credentials
 
+**All billing/trial limits are disabled by default.** Self-hosters get unlimited "growth" tier access (all features, no limits). To enable billing, set `BILLING_ENABLED=true` in your environment.
+
 See the [Installation](#installation) section for setup instructions.
 
 ### License
@@ -105,20 +107,24 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role (server-side tasks)
 - `ANTHROPIC_API_KEY` - Claude API key
-- `STRIPE_SECRET_KEY` - Stripe secret (billing)
-- `STRIPE_PRICE_STANDARD` / `STRIPE_PRICE_GROWTH` - Stripe price IDs
-- `STRIPE_WEBHOOK_SECRET` - Stripe webhook signature secret
+- `ENCRYPTION_KEY` - 64 hex chars for OAuth token encryption
+- `COOKIE_SECRET` - Random secret for OAuth state signing
+
+**Recommended for Production:**
+
 - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` - Rate limiter backend
-- `QSTASH_TOKEN` / `QSTASH_PROCESS_URL` / `QSTASH_CURRENT_SIGNING_KEY` - Scheduling/publish webhooks
-- `SENTRY_DSN` (or `NEXT_PUBLIC_SENTRY_DSN`) - Observability
+- `QSTASH_TOKEN` / `QSTASH_PROCESS_URL` / `QSTASH_CURRENT_SIGNING_KEY` - Scheduling
 
 **Optional:**
 
+- `BILLING_ENABLED` - Set to `true` to enable billing/trial limits (disabled by default)
+- `STRIPE_SECRET_KEY` - Stripe secret (only if billing enabled)
+- `STRIPE_PRICE_STANDARD` / `STRIPE_PRICE_GROWTH` - Stripe price IDs
+- `STRIPE_WEBHOOK_SECRET` - Stripe webhook signature secret
 - `LINKEDIN_CLIENT_ID/SECRET` - LinkedIn OAuth
 - `META_APP_ID/SECRET` - Facebook OAuth
 - `RATE_LIMIT_MODE` - `auto` (default) | `redis` | `memory` | `disabled`
-- `QSTASH_NEXT_SIGNING_KEY` - Key rotation support
-- `SENTRY_ORG` / `SENTRY_PROJECT` - Sentry upload configuration
+- `SENTRY_DSN` - Error monitoring
 
 ## Usage Example
 
