@@ -3,8 +3,28 @@ name: Python Quality Checks
 on:
   push:
     branches: [main, master, develop]
+    paths:
+      - '**.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - '.github/workflows/quality-python.yml'
   pull_request:
     branches: [main, master, develop]
+    paths:
+      - '**.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - '.github/workflows/quality-python.yml'
+  schedule:
+    - cron: '0 2 * * 0' # Weekly full matrix test on Sunday
+  workflow_dispatch:
+
+# Prevent duplicate runs
+concurrency:
+  group: python-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality:
