@@ -23,6 +23,7 @@ import {
 
 // Set env vars BEFORE billing module loads (it reads process.env at load time)
 vi.hoisted(() => {
+  process.env.BILLING_ENABLED = 'true' // Enable billing for tests
   process.env.STRIPE_SECRET_KEY = 'sk_test_xxx'
   process.env.STRIPE_PRICE_STANDARD = 'price_standard_29'
   process.env.STRIPE_PRICE_GROWTH = 'price_growth_59'
@@ -94,6 +95,7 @@ describe('BillingService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    process.env.BILLING_ENABLED = 'true'
     process.env.STRIPE_SECRET_KEY = 'sk_test_xxx'
     process.env.STRIPE_PRICE_STANDARD = TIER_PRICES.standard.priceId
     process.env.STRIPE_PRICE_GROWTH = TIER_PRICES.growth.priceId
@@ -101,6 +103,7 @@ describe('BillingService', () => {
   })
 
   afterEach(() => {
+    delete process.env.BILLING_ENABLED
     delete process.env.STRIPE_SECRET_KEY
     delete process.env.STRIPE_PRICE_STANDARD
     delete process.env.STRIPE_PRICE_GROWTH

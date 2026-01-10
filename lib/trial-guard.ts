@@ -7,10 +7,15 @@
  * - Global daily cap of 200 trial generations
  * - Disposable email blocking
  * - One trial per email + IP (soft-enforced)
+ *
+ * For self-hosted/open source deployments:
+ * - Set BILLING_ENABLED=false to disable all trial limits
+ * - All users get unlimited access
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { logger } from '@/lib/logger'
+import { isBillingEnabled } from '@/lib/billing'
 
 export interface TrialStatus {
   allowed: boolean
@@ -89,10 +94,28 @@ async function getSystemLimits() {
 
 /**
  * Check if a trial user can perform a generation
+ * When BILLING_ENABLED=false, always returns allowed: true
  */
 export async function checkTrialAccess(
   userId: string
 ): Promise<TrialCheckResult> {
+  // Open source mode: no trial limits
+  if (!isBillingEnabled()) {
+    return {
+      allowed: true,
+      status: {
+        allowed: true,
+        isTrial: false,
+        trialEnded: false,
+        trialDaysRemaining: 0,
+        generationsToday: 0,
+        generationsTotal: 0,
+        dailyLimit: Infinity,
+        totalLimit: Infinity,
+      },
+    }
+  }
+
   const supabase = createServiceClient()
   const limits = await getSystemLimits()
 
@@ -300,6 +323,7 @@ async function checkTrialAccessWithProfile(
 /**
  * Check trial limits and record generation atomically
  * This replaces the old check-then-record pattern to prevent race conditions
+ * When BILLING_ENABLED=false, always returns allowed: true
  */
 export async function checkAndRecordTrialGeneration(
   userId: string,
@@ -311,6 +335,23 @@ export async function checkAndRecordTrialGeneration(
     userAgent?: string
   }
 ): Promise<TrialCheckResult> {
+  // Open source mode: no trial limits
+  if (!isBillingEnabled()) {
+    return {
+      allowed: true,
+      status: {
+        allowed: true,
+        isTrial: false,
+        trialEnded: false,
+        trialDaysRemaining: 0,
+        generationsToday: 0,
+        generationsTotal: 0,
+        dailyLimit: Infinity,
+        totalLimit: Infinity,
+      },
+    }
+  }
+
   const supabase = createServiceClient()
 
   // Call atomic RPC that checks limits and records in single transaction

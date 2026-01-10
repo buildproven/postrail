@@ -1,5 +1,5 @@
 /**
- * Service-to-service authentication for external agents (e.g., VBL Marketer_Agent)
+ * Service-to-service authentication for external agents and integrations
  *
  * Security features:
  * - API keys are hashed (never stored in plaintext)
@@ -78,7 +78,7 @@ const serviceRedis =
 export async function validateServiceKey(
   apiKey: string
 ): Promise<ServiceContext | null> {
-  if (!apiKey || !apiKey.startsWith('vbl_sk_')) {
+  if (!apiKey || !apiKey.startsWith('pr_sk_')) {
     return null
   }
 
@@ -345,7 +345,7 @@ export async function generateServiceKey(): Promise<{
 }> {
   const nodeCrypto = await import('crypto')
   const randomPart = nodeCrypto.randomBytes(24).toString('base64url')
-  const key = `vbl_sk_${randomPart}`
+  const key = `pr_sk_${randomPart}`
   const keyHash = hash(key)
 
   return { key, keyHash }
@@ -359,7 +359,7 @@ export function extractServiceKey(authHeader: string | null): string | null {
 
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
-    if (token.startsWith('vbl_sk_')) {
+    if (token.startsWith('pr_sk_')) {
       return token
     }
   }

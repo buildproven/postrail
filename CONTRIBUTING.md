@@ -1,6 +1,10 @@
 # Contributing to Postrail
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to Postrail.
+Thank you for your interest in contributing! Postrail is an open source project and we welcome contributions from the community.
+
+## License
+
+By contributing to this project, you agree that your contributions will be licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Code of Conduct
 
@@ -9,7 +13,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 ## Prerequisites
 
 - Node.js 20+ (enforced via `.npmrc`)
-- Supabase account
+- Supabase account (for database)
 - Anthropic API key (for AI features)
 
 Install dependencies:
@@ -20,19 +24,34 @@ npm install
 
 ## Development Workflow
 
-1. **Start the dev server**
+1. **Fork the repository**
+
+   ```bash
+   git clone https://github.com/vibebuildlab/postrail.git
+   cd postrail
+   ```
+
+2. **Create a branch**
+
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+3. **Start the dev server**
+
    ```bash
    npm run dev
    ```
 
-2. **Run quality gates**
+4. **Run quality gates**
+
    ```bash
    npm run lint
    npm test
    npm run test:coverage
    ```
 
-3. **Run E2E tests**
+5. **Run E2E tests**
    ```bash
    npm run test:e2e
    ```
@@ -40,16 +59,19 @@ npm install
 ## Code Standards
 
 ### TypeScript
+
 - Strict mode enabled
 - No `any` types
 - Proper error handling
 
 ### Formatting
+
 - Prettier for code formatting
 - ESLint with security rules
 - Husky + lint-staged for pre-commit hooks
 
 ### Testing
+
 - Unit tests: Vitest
 - E2E tests: Playwright
 - Minimum 75% coverage for new code
@@ -79,9 +101,16 @@ test(e2e): add newsletter import tests
 - Maintain 75%+ coverage
 - Test actual execution, not just structure
 
-## Questions?
+## Reporting Issues
 
-Open a GitHub issue or discussion.
+- Check existing issues before creating a new one
+- Use issue templates when available
+- Include reproduction steps for bugs
+
+## Getting Help
+
+- Open a GitHub issue or discussion
+- Check the [documentation](./docs/)
 
 ## Legal
 
@@ -90,5 +119,4 @@ Open a GitHub issue or discussion.
 
 ---
 
-> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)
-
+> **Vibe Build Lab LLC** - [vibebuildlab.com](https://vibebuildlab.com)

@@ -17,7 +17,9 @@ function getResend(): Resend {
   return resendClient
 }
 
-const FROM_EMAIL = 'PostRail <noreply@vibebuildlab.com>'
+// FROM_EMAIL configurable via env var for self-hosted deployments
+const FROM_EMAIL =
+  process.env.RESEND_FROM_EMAIL || 'PostRail <noreply@yourdomain.com>'
 
 export interface EmailResult {
   success: boolean

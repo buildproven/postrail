@@ -6,12 +6,25 @@
  * - Customer management
  * - Subscription lifecycle
  * - Usage-based feature gating
+ *
+ * For self-hosted/open source deployments:
+ * - Set BILLING_ENABLED=false to disable all billing/trial limits
+ * - All users get unlimited "growth" tier access
  */
 
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
+
+/**
+ * Check if billing/trial limits are enabled
+ * For self-hosted deployments, set BILLING_ENABLED=false to give all users unlimited access
+ * Default: false (open source friendly - no limits by default)
+ */
+export function isBillingEnabled(): boolean {
+  return process.env.BILLING_ENABLED === 'true'
+}
 
 // Subscription tiers
 export const SUBSCRIPTION_TIERS = {
@@ -401,11 +414,17 @@ class BillingService {
 
   /**
    * Check if user has access to a feature
+   * When BILLING_ENABLED=false, all users get growth tier access
    */
   async hasFeatureAccess(
     userId: string,
     feature: string
   ): Promise<{ allowed: boolean; tier: SubscriptionTier }> {
+    // Open source mode: all features enabled
+    if (!isBillingEnabled()) {
+      return { allowed: true, tier: 'growth' }
+    }
+
     const status = await this.getSubscriptionStatus(userId)
 
     if (status.status === 'expired' || status.status === 'cancelled') {
@@ -420,12 +439,22 @@ class BillingService {
 
   /**
    * Get usage limits for a user
+   * When BILLING_ENABLED=false, returns unlimited (growth tier)
    */
   async getUsageLimits(userId: string): Promise<{
     dailyLimit: number
     platforms: number
     tier: SubscriptionTier
   }> {
+    // Open source mode: unlimited usage
+    if (!isBillingEnabled()) {
+      return {
+        dailyLimit: Infinity,
+        platforms: Infinity,
+        tier: 'growth',
+      }
+    }
+
     const status = await this.getSubscriptionStatus(userId)
     const tierConfig = SUBSCRIPTION_TIERS[status.tier]
 

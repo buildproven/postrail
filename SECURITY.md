@@ -1,5 +1,41 @@
 # Security Policy
 
+## Supported Versions
+
+| Version | Supported          |
+| ------- | ------------------ |
+| 0.1.x   | :white_check_mark: |
+
+## Reporting a Vulnerability
+
+We take security seriously. If you discover a security vulnerability, please report it responsibly.
+
+### For Critical/High Severity Issues
+
+**Please do not report security vulnerabilities through public GitHub issues.**
+
+Instead:
+
+1. **GitHub Security Advisories** (Preferred): Report via [GitHub Security Advisories](https://github.com/vibebuildlab/postrail/security/advisories/new)
+2. **Email**: security@vibebuildlab.com
+
+Include:
+
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
+
+You should receive a response within 48 hours.
+
+### For Low/Medium Severity Issues
+
+You may open a public GitHub issue if the vulnerability:
+
+- Has no known active exploits
+- Does not expose sensitive data
+- Has a straightforward fix
+
 ## Automated Security Controls
 
 - **ESLint (security plugin)**: Runs via lint-staged on commits and in CI (`npm run lint`) to flag injection/unsafe patterns.
@@ -23,24 +59,17 @@ npm run security:config
 gitleaks detect --source .
 ```
 
-## Reporting Security Issues
-
-**Please do not report security vulnerabilities through public GitHub issues.**
-
-Instead, please report them via email to: **security@vibebuildlab.com**
-
-Include:
-
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Suggested fix (if any)
-
-You should receive a response within 48 hours.
-
 ## Security Best Practices
 
-### For Developers
+### For Self-Hosters
+
+- Use strong, unique values for `ENCRYPTION_KEY` and `COOKIE_SECRET`
+- Never commit `.env` files to version control
+- Keep dependencies updated regularly
+- Enable rate limiting in production (`RATE_LIMIT_MODE=redis`)
+- Use HTTPS for all deployments
+
+### For Contributors
 
 - Never commit secrets, API keys, or passwords
 - Use environment variables for sensitive configuration
@@ -62,4 +91,4 @@ You should receive a response within 48 hours.
 
 ---
 
-> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)
+> **Vibe Build Lab LLC** - [vibebuildlab.com](https://vibebuildlab.com)

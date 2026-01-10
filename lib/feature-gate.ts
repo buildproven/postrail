@@ -5,10 +5,15 @@
  * - Trial: basic_generation, manual_posting
  * - Standard: + scheduling, analytics_basic
  * - Growth: + analytics_advanced, bulk_generation, priority_support, api_access
+ *
+ * For self-hosted/open source deployments:
+ * - Set BILLING_ENABLED=false to disable all feature gating
+ * - All users get unlimited "growth" tier access
  */
 
 import {
   billingService,
+  isBillingEnabled,
   SUBSCRIPTION_TIERS,
   SubscriptionTier,
 } from '@/lib/billing'
@@ -128,6 +133,7 @@ async function getServerClient(
 /**
  * Check usage limits (daily generations)
  * M3 fix: Accept optional supabase client to prefer server client (RLS) over service client
+ * When BILLING_ENABLED=false, always returns allowed: true with unlimited limits
  */
 export async function checkUsageLimits(
   userId: string,
@@ -138,6 +144,16 @@ export async function checkUsageLimits(
   limit: number
   tier: SubscriptionTier
 }> {
+  // Open source mode: unlimited usage
+  if (!isBillingEnabled()) {
+    return {
+      allowed: true,
+      remaining: Infinity,
+      limit: Infinity,
+      tier: 'growth',
+    }
+  }
+
   const status = await billingService.getSubscriptionStatus(userId)
   const limits = await billingService.getUsageLimits(userId)
 

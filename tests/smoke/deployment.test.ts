@@ -51,7 +51,11 @@ describe('Pre-Deployment Smoke Tests', () => {
     it('should have Tailwind configuration', () => {
       // Tailwind v4 uses CSS-based configuration instead of tailwind.config.ts
       const globalsCss = fs.readFileSync('app/globals.css', 'utf-8')
-      expect(globalsCss).toContain('@import "tailwindcss"')
+      // Tailwind v4 can use either @import "tailwindcss" or @import url('tailwindcss')
+      expect(
+        globalsCss.includes('@import "tailwindcss"') ||
+          globalsCss.includes("@import url('tailwindcss')")
+      ).toBe(true)
       expect(globalsCss).toContain('@theme')
     })
 

@@ -1,7 +1,7 @@
 {
   "name": "postrail",
   "version": "0.1.0",
-  "private": true,
+  "license": "MIT",
   "engines": {
     "node": ">=20",
     "npm": ">=10.0.0"
@@ -47,6 +47,7 @@
     "type-check:all": "npm run type-check && npm run type-check:tests",
     "quality:check": "npm run type-check:all && npm run lint && npm run test",
     "quality:ci": "npm run quality:check && npm run security:audit",
+    "ci:local": "./scripts/ci-local.sh",
     "python:format": "black .",
     "python:format:check": "black --check .",
     "python:lint": "ruff check .",

@@ -26,19 +26,21 @@ export default function Home() {
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web Browser',
     description:
-      'AI-powered social media automation for newsletter creators. Turn your newsletter into 8 platform-optimized posts in seconds.',
+      'Open source AI-powered social media automation for newsletter creators. Turn your newsletter into 8 platform-optimized posts in seconds.',
     offers: {
-      '@type': 'AggregateOffer',
+      '@type': 'Offer',
       priceCurrency: 'USD',
-      lowPrice: '29',
-      highPrice: '59',
-      offerCount: '2',
+      price: '0',
+      description:
+        'Free and open source - self-host on your own infrastructure',
     },
     creator: {
       '@type': 'Organization',
       name: 'Vibe Build Lab LLC',
       url: 'https://vibebuildlab.com',
     },
+    license: 'https://opensource.org/licenses/MIT',
+    codeRepository: 'https://github.com/vibebuildlab/postrail',
   }
 
   return (
@@ -67,28 +69,32 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-xl sm:text-2xl text-gray-700 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
-            AI generates platform-perfect posts for Twitter, LinkedIn, Facebook,
-            and Threads. Connect once, post everywhere.
+            Open source AI-powered automation for newsletter creators. Self-host
+            and customize to your needs.
           </p>
 
           <div className="flex gap-4 items-center justify-center flex-col sm:flex-row mb-12">
             <a
               className="rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors text-lg font-medium h-12 px-8 flex items-center justify-center"
-              href="/auth/signup"
+              href="https://github.com/vibebuildlab/postrail"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              Start Free Trial
+              Fork on GitHub
             </a>
             <a
               className="rounded-full border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-lg h-12 px-8 flex items-center justify-center"
-              href="/auth/login"
+              href="https://github.com/vibebuildlab/postrail#installation"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              Log In
+              Get Started
             </a>
           </div>
 
           <p className="text-sm text-gray-700 dark:text-gray-400">
-            14-day free trial. No credit card required. 3 generations/day, 10
-            total.
+            MIT License. Free forever. Built in under a week with AI-assisted
+            development.
           </p>
         </div>
 
@@ -182,92 +188,102 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Pricing */}
+        {/* Open Source */}
         <section
           className="max-w-5xl mx-auto mt-20 w-full"
-          aria-labelledby="pricing-heading"
+          aria-labelledby="opensource-heading"
         >
           <h2
-            id="pricing-heading"
+            id="opensource-heading"
             className="text-3xl font-bold text-center mb-4"
           >
-            Simple Pricing
+            Open Source
           </h2>
           <p className="text-center text-gray-700 dark:text-gray-400 mb-12">
-            Start free, upgrade when you need more.
+            Self-host for free. Built in under a week with AI-assisted
+            development.
           </p>
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Free Trial */}
-            <div className="border rounded-xl p-6 dark:border-gray-700">
-              <h3 className="text-xl font-bold mb-2">Free Trial</h3>
-              <p className="text-3xl font-bold mb-4">
-                $0
-                <span className="text-base font-normal text-gray-700 dark:text-gray-400">
-                  /14 days
-                </span>
-              </p>
-              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-400 mb-6">
-                <li>3 generations per day</li>
-                <li>10 generations total</li>
-                <li>All 4 platforms</li>
-                <li>Manual posting</li>
-              </ul>
-              <a
-                href="/auth/signup"
-                className="block text-center py-2 px-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                Get Started
-              </a>
-            </div>
-
-            {/* Standard */}
+            {/* Self-Host */}
             <div className="border-2 border-blue-600 rounded-xl p-6 relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                POPULAR
+                MIT LICENSE
               </div>
-              <h3 className="text-xl font-bold mb-2">Standard</h3>
+              <h3 className="text-xl font-bold mb-2">Self-Host</h3>
               <p className="text-3xl font-bold mb-4">
-                $29
+                Free
                 <span className="text-base font-normal text-gray-700 dark:text-gray-400">
-                  /mo
+                  {' '}
+                  forever
                 </span>
               </p>
               <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-400 mb-6">
-                <li>50 generations per day</li>
-                <li>Unlimited total</li>
-                <li>All 4 platforms</li>
-                <li>Scheduling</li>
-                <li>Basic analytics</li>
+                <li>Full source code</li>
+                <li>All features included</li>
+                <li>Deploy anywhere</li>
+                <li>Modify as needed</li>
+                <li>Community support</li>
               </ul>
               <a
-                href="/auth/signup"
+                href="https://github.com/vibebuildlab/postrail"
                 className="block text-center py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                Start Trial
+                View on GitHub
               </a>
             </div>
 
-            {/* Growth */}
+            {/* Requirements */}
             <div className="border rounded-xl p-6 dark:border-gray-700">
-              <h3 className="text-xl font-bold mb-2">Growth</h3>
+              <h3 className="text-xl font-bold mb-2">What You Need</h3>
               <p className="text-3xl font-bold mb-4">
-                $59
+                ~$20
                 <span className="text-base font-normal text-gray-700 dark:text-gray-400">
                   /mo
                 </span>
               </p>
               <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-400 mb-6">
-                <li>200 generations per day</li>
-                <li>Unlimited total</li>
-                <li>All platforms + API access</li>
-                <li>Advanced analytics</li>
-                <li>Priority support</li>
+                <li>Supabase (free tier)</li>
+                <li>Vercel/Netlify (free tier)</li>
+                <li>Anthropic API (~$10-20/mo)</li>
+                <li>Social platform OAuth</li>
+                <li>Optional: Upstash Redis</li>
               </ul>
               <a
-                href="/auth/signup"
+                href="https://github.com/vibebuildlab/postrail#installation"
                 className="block text-center py-2 px-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                Start Trial
+                Setup Guide
+              </a>
+            </div>
+
+            {/* Built With VBL */}
+            <div className="border rounded-xl p-6 dark:border-gray-700">
+              <h3 className="text-xl font-bold mb-2">Built with VBL</h3>
+              <p className="text-3xl font-bold mb-4">
+                &lt;1 week
+                <span className="text-base font-normal text-gray-700 dark:text-gray-400">
+                  {' '}
+                  build time
+                </span>
+              </p>
+              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-400 mb-6">
+                <li>Production-ready code</li>
+                <li>AI-assisted development</li>
+                <li>Enterprise security</li>
+                <li>Full test coverage</li>
+                <li>Modern stack</li>
+              </ul>
+              <a
+                href="https://vibebuildlab.com"
+                className="block text-center py-2 px-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Learn More
               </a>
             </div>
           </div>
@@ -282,6 +298,14 @@ export default function Home() {
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-700 dark:text-gray-400">
           <p>© 2025 Vibe Build Lab LLC. All rights reserved.</p>
           <div className="flex gap-6">
+            <a
+              href="https://github.com/vibebuildlab/postrail"
+              className="hover:text-gray-900 dark:hover:text-gray-200"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
+            </a>
             <a
               href="https://vibebuildlab.com/privacy-policy"
               className="hover:text-gray-900 dark:hover:text-gray-200"
