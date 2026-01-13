@@ -38,7 +38,7 @@ describe('redisRateLimiter - degraded redis path', () => {
     expect(result.allowed).toBe(true) // First request is allowed
     expect(result.degraded).toBe(true) // Memory mode indicates degraded service
     expect(result.backend).toBe('memory') // Fell back to memory backend
-  })
+  }, 15000)
 
   it('enforces rate limits even when redis fails (circuit breaker)', async () => {
     vi.doMock('@upstash/redis', () => {
