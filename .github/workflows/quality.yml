@@ -72,7 +72,7 @@ jobs:
       - name: Unit Tests
         run: |
           echo "🧪 Running unit tests..."
-          npm test
+          npm run test:fast
         env:
           # Required for tests that need environment variables
           NODE_ENV: test

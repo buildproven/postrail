@@ -24,7 +24,6 @@ describe('Accessibility Tests', () => {
     // const puppeteer = require('puppeteer')
     // browser = await puppeteer.launch()
     // const page = await browser.newPage()
-
     // For now, this is a placeholder that passes
     // Replace with actual implementation based on your framework
   })

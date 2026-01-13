@@ -15,14 +15,28 @@ const mockSupabase = vi.hoisted(() => ({
       error: null,
     })),
   },
-  from: vi.fn(() => ({
-    select: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    single: vi.fn().mockResolvedValue({ data: null, error: null }),
-  })),
+  from: vi.fn(() => {
+    const baseChain: any = {
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: null }),
+    }
+
+    return {
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        ...baseChain,
+      }),
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+        ...baseChain,
+      }),
+      update: vi.fn().mockReturnValue(baseChain),
+      delete: vi.fn().mockReturnValue(baseChain),
+      ...baseChain,
+    }
+  }),
 }))
 
 vi.mock('@/lib/supabase/server', () => ({

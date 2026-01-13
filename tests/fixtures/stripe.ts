@@ -39,7 +39,9 @@ export function createMockStripeClient() {
 /**
  * Create mock Stripe module
  */
-export function createMockStripeModule(mockStripe: ReturnType<typeof createMockStripeClient>) {
+export function createMockStripeModule(
+  mockStripe: ReturnType<typeof createMockStripeClient>
+) {
   return {
     default: class MockStripe {
       checkout = mockStripe.checkout

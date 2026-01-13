@@ -296,6 +296,7 @@ Based on optimizations:
    - Impact: 20-40% further reduction
 
 4. **Bundle Analyzer**
+
    ```bash
    npm install --save-dev @next/bundle-analyzer
    ```

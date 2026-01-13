@@ -29,12 +29,14 @@ export function createMockQueryBuilder(overrides?: {
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
-    single: vi
-      .fn()
-      .mockResolvedValue({ data: overrides?.data ?? null, error: overrides?.error ?? null }),
-    maybeSingle: vi
-      .fn()
-      .mockResolvedValue({ data: overrides?.data ?? null, error: overrides?.error ?? null }),
+    single: vi.fn().mockResolvedValue({
+      data: overrides?.data ?? null,
+      error: overrides?.error ?? null,
+    }),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: overrides?.data ?? null,
+      error: overrides?.error ?? null,
+    }),
   }
 
   // Add count property for select with count
@@ -61,7 +63,12 @@ export function createMockSupabaseClient(options?: {
   return {
     auth: {
       getUser: vi.fn(() => ({
-        data: { user: options?.user ?? { id: 'test-user-id', email: 'test@example.com' } },
+        data: {
+          user: options?.user ?? {
+            id: 'test-user-id',
+            email: 'test@example.com',
+          },
+        },
         error: options?.authError ?? null,
       })),
       signInWithPassword: vi.fn(),
