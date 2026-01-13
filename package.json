@@ -127,7 +127,7 @@
     "postcss": "^8",
     "prettier": "^3.3.3",
     "stylelint": "^16.8.0",
-    "stylelint-config-standard": "^37.0.0",
+    "stylelint-config-standard": "^39.0.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.0.9",
