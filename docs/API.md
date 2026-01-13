@@ -7,7 +7,7 @@ PostRail exposes RESTful endpoints for AI post generation, newsletter ingestion,
 ## Authentication
 
 - **Supabase session (default)**: Cookie-based session for all user APIs.
-- **Service API keys**: `Authorization: Bearer vbl_sk_*` for Growth Autopilot endpoints (`/api/posts/bulk`, `/api/clients/[clientId]/metrics`). Keys are hashed and permission-scoped.
+- **Service API keys**: `Authorization: Bearer pr_sk_*` for Growth Autopilot endpoints (`/api/posts/bulk`, `/api/clients/[clientId]/metrics`). Keys are hashed and permission-scoped.
 - **Webhooks**: Stripe webhooks verify `STRIPE_WEBHOOK_SECRET`; QStash callbacks verify `Upstash-Signature`.
 
 ## Rate Limits

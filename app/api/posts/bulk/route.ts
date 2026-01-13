@@ -36,7 +36,7 @@ interface PostResult {
  * POST /api/posts/bulk
  *
  * Create multiple posts for a Growth Autopilot client.
- * Requires service authentication (Bearer vbl_sk_*).
+ * Requires service authentication (Bearer pr_sk_*).
  */
 export async function POST(request: NextRequest) {
   try {
