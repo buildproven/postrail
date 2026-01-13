@@ -1,7 +1,16 @@
 {
   "name": "postrail",
   "version": "0.1.0",
+  "description": "AI-powered social media automation for newsletter creators. Automatically generate and schedule social posts across LinkedIn, Facebook, and Twitter/X.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vibebuildlab/postrail.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vibebuildlab/postrail/issues"
+  },
+  "homepage": "https://github.com/vibebuildlab/postrail#readme",
   "engines": {
     "node": ">=20",
     "npm": ">=10.0.0"
