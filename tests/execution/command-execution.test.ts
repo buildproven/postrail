@@ -30,15 +30,17 @@ describe('Command Execution - Isolated Environment', () => {
       'package.json',
       'package-lock.json',
       'tsconfig.json',
-      'next.config.ts',
-      'tailwind.config.ts',
+      'next.config.js',
       'postcss.config.mjs',
       'eslint.config.cjs',
       'eslint.config.mjs',
+      'eslint-security.config.js',
       '.eslintignore',
       'vitest.config.ts',
       '.prettierrc',
       '.prettierignore',
+      '.stylelintrc.json',
+      'commitlint.config.js',
     ]
 
     filesToCopy.forEach(file => {
@@ -217,9 +219,10 @@ describe('Build Command - Production Readiness', () => {
         'package.json',
         'package-lock.json',
         'tsconfig.json',
-        'next.config.ts',
-        'tailwind.config.ts',
+        'next.config.js',
         'postcss.config.mjs',
+        '.stylelintrc.json',
+        '.prettierrc',
       ]
 
       filesToCopy.forEach(file => {
@@ -228,7 +231,7 @@ describe('Build Command - Production Readiness', () => {
         }
       })
 
-      const dirsToCopy = ['app', 'components', 'lib', 'public']
+      const dirsToCopy = ['app', 'components', 'lib', 'public', 'tests']
       dirsToCopy.forEach(dir => {
         if (fs.existsSync(dir)) {
           fs.cpSync(dir, path.join(tmpDir, dir), { recursive: true })
