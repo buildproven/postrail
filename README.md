@@ -9,7 +9,7 @@
 
 AI-powered social media automation for newsletter creators. Automatically generate and schedule social media posts to promote your newsletters across LinkedIn, Facebook, and Twitter/X.
 
-**Open Source Showcase** - This is a production-ready SaaS application built in under a week using AI-assisted development. Feel free to fork, self-host, or use as a reference for your own projects.
+**Open Source Showcase** - This is a production-ready SaaS application built in under a week using AI-assisted development. Feel free to fork, deploy to your own cloud account, or use as a reference for your own projects.
 
 ---
 
@@ -40,15 +40,18 @@ AI-powered social media automation for newsletter creators. Automatically genera
 - **Solopreneurs** who need to automate repetitive posting tasks
 - **Agencies** managing multiple newsletter clients
 
-## Self-Hosting
+## Deploy to Your Own Cloud Account
 
-This project is **open source** and can be self-hosted for free. You'll need:
+This project is **open source** and can be deployed to your own cloud infrastructure. Required services:
 
-- Supabase account (free tier available)
-- Anthropic API key (pay-as-you-go)
-- Social platform OAuth credentials
+- **Supabase** (free tier available) - Database + authentication
+- **Anthropic API** (pay-as-you-go) - AI post generation
+- **Upstash** (optional, free tier) - Post scheduling (QStash) + rate limiting (Redis)
+- **Hosting platform** - Vercel, Railway, Render, or Fly.io
 
-**All billing/trial limits are disabled by default.** Self-hosters get unlimited "growth" tier access (all features, no limits). To enable billing, set `BILLING_ENABLED=true` in your environment.
+**Important:** This is not "self-hostable" in the traditional sense (running on your own hardware without external dependencies). It requires cloud service accounts for database, authentication, and AI generation. You control your own deployment and API keys, but the app depends on external cloud services.
+
+**For independent deployments:** All billing/trial limits are disabled by default. Set `BILLING_ENABLED=false` (default) to give all users unlimited "growth" tier access (all features, no limits).
 
 See the [Installation](#installation) section for setup instructions.
 

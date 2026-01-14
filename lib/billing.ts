@@ -7,7 +7,7 @@
  * - Subscription lifecycle
  * - Usage-based feature gating
  *
- * For self-hosted/open source deployments:
+ * For independent deployments:
  * - Set BILLING_ENABLED=false to disable all billing/trial limits
  * - All users get unlimited "growth" tier access
  */
@@ -19,7 +19,7 @@ import { z } from 'zod'
 
 /**
  * Check if billing/trial limits are enabled
- * For self-hosted deployments, set BILLING_ENABLED=false to give all users unlimited access
+ * For independent deployments, set BILLING_ENABLED=false to give all users unlimited access
  * Default: false (open source friendly - no limits by default)
  */
 export function isBillingEnabled(): boolean {

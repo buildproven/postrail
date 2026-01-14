@@ -31,8 +31,7 @@ export default function Home() {
       '@type': 'Offer',
       priceCurrency: 'USD',
       price: '0',
-      description:
-        'Free and open source - self-host on your own infrastructure',
+      description: 'Free and open source - deploy to your own cloud account',
     },
     creator: {
       '@type': 'Organization',
@@ -69,8 +68,8 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-xl sm:text-2xl text-gray-700 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
-            Open source AI-powered automation for newsletter creators. Self-host
-            and customize to your needs.
+            Open source AI-powered automation for newsletter creators. Deploy to
+            your own cloud account and customize to your needs.
           </p>
 
           <div className="flex gap-4 items-center justify-center flex-col sm:flex-row mb-12">
@@ -200,16 +199,16 @@ export default function Home() {
             Open Source
           </h2>
           <p className="text-center text-gray-700 dark:text-gray-400 mb-12">
-            Self-host for free. Built in under a week with AI-assisted
-            development.
+            Deploy for free to your own cloud account. Built in under a week
+            with AI-assisted development.
           </p>
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Self-Host */}
+            {/* Deploy to Your Account */}
             <div className="border-2 border-blue-600 rounded-xl p-6 relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
                 MIT LICENSE
               </div>
-              <h3 className="text-xl font-bold mb-2">Self-Host</h3>
+              <h3 className="text-xl font-bold mb-2">Deploy to Your Account</h3>
               <p className="text-3xl font-bold mb-4">
                 Free
                 <span className="text-base font-normal text-gray-700 dark:text-gray-400">

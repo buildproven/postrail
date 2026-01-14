@@ -17,7 +17,7 @@ function getResend(): Resend {
   return resendClient
 }
 
-// FROM_EMAIL configurable via env var for self-hosted deployments
+// FROM_EMAIL configurable via env var for independent deployments
 const FROM_EMAIL =
   process.env.RESEND_FROM_EMAIL || 'PostRail <noreply@yourdomain.com>'
 

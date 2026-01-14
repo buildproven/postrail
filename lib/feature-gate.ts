@@ -6,7 +6,7 @@
  * - Standard: + scheduling, analytics_basic
  * - Growth: + analytics_advanced, bulk_generation, priority_support, api_access
  *
- * For self-hosted/open source deployments:
+ * For independent deployments:
  * - Set BILLING_ENABLED=false to disable all feature gating
  * - All users get unlimited "growth" tier access
  */

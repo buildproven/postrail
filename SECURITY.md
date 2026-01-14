@@ -61,13 +61,17 @@ gitleaks detect --source .
 
 ## Security Best Practices
 
-### For Self-Hosters
+### For Independent Deployments
+
+If you deploy PostRail to your own cloud account:
 
 - Use strong, unique values for `ENCRYPTION_KEY` and `COOKIE_SECRET`
 - Never commit `.env` files to version control
 - Keep dependencies updated regularly
 - Enable rate limiting in production (`RATE_LIMIT_MODE=redis`)
 - Use HTTPS for all deployments
+- Set up your own Supabase project with proper RLS policies
+- Secure your API keys (Anthropic, Upstash) as environment variables
 
 ### For Contributors
 

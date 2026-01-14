@@ -8,7 +8,7 @@
  * - Disposable email blocking
  * - One trial per email + IP (soft-enforced)
  *
- * For self-hosted/open source deployments:
+ * For independent deployments:
  * - Set BILLING_ENABLED=false to disable all trial limits
  * - All users get unlimited access
  */
