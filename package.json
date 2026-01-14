@@ -101,7 +101,6 @@
     "resend": "^6.7.0",
     "stripe": "^20.1.2",
     "tailwind-merge": "^3.4.0",
-    "tw-animate-css": "^1.2.9",
     "twitter-api-v2": "^1.28.0",
     "zod": "^4.3.5"
   },
