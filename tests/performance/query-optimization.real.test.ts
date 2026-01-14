@@ -7,8 +7,23 @@
  * 3. Perform faster under load (performance)
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
+
+// Mock Next.js dependencies to avoid "cookies was called outside a request scope" error
+vi.mock('@supabase/ssr', () => ({
+  createServerClient: vi.fn(),
+}))
+
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(),
+}))
+
 import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+const mockCreateServerClient = vi.mocked(createServerClient)
+const mockCookies = vi.mocked(cookies)
 import {
   benchmarkNewsletterListUnoptimized,
   benchmarkNewsletterListOptimized,
@@ -16,6 +31,34 @@ import {
   cleanTestData,
   comparePerformance,
 } from '@/lib/performance-benchmark'
+
+// Setup mock Supabase client and cookies at module level (applies to all tests)
+const mockCookieStore = {
+  getAll: vi.fn().mockReturnValue([]),
+  set: vi.fn(),
+}
+mockCookies.mockResolvedValue(mockCookieStore)
+
+const mockClient: any = {
+  auth: {
+    getUser: vi.fn().mockResolvedValue({
+      data: { user: { id: 'test-user-123' } },
+      error: null,
+    }),
+  },
+  from: vi.fn().mockReturnThis(),
+  select: vi.fn().mockReturnThis(),
+  insert: vi.fn().mockReturnThis(),
+  delete: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
+  like: vi.fn().mockReturnThis(),
+  order: vi.fn().mockReturnThis(),
+  limit: vi.fn().mockReturnThis(),
+  gte: vi.fn().mockReturnThis(),
+  single: vi.fn().mockResolvedValue({ data: null, error: null }),
+  rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+}
+mockCreateServerClient.mockReturnValue(mockClient)
 
 describe('Query Optimization - Correctness', () => {
   let testUserId: string

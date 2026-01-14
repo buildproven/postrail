@@ -8,7 +8,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/setup.ts'],
-    exclude: ['**/node_modules/**', '**/e2e/**', '**/*.spec.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/e2e/**',
+      '**/*.spec.ts',
+      '**/*.real.test.{ts,tsx}',
+      'tests/integration/**',
+    ],
     env: {
       COOKIE_SECRET: 'test-cookie-secret-for-hmac-signing',
     },

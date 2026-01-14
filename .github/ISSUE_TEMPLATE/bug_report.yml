@@ -1,0 +1,102 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in PostRail
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the sections below to help us investigate.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: When I try to..., I expect..., but instead...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Messages / Logs
+      description: If applicable, paste any error messages or relevant logs
+      render: shell
+    validations:
+      required: false
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment Type
+      description: How are you running PostRail?
+      options:
+        - Vercel
+        - Netlify
+        - Self-deployed (Docker)
+        - Other (please specify in additional context)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version/commit of PostRail are you using?
+      placeholder: e.g., v1.0.0, commit sha, or "latest"
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: |
+        Please provide relevant environment details:
+        - Node.js version
+        - Browser (if frontend issue)
+        - Database (Supabase cloud/self-hosted)
+      placeholder: |
+        - Node: 20.x
+        - Browser: Chrome 120
+        - Database: Supabase cloud
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here (screenshots, related issues, etc.)
+    validations:
+      required: false
