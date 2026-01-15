@@ -6,6 +6,16 @@
 
 ## Recent Work
 
+- **2026-01-14**: Created VBL-QUALITY-INTEGRATION-PROPOSAL.md (ARCH1)
+  - Analysis: Why /bs:perfect didn't catch VBL findings (code vs architecture gap)
+  - Proposal: Enhance /bs:perfect with architecture-documentation-generator agent (+10-15 min)
+  - Proposal: Enhance VBL Adopt with actionable output (auto-generate backlog, skeleton docs, decision frameworks)
+  - Value Score: 5.0 (Rev:3 Ret:4 Diff:3 ÷ M) - closes strategic documentation gap
+  - Effort: M (16-26 hours total) - preserves separation of concerns while eliminating manual work
+- **2026-01-14**: Added 12 VBL adoption findings to backlog (Architecture Review 62/100, Security Audit OWASP gaps)
+  - 6 High Priority: OWASP compliance (A09, A02, A03), scalability docs, OAuth refresh, platform rate limits
+  - 5 Medium Priority: API versioning, AI fallback, security audit, API consolidation, data retention
+  - 1 Low Priority: Gitleaks false positive cleanup
 - **2026-01-03**: Completed all outstanding Medium priority items (M4, M5, M15)
   - M4: Extracted 450+ lines of business logic from schedule route to service layer
   - M5: Dashboard queries already parallelized (verified)
@@ -47,6 +57,32 @@
 
 ---
 
+## 🔍 VBL Adoption Findings (Dec 27-29, 2025)
+
+**Value Score:** 100/100 (perfect adoption)
+**Requirements Scanned:** 1,196 | **Endpoints:** 54 | **Test Items:** 1,121
+
+### Key Gaps Identified
+
+**Architecture Review: 62/100 (NEEDS REVISION)**
+
+- API Proliferation (55/100): 54 endpoints → consolidate to 15-20 RESTful
+- Scalability (45/100): Missing queue/rate limit/DB scaling strategy
+- Security (65/100): Token rotation, PII handling, input validation gaps
+- Missing: API versioning, error resilience, data retention policies
+
+**Security Audit: FAILED**
+
+- OWASP A09 (Logging/Monitoring): Security events not logged
+- OWASP A02 (Cryptographic): Validation needed
+- OWASP A03 (Injection): AI-generated content validation gaps
+- OWASP A05 (Security Misconfiguration): Audit needed
+- 10 Gitleaks findings (all false positives in test fixtures)
+
+See VBL-prefixed items below for prioritized remediation plan.
+
+---
+
 ## 📋 Pending Items
 
 **Scoring**: (Revenue + Retention + Differentiation) ÷ Effort = Priority Score
@@ -54,34 +90,47 @@
 
 ### 🔥 High Value - Next Up
 
-| ID  | Issue                                    | Value Drivers      | Effort | Score | Location                      | Status  |
-| --- | ---------------------------------------- | ------------------ | ------ | ----- | ----------------------------- | ------- |
-| L2  | Missing test coverage for post-scheduler | Rev:2 Ret:3 Diff:2 | M      | 3.5   | components/post-scheduler.tsx | Pending |
-| L13 | Alert system failures not escalated      | Rev:2 Ret:4 Diff:1 | M      | 3.5   | lib/alerts.ts:51-62           | Pending |
-| L14 | User profile caching opportunity (Redis) | Rev:2 Ret:3 Diff:2 | M      | 3.5   | Multiple API routes           | Pending |
+| ID    | Issue                                                       | Value Drivers      | Effort | Score | Location                                 | Status  |
+| ----- | ----------------------------------------------------------- | ------------------ | ------ | ----- | ---------------------------------------- | ------- |
+| ARCH1 | Enhance /bs:perfect + VBL Adopt for architecture coverage   | Rev:3 Ret:4 Diff:3 | M      | 5.0   | docs/VBL-QUALITY-INTEGRATION-PROPOSAL.md | Pending |
+| VBL1  | OWASP A09: Security logging/monitoring gaps                 | Rev:2 Ret:3 Diff:1 | S      | 6.0   | lib/logger.ts                            | Pending |
+| VBL2  | OWASP A02: Cryptographic failures compliance                | Rev:1 Ret:3 Diff:1 | S      | 5.0   | lib/crypto.ts                            | Pending |
+| VBL3  | Scalability architecture documentation (queue, DB, caching) | Rev:3 Ret:4 Diff:2 | M      | 4.5   | docs/ARCHITECTURE.md                     | Pending |
+| L2    | Missing test coverage for post-scheduler                    | Rev:2 Ret:3 Diff:2 | M      | 3.5   | components/post-scheduler.tsx            | Pending |
+| L13   | Alert system failures not escalated                         | Rev:2 Ret:4 Diff:1 | M      | 3.5   | lib/alerts.ts:51-62                      | Pending |
+| L14   | User profile caching opportunity (Redis)                    | Rev:2 Ret:3 Diff:2 | M      | 3.5   | Multiple API routes                      | Pending |
+| VBL4  | OWASP A03: Injection prevention review (AI content)         | Rev:2 Ret:4 Diff:1 | M      | 3.5   | lib/ai-generate.ts                       | Pending |
+| VBL5  | OAuth token rotation/refresh strategy                       | Rev:2 Ret:4 Diff:1 | M      | 3.5   | lib/oauth-refresh.ts                     | Pending |
+| VBL6  | Social platform rate limit coordination strategy            | Rev:3 Ret:5 Diff:2 | L      | 3.3   | lib/platform-rate-limits.ts              | Pending |
 
 ### 📊 Medium Value - Worth Doing
 
-| ID  | Issue                                    | Value Drivers      | Effort | Score | Location             | Status   |
-| --- | ---------------------------------------- | ------------------ | ------ | ----- | -------------------- | -------- |
-| L1  | ESLint object injection warnings (15)    | Rev:1 Ret:3 Diff:2 | M      | 3.0   | Various              | Pending  |
-| L7  | Create shared types directory            | Rev:1 Ret:3 Diff:2 | M      | 3.0   | types/               | Pending  |
-| L8  | Service layer abstraction (refactor)     | Rev:2 Ret:3 Diff:3 | L      | 2.7   | lib/services/        | Pending  |
-| L10 | PBKDF2 iterations could be higher (600k) | Rev:1 Ret:3 Diff:2 | M      | 3.0   | lib/crypto.ts:92,151 | Pending  |
-| M1  | Dual rate limiter implementations        | Rev:1 Ret:2 Diff:2 | M      | 2.5   | lib/rate-limiter.ts  | Deferred |
+| ID    | Issue                                            | Value Drivers      | Effort | Score | Location             | Status   |
+| ----- | ------------------------------------------------ | ------------------ | ------ | ----- | -------------------- | -------- |
+| L1    | ESLint object injection warnings (15)            | Rev:1 Ret:3 Diff:2 | M      | 3.0   | Various              | Pending  |
+| L7    | Create shared types directory                    | Rev:1 Ret:3 Diff:2 | M      | 3.0   | types/               | Pending  |
+| VBL7  | API versioning strategy (54 endpoints → /v1/...) | Rev:2 Ret:3 Diff:1 | M      | 3.0   | app/api/             | Pending  |
+| VBL8  | AI provider fallback strategy (OpenAI/Gemini)    | Rev:2 Ret:4 Diff:3 | L      | 3.0   | lib/ai-providers.ts  | Pending  |
+| L10   | PBKDF2 iterations could be higher (600k)         | Rev:1 Ret:3 Diff:2 | M      | 3.0   | lib/crypto.ts:92,151 | Pending  |
+| L8    | Service layer abstraction (refactor)             | Rev:2 Ret:3 Diff:3 | L      | 2.7   | lib/services/        | Pending  |
+| M1    | Dual rate limiter implementations                | Rev:1 Ret:2 Diff:2 | M      | 2.5   | lib/rate-limiter.ts  | Deferred |
+| VBL9  | OWASP A05: Security misconfiguration audit       | Rev:1 Ret:3 Diff:1 | M      | 2.5   | Various              | Pending  |
+| VBL10 | API consolidation (54 endpoints → 15-20 RESTful) | Rev:2 Ret:3 Diff:2 | L      | 2.3   | app/api/             | Pending  |
+| VBL11 | Data retention policies (posts, user data, GDPR) | Rev:1 Ret:2 Diff:1 | M      | 2.0   | docs/DATA-POLICY.md  | Pending  |
 
 ### 📚 Low Value - When Needed
 
-| ID  | Issue                                        | Value Drivers      | Effort | Score | Location                         | Status  |
-| --- | -------------------------------------------- | ------------------ | ------ | ----- | -------------------------------- | ------- |
-| L3  | Unused PLATFORM_OPTIMAL_TIMES constant       | Rev:0 Ret:1 Diff:1 | S      | 2.0   | components/post-scheduler.tsx:55 | Pending |
-| L4  | Props drilling in PostPreviewCard            | Rev:0 Ret:2 Diff:1 | S      | 3.0   | components/post-preview-card.tsx | Pending |
-| L5  | Client-side auth re-fetch in settings        | Rev:0 Ret:2 Diff:1 | S      | 3.0   | app/dashboard/settings/page.tsx  | Pending |
-| L6  | Missing rate limit headers on some endpoints | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Various API routes               | Pending |
-| L9  | Parallel rate limit/feature checks           | Rev:1 Ret:2 Diff:1 | S      | 4.0   | api/generate-posts/route.ts:213  | Pending |
-| L11 | Weak regex in SSRF IPv6 validation           | Rev:1 Ret:2 Diff:2 | S      | 5.0   | lib/ssrf-protection.ts:626       | Pending |
-| L12 | Missing cache invalidation for trial limits  | Rev:1 Ret:2 Diff:1 | S      | 4.0   | lib/trial-guard.ts:35-87         | Pending |
-| L15 | Dynamic imports for heavy components         | Rev:1 Ret:2 Diff:1 | S      | 4.0   | components/newsletter-editor.tsx | Pending |
+| ID    | Issue                                        | Value Drivers      | Effort | Score | Location                         | Status  |
+| ----- | -------------------------------------------- | ------------------ | ------ | ----- | -------------------------------- | ------- |
+| L11   | Weak regex in SSRF IPv6 validation           | Rev:1 Ret:2 Diff:2 | S      | 5.0   | lib/ssrf-protection.ts:626       | Pending |
+| L6    | Missing rate limit headers on some endpoints | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Various API routes               | Pending |
+| L9    | Parallel rate limit/feature checks           | Rev:1 Ret:2 Diff:1 | S      | 4.0   | api/generate-posts/route.ts:213  | Pending |
+| L12   | Missing cache invalidation for trial limits  | Rev:1 Ret:2 Diff:1 | S      | 4.0   | lib/trial-guard.ts:35-87         | Pending |
+| L15   | Dynamic imports for heavy components         | Rev:1 Ret:2 Diff:1 | S      | 4.0   | components/newsletter-editor.tsx | Pending |
+| L4    | Props drilling in PostPreviewCard            | Rev:0 Ret:2 Diff:1 | S      | 3.0   | components/post-preview-card.tsx | Pending |
+| L5    | Client-side auth re-fetch in settings        | Rev:0 Ret:2 Diff:1 | S      | 3.0   | app/dashboard/settings/page.tsx  | Pending |
+| L3    | Unused PLATFORM_OPTIMAL_TIMES constant       | Rev:0 Ret:1 Diff:1 | S      | 2.0   | components/post-scheduler.tsx:55 | Pending |
+| VBL12 | Gitleaks false positives in test files       | Rev:0 Ret:1 Diff:0 | S      | 1.0   | .gitleaks.toml                   | Pending |
 
 ---
 
