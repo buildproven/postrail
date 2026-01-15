@@ -21,6 +21,7 @@ import { NextResponse } from 'next/server'
 import { checkTrialAccess } from '@/lib/trial-guard'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { security } from '@/lib/logger'
 
 type AnySupabaseClient = SupabaseClient
 
@@ -68,11 +69,16 @@ export async function checkFeatureAccess(
     (config.features as readonly string[]).includes(feature)
   )?.[0]
 
+  const message = `This feature requires a ${requiredTier || 'paid'} subscription`
+
+  // Log feature access denial
+  security.featureAccessDenied(userId, feature, tier, message)
+
   return {
     allowed: false,
     tier,
     requiredTier,
-    message: `This feature requires a ${requiredTier || 'paid'} subscription`,
+    message,
   }
 }
 
@@ -91,6 +97,7 @@ export function requireFeature(feature: Feature) {
     const check = await checkFeatureAccess(userId, feature)
 
     if (!check.allowed) {
+      // Logging already handled in checkFeatureAccess
       return NextResponse.json(
         {
           error: 'Feature not available',

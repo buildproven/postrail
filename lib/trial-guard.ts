@@ -14,7 +14,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { logger } from '@/lib/logger'
+import { logger, security } from '@/lib/logger'
 import { isBillingEnabled } from '@/lib/billing'
 
 export interface TrialStatus {
@@ -221,6 +221,11 @@ async function checkTrialAccessWithProfile(
   }
 
   if (trialEnded) {
+    // Log trial access denial
+    security.trialAccessDenied(profile.user_id, 'trial_expired', {
+      total: profile.trial_total_generations,
+    })
+
     return {
       allowed: false,
       error: 'Trial expired. Please upgrade to continue.',
@@ -229,6 +234,11 @@ async function checkTrialAccessWithProfile(
   }
 
   if (profile.trial_total_generations >= limits.trialTotalLimitPerUser) {
+    // Log trial access denial
+    security.trialAccessDenied(profile.user_id, 'total_limit', {
+      total: profile.trial_total_generations,
+    })
+
     return {
       allowed: false,
       error: `Trial limit reached (${limits.trialTotalLimitPerUser} generations). Please upgrade to continue.`,
@@ -270,6 +280,12 @@ async function checkTrialAccessWithProfile(
   const generationsToday = todayCount || 0
 
   if (generationsToday >= limits.trialDailyLimitPerUser) {
+    // Log trial access denial
+    security.trialAccessDenied(profile.user_id, 'daily_limit', {
+      daily: generationsToday,
+      total: profile.trial_total_generations,
+    })
+
     return {
       allowed: false,
       error: `Daily trial limit reached (${limits.trialDailyLimitPerUser} generations). Try again tomorrow.`,

@@ -29,7 +29,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
-import { logger } from '@/lib/logger'
+import { logger, security } from '@/lib/logger'
 import { z } from 'zod'
 
 /**
@@ -484,6 +484,10 @@ export async function checkPermission(
     const userRole = await getUserRole(userId)
 
     if (!userRole) {
+      // Log permission denial for users without roles
+      security.permissionDenied(userId, permission, undefined, {
+        reason: 'no_role',
+      })
       return false
     }
 
@@ -496,22 +500,44 @@ export async function checkPermission(
           ? RBAC_PERMISSIONS.USER
           : undefined
 
-    if (!rolePermissions) return false
+    if (!rolePermissions) {
+      // Log permission denial for unknown roles
+      security.permissionDenied(userId, permission, undefined, {
+        reason: 'unknown_role',
+        role: userRole,
+      })
+      return false
+    }
 
+    let hasPermission = false
     switch (permission) {
       case 'viewSystemStats':
-        return rolePermissions.viewSystemStats
+        hasPermission = rolePermissions.viewSystemStats
+        break
       case 'viewAllUsers':
-        return rolePermissions.viewAllUsers
+        hasPermission = rolePermissions.viewAllUsers
+        break
       case 'manageRoles':
-        return rolePermissions.manageRoles
+        hasPermission = rolePermissions.manageRoles
+        break
       case 'viewAuditLogs':
-        return rolePermissions.viewAuditLogs
+        hasPermission = rolePermissions.viewAuditLogs
+        break
       case 'manageSystemConfig':
-        return rolePermissions.manageSystemConfig
+        hasPermission = rolePermissions.manageSystemConfig
+        break
       default:
-        return false
+        hasPermission = false
     }
+
+    // Log permission denial
+    if (!hasPermission) {
+      security.permissionDenied(userId, permission, undefined, {
+        role: userRole,
+      })
+    }
+
+    return hasPermission
   } catch (error) {
     logger.error({ error: error }, 'RBAC: Unexpected error in checkPermission')
     return false

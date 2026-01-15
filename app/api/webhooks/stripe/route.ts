@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { billingService } from '@/lib/billing'
 import { createServiceClient } from '@/lib/supabase/service'
-import { logger } from '@/lib/logger'
+import { logger, security } from '@/lib/logger'
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET
@@ -43,6 +43,26 @@ function isStripeIP(ip: string | null): boolean {
     return true
   }
   return STRIPE_WEBHOOK_IPS.includes(ip)
+}
+
+/**
+ * Get user ID and tier from Stripe customer ID
+ */
+async function getUserFromCustomer(customerId: string): Promise<{
+  userId?: string
+  tier?: string
+}> {
+  const supabase = createServiceClient()
+  const { data } = await supabase
+    .from('user_profiles')
+    .select('user_id, subscription_tier')
+    .eq('stripe_customer_id', customerId)
+    .single()
+
+  return {
+    userId: data?.user_id,
+    tier: data?.subscription_tier ?? undefined,
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -129,6 +149,12 @@ export async function POST(request: NextRequest) {
             subscription
           )
 
+          // Log subscription creation
+          const { userId, tier } = await getUserFromCustomer(customerId)
+          if (userId && tier) {
+            security.subscriptionCreated(userId, tier, customerId)
+          }
+
           logger.info({ customerId }, 'Checkout completed for customer')
         }
         break
@@ -155,7 +181,20 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
 
+        // Get user info before cancellation
+        const { userId, tier } = await getUserFromCustomer(customerId)
+
         await billingService.handleSubscriptionCancelled(customerId)
+
+        // Log subscription cancellation
+        if (userId && tier) {
+          security.subscriptionCancelled(
+            userId,
+            tier,
+            customerId,
+            subscription.cancellation_details?.reason ?? undefined
+          )
+        }
 
         logger.info({ customerId }, 'Subscription cancelled for customer')
         break
@@ -177,6 +216,17 @@ export async function POST(request: NextRequest) {
           )
         }
 
+        // Log payment success
+        const { userId } = await getUserFromCustomer(customerId)
+        if (userId) {
+          security.paymentSucceeded(
+            userId,
+            customerId,
+            invoice.amount_paid,
+            invoice.id
+          )
+        }
+
         logger.info({ customerId }, 'Payment succeeded for customer')
         break
       }
@@ -184,6 +234,18 @@ export async function POST(request: NextRequest) {
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
         const customerId = invoice.customer as string
+
+        // Log payment failure
+        const { userId } = await getUserFromCustomer(customerId)
+        if (userId) {
+          security.paymentFailed(
+            userId,
+            customerId,
+            invoice.amount_due,
+            (invoice as { last_payment_error?: { message?: string } })
+              .last_payment_error?.message
+          )
+        }
 
         // Update status to past_due
         await supabase
