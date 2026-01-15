@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { logger } from '@/lib/logger'
+import { logger, security } from '@/lib/logger'
 
 // Allowlist of safe redirect paths within our app
 const ALLOWED_REDIRECTS = [
@@ -34,8 +34,22 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error && data.user) {
+      // Log successful authentication
+      security.loginSuccess(
+        data.user.id,
+        data.user.email ?? 'unknown',
+        'oauth',
+        {
+          ip:
+            request.headers.get('x-forwarded-for') ??
+            request.headers.get('x-real-ip') ??
+            undefined,
+          userAgent: request.headers.get('user-agent') ?? undefined,
+        }
+      )
+
       const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
       const isLocalEnv = process.env.NODE_ENV === 'development'
       if (isLocalEnv) {
@@ -49,23 +63,41 @@ export async function GET(request: Request) {
     }
 
     // OAuth exchange failed - log detailed error and redirect with reason
-    logger.error(
-      {
-        error: error,
-        code: code?.substring(0, 10) + '...', // Log partial code for debugging
-        message: error.message,
-        status: error.status,
-      },
-      'OAuth code exchange failed'
-    )
+    if (error) {
+      logger.error(
+        {
+          error: error,
+          code: code?.substring(0, 10) + '...', // Log partial code for debugging
+          message: error.message,
+          status: error.status,
+        },
+        'OAuth code exchange failed'
+      )
 
-    // Provide user-friendly error reason in URL
-    const errorReason = encodeURIComponent(
-      error.message || 'Authentication failed'
-    )
-    return NextResponse.redirect(
-      `${origin}/auth/auth-code-error?reason=${errorReason}`
-    )
+      // Log authentication failure
+      security.loginFailure(
+        undefined,
+        error.message || 'OAuth code exchange failed',
+        {
+          ip:
+            request.headers.get('x-forwarded-for') ??
+            request.headers.get('x-real-ip') ??
+            undefined,
+          userAgent: request.headers.get('user-agent') ?? undefined,
+        }
+      )
+
+      // Provide user-friendly error reason in URL
+      const errorReason = encodeURIComponent(
+        error.message || 'Authentication failed'
+      )
+      return NextResponse.redirect(
+        `${origin}/auth/auth-code-error?reason=${errorReason}`
+      )
+    }
+
+    // return the user to an error page with instructions
+    return NextResponse.redirect(`${origin}/auth/auth-code-error`)
   }
 
   // return the user to an error page with instructions

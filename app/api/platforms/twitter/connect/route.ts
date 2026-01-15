@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { TwitterApi } from 'twitter-api-v2'
 import { createClient } from '@/lib/supabase/server'
 import { encrypt, hash } from '@/lib/crypto'
-import { logger } from '@/lib/logger'
+import { logger, security } from '@/lib/logger'
 
 /**
  * Twitter BYOK (Bring Your Own Keys) Connection Endpoint
@@ -131,6 +131,14 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         )
       }
+
+      // Log successful platform connection
+      security.platformConnected(
+        user.id,
+        'twitter',
+        twitterUser.id,
+        twitterUser.username
+      )
 
       return NextResponse.json({
         success: true,
@@ -262,6 +270,14 @@ export async function DELETE() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get platform user ID before deletion for logging
+    const { data: connection } = await supabase
+      .from('platform_connections')
+      .select('platform_user_id')
+      .eq('user_id', user.id)
+      .eq('platform', 'twitter')
+      .single()
+
     const { error: dbError } = await supabase
       .from('platform_connections')
       .delete()
@@ -273,6 +289,15 @@ export async function DELETE() {
       return NextResponse.json(
         { error: 'Failed to disconnect Twitter' },
         { status: 500 }
+      )
+    }
+
+    // Log platform disconnection
+    if (connection?.platform_user_id) {
+      security.platformDisconnected(
+        user.id,
+        'twitter',
+        connection.platform_user_id
       )
     }
 
