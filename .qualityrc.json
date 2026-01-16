@@ -1,11 +1,47 @@
 {
-  "history": {
-    "lastReady": {
-      "timestamp": "2026-01-16T00:40:00Z",
-      "commit": "d5771a8",
-      "passed": true,
-      "coverage": 0,
-      "issuesFixed": 3
+  "version": "1.0.0",
+  "maturity": "auto",
+  "detected": {
+    "level": "production-ready",
+    "sourceFiles": 0,
+    "testFiles": 0,
+    "hasDocumentation": false,
+    "hasDependencies": true,
+    "detectedAt": "2026-01-16T00:40:00Z"
+  },
+  "checks": {
+    "prettier": {
+      "enabled": true,
+      "required": true
+    },
+    "eslint": {
+      "enabled": "auto",
+      "required": false
+    },
+    "stylelint": {
+      "enabled": "auto",
+      "required": false
+    },
+    "tests": {
+      "enabled": "auto",
+      "required": false
+    },
+    "coverage": {
+      "enabled": false,
+      "required": false,
+      "threshold": 80
+    },
+    "security-audit": {
+      "enabled": "auto",
+      "required": false
+    },
+    "documentation": {
+      "enabled": false,
+      "required": false
+    },
+    "lighthouse": {
+      "enabled": false,
+      "required": false
     }
   }
 }

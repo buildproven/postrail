@@ -196,8 +196,12 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Feature gate: A/B variants may be a paid feature
-    const featureCheck = await checkFeatureAccess(user.id, 'ab_variants')
+    // L9 fix: Parallelize independent checks for better performance
+    const [featureCheck, rateLimitResult] = await Promise.all([
+      checkFeatureAccess(user.id, 'ab_variants'),
+      redisRateLimiter.checkRateLimit(user.id),
+    ])
+
     if (!featureCheck.allowed) {
       return NextResponse.json(
         {
@@ -208,9 +212,6 @@ export async function POST(
         { status: 403 }
       )
     }
-
-    // Rate limiting
-    const rateLimitResult = await redisRateLimiter.checkRateLimit(user.id)
     if (!rateLimitResult.allowed) {
       // L6 fix: Add standard rate limit headers
       return NextResponse.json(

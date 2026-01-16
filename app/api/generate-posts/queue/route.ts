@@ -41,9 +41,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { title, content, newsletterDate } = parseResult.data
+    const { title, content, newsletterDate} = parseResult.data
 
-    const featureCheck = await checkFeatureAccess(user.id, 'basic_generation')
+    // L9 fix: Parallelize independent checks for better performance
+    const contentHash = redisRateLimiter.generateContentHash(
+      title || 'Untitled Newsletter',
+      content,
+      user.id
+    )
+
+    const [featureCheck, usage, rateLimit] = await Promise.all([
+      checkFeatureAccess(user.id, 'basic_generation'),
+      checkUsageLimits(user.id),
+      redisRateLimiter.checkRateLimit(user.id, contentHash),
+    ])
+
     if (!featureCheck.allowed) {
       return NextResponse.json(
         {
@@ -56,7 +68,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const usage = await checkUsageLimits(user.id)
     if (!usage.allowed) {
       let message = 'Daily usage limit reached. Please try again later.'
       if (usage.tier === 'trial') {
@@ -68,18 +79,6 @@ export async function POST(request: NextRequest) {
         { status: 429 }
       )
     }
-
-    // Rate limit before enqueue
-    const contentHash = redisRateLimiter.generateContentHash(
-      title || 'Untitled Newsletter',
-      content,
-      user.id
-    )
-
-    const rateLimit = await redisRateLimiter.checkRateLimit(
-      user.id,
-      contentHash
-    )
     if (!rateLimit.allowed) {
       // L6 fix: Add standard rate limit headers
       return NextResponse.json(
