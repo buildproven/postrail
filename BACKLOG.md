@@ -6,6 +6,11 @@
 
 ## Recent Work
 
+- **2026-01-15**: Security improvements (VBL1, VBL2, L11)
+  - VBL1: Added OWASP A09 security logging to login actions and rate limiter
+  - VBL2: Increased PBKDF2 iterations from 100k → 600k (OWASP 2024 recommendation)
+  - L11: Fixed weak IPv6 regex in SSRF protection (now uses Node.js built-in net.isIP())
+  - All 617 tests passing, TypeScript strict mode clean, 0 ESLint errors
 - **2026-01-14**: Created VBL-QUALITY-INTEGRATION-PROPOSAL.md (ARCH1)
   - Analysis: Why /bs:perfect didn't catch VBL findings (code vs architecture gap)
   - Proposal: Enhance /bs:perfect with architecture-documentation-generator agent (+10-15 min)
@@ -93,10 +98,7 @@ See VBL-prefixed items below for prioritized remediation plan.
 
 | ID    | Item                                                        | Type        | Value Drivers      | Effort | Score | Status  |
 | ----- | ----------------------------------------------------------- | ----------- | ------------------ | ------ | ----- | ------- |
-| VBL1  | OWASP A09: Security logging/monitoring gaps                 | Security    | Rev:2 Ret:3 Diff:1 | S      | 6.0   | Pending |
 | ARCH1 | Enhance /bs:perfect + VBL Adopt for architecture coverage   | Feature     | Rev:3 Ret:4 Diff:3 | M      | 5.0   | Pending |
-| VBL2  | OWASP A02: Cryptographic failures compliance                | Security    | Rev:1 Ret:3 Diff:1 | S      | 5.0   | Pending |
-| L11   | Weak regex in SSRF IPv6 validation                          | Security    | Rev:1 Ret:2 Diff:2 | S      | 5.0   | Pending |
 | VBL3  | Scalability architecture documentation (queue, DB, caching) | Docs        | Rev:3 Ret:4 Diff:2 | M      | 4.5   | Pending |
 | L6    | Missing rate limit headers on some endpoints                | Tech Debt   | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Pending |
 | L9    | Parallel rate limit/feature checks                          | Perf        | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Pending |
@@ -114,7 +116,6 @@ See VBL-prefixed items below for prioritized remediation plan.
 | L7    | Create shared types directory                               | Refactor    | Rev:1 Ret:3 Diff:2 | M      | 3.0   | Pending |
 | VBL7  | API versioning strategy (54 endpoints → /v1/...)            | Tech Debt   | Rev:2 Ret:3 Diff:1 | M      | 3.0   | Pending |
 | VBL8  | AI provider fallback strategy (OpenAI/Gemini)               | Feature     | Rev:2 Ret:4 Diff:3 | L      | 3.0   | Pending |
-| L10   | PBKDF2 iterations could be higher (600k)                    | Security    | Rev:1 Ret:3 Diff:2 | M      | 3.0   | Pending |
 
 ### 📊 Medium Value - Worth Doing
 
@@ -139,6 +140,9 @@ See VBL-prefixed items below for prioritized remediation plan.
 
 | ID   | Item                                              | Type      | Completed  |
 | ---- | ------------------------------------------------- | --------- | ---------- |
+| VBL1 | OWASP A09 security logging (login, rate limits)   | Security  | 2026-01-15 |
+| VBL2 | OWASP A02 crypto compliance (PBKDF2 600k)         | Security  | 2026-01-15 |
+| L11  | IPv6 validation fix (net.isIP())                  | Security  | 2026-01-15 |
 | C1   | QStash webhook signature verification             | Security  | 2026-01-02 |
 | C2   | Webhook cookie logging security fix               | Security  | 2026-01-02 |
 | C3   | Auth cookie silent failure handling               | Bug       | 2026-01-02 |

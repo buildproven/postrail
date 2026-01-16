@@ -14,6 +14,7 @@
  */
 
 import { logger } from '@/lib/logger'
+import { isIP } from 'net'
 
 interface SSRFValidationResult {
   allowed: boolean
@@ -627,24 +628,18 @@ class SSRFProtection {
   /**
    * Validate IP address format to prevent spoofing
    * Accepts both IPv4 and IPv6, including localhost for development
+   *
+   * SECURITY FIX (L11): Improved IPv6 validation to catch compressed formats
+   * Previous regex: /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/
+   * Issue: Missed valid IPv6 like fe80::1, 2001:db8::1, ::ffff:192.0.2.1
+   * Solution: Use Node.js built-in net.isIP() for RFC 4291 compliance
    */
   private isValidIP(ip: string): boolean {
-    // IPv4 validation: Safe regex with bounded quantifiers ({3}, {1,4}) and anchored pattern
-    // No catastrophic backtracking risk - alternation groups are non-overlapping
-    // Verified safe: bounded quantifiers, anchored, non-overlapping alternation
-    const ipv4Regex =
-      // eslint-disable-next-line security/detect-unsafe-regex
-      /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
-
-    // IPv6 validation: Safe regex with bounded quantifiers ({7}, {1,4}) and anchored pattern
-    // Simplified format checking - full RFC 4291 compliance handled by DNS resolution
-    // Verified safe: bounded quantifiers, anchored, mutually exclusive alternation
-    // eslint-disable-next-line security/detect-unsafe-regex
-    const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/
-
     if (!ip || ip.length === 0) return false
 
-    return ipv4Regex.test(ip) || ipv6Regex.test(ip)
+    // Use Node.js built-in IP validation (RFC 4291 compliant)
+    // Returns 4 for IPv4, 6 for IPv6, 0 for invalid
+    return isIP(ip) !== 0
   }
 
   /**
