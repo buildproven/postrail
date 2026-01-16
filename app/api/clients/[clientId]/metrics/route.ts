@@ -7,6 +7,7 @@ import {
   canAccessClient,
   checkServiceRateLimit,
 } from '@/lib/service-auth'
+import { createRateLimitHeaders } from '@/lib/redis-rate-limiter'
 
 export const runtime = 'nodejs'
 
@@ -98,11 +99,7 @@ export async function GET(
         },
         {
           status: 429,
-          headers: {
-            'Retry-After': String(rateLimitResult.retryAfter || 60),
-            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
-            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-          },
+          headers: createRateLimitHeaders(rateLimitResult),
         }
       )
     }
@@ -286,7 +283,9 @@ export async function GET(
       },
     }
 
-    return NextResponse.json(response)
+    return NextResponse.json(response, {
+      headers: createRateLimitHeaders(rateLimitResult),
+    })
   } catch (error) {
     logger.error({ error }, 'Metrics endpoint error:')
     return NextResponse.json(

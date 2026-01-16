@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { redisRateLimiter } from '@/lib/redis-rate-limiter'
+import {
+  redisRateLimiter,
+  createRateLimitHeaders,
+} from '@/lib/redis-rate-limiter'
 import { publishGenerationJob } from '@/lib/platforms/qstash'
 import { checkFeatureAccess, checkUsageLimits } from '@/lib/feature-gate'
 import { checkTrialAccess } from '@/lib/trial-guard'
@@ -41,7 +44,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { title, content, newsletterDate} = parseResult.data
+    const { title, content, newsletterDate } = parseResult.data
 
     // L9 fix: Parallelize independent checks for better performance
     const contentHash = redisRateLimiter.generateContentHash(
@@ -90,11 +93,7 @@ export async function POST(request: NextRequest) {
         },
         {
           status: 429,
-          headers: {
-            'Retry-After': String(rateLimit.retryAfter || 60),
-            'X-RateLimit-Remaining': String(rateLimit.requestsRemaining),
-            'X-RateLimit-Reset': String(rateLimit.resetTime),
-          },
+          headers: createRateLimitHeaders(rateLimit),
         }
       )
     }
@@ -135,7 +134,10 @@ export async function POST(request: NextRequest) {
 
     await publishGenerationJob(job.id)
 
-    return NextResponse.json({ jobId: job.id, status: 'queued' })
+    return NextResponse.json(
+      { jobId: job.id, status: 'queued' },
+      { headers: createRateLimitHeaders(rateLimit) }
+    )
   } catch (error) {
     logger.error({ error }, 'Queue enqueue error')
     return NextResponse.json(

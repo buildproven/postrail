@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
-import { redisRateLimiter } from '@/lib/redis-rate-limiter'
+import {
+  redisRateLimiter,
+  createRateLimitHeaders,
+} from '@/lib/redis-rate-limiter'
 import { checkFeatureAccess } from '@/lib/feature-gate'
 import { sanitizeAIContent } from '@/lib/content-sanitization'
 import { z } from 'zod'
@@ -225,11 +228,7 @@ export async function POST(
         },
         {
           status: 429,
-          headers: {
-            'Retry-After': String(rateLimitResult.retryAfter || 60),
-            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
-            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-          },
+          headers: createRateLimitHeaders(rateLimitResult),
         }
       )
     }
@@ -323,15 +322,18 @@ export async function POST(
       // Still return the variants even if save failed
     }
 
-    return NextResponse.json({
-      postId,
-      original: {
-        content: post.content,
-        characterCount: post.character_count,
+    return NextResponse.json(
+      {
+        postId,
+        original: {
+          content: post.content,
+          characterCount: post.character_count,
+        },
+        variants,
+        totalVariants: updatedVariants.length,
       },
-      variants,
-      totalVariants: updatedVariants.length,
-    })
+      { headers: createRateLimitHeaders(rateLimitResult) }
+    )
   } catch (error) {
     logger.error({ error }, 'Variant generation error:')
     return NextResponse.json(
