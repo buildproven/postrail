@@ -91,6 +91,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
+    "isomorphic-dompurify": "^2.35.0",
     "lucide-react": "^0.562.0",
     "next": "^16.0.10",
     "pino": "^10.1.1",
@@ -105,9 +106,12 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.3.1",
+    "@commitlint/config-conventional": "^19.0.0",
     "@eslint/js": "^9.39.1",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.56.1",
+    "@size-limit/file": "^12.0.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -120,6 +124,7 @@
     "@typescript-eslint/parser": "^8.9.0",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^4.0.10",
+    "axe-core": "^4.11.1",
     "create-qa-architect": "^5.4.3",
     "dotenv": "^17.2.3",
     "eslint": "^9",
@@ -134,16 +139,12 @@
     "playwright": "^1.56.1",
     "postcss": "^8",
     "prettier": "^3.3.3",
+    "size-limit": "^12.0.0",
     "stylelint": "^16.8.0",
     "stylelint-config-standard": "^39.0.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.0.9",
-    "size-limit": "^12.0.0",
-    "@size-limit/file": "^12.0.0",
-    "@commitlint/cli": "^20.3.1",
-    "@commitlint/config-conventional": "^19.0.0",
-    "axe-core": "^4.11.1"
+    "vitest": "^4.0.9"
   },
   "lint-staged": {
     "package.json": [

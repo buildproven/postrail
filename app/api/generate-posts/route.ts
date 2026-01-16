@@ -6,6 +6,7 @@ import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { checkFeatureAccess, checkUsageLimits } from '@/lib/feature-gate'
 import { checkTrialAccess, recordTrialGeneration } from '@/lib/trial-guard'
 import { logger, logError } from '@/lib/logger'
+import { sanitizeAIContent } from '@/lib/content-sanitization'
 import { z } from 'zod'
 
 // M6 fix: Zod schema for request validation
@@ -160,7 +161,9 @@ Generate a ${postType} post for ${platform}.`
 
     const content = message.content[0]
     if (content.type === 'text') {
-      return content.text.trim()
+      // VBL4: Sanitize AI-generated content to prevent XSS/injection
+      const rawContent = content.text.trim()
+      return sanitizeAIContent(rawContent, 'post_generation')
     }
 
     throw new Error('Unexpected response format from Claude')

@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { checkFeatureAccess } from '@/lib/feature-gate'
+import { sanitizeAIContent } from '@/lib/content-sanitization'
 import { z } from 'zod'
 import { logger } from '@/lib/logger'
 
@@ -163,7 +164,9 @@ Create a ${style.name} variant of this post. Make it distinctly different while 
 
   const content = message.content[0]
   if (content.type === 'text') {
-    return content.text.trim()
+    // VBL4: Sanitize AI-generated content to prevent XSS/injection
+    const rawContent = content.text.trim()
+    return sanitizeAIContent(rawContent, 'variant_generation')
   }
 
   throw new Error('Unexpected response format from Claude')
