@@ -2,8 +2,14 @@
  * Encryption utilities for sensitive data (API keys, tokens)
  * Uses AES-256-GCM for authenticated encryption
  *
+ * Security (OWASP ASVS 4.0.3):
+ * - AES-256-GCM (authenticated encryption with 128-bit auth tag)
+ * - PBKDF2-HMAC-SHA256 with 600,000 iterations (OWASP 2024 recommendation)
+ * - Cryptographically secure random: crypto.randomBytes() for IV and salt
+ * - Key rotation: Change ENCRYPTION_KEY periodically, decrypt-reencrypt data
+ *
  * Performance optimization: Caches base encryption key and derived keys (LRU cache)
- * to avoid repeated PBKDF2 iterations (100,000 iterations = 50-100ms per call).
+ * to avoid repeated PBKDF2 iterations (600,000 iterations = 300-600ms per call).
  */
 
 import crypto from 'crypto'
@@ -12,6 +18,9 @@ const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 16
 const SALT_LENGTH = 64
 const KEY_LENGTH = 32
+// OWASP ASVS 4.0.3: PBKDF2-HMAC-SHA256 with 600,000+ iterations recommended
+// See: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+const PBKDF2_ITERATIONS = 600000
 
 // Cache for base encryption key (parsed from env var)
 let cachedEncryptionKey: Buffer | null = null
@@ -66,7 +75,7 @@ function getEncryptionKey(): Buffer {
  * Security features:
  * - Authenticated encryption (GCM mode prevents tampering)
  * - Random IV per encryption (prevents pattern analysis)
- * - Key derivation with PBKDF2 (100,000 iterations)
+ * - Key derivation with PBKDF2 (600,000 iterations per OWASP 2024)
  * - Random salt per encryption (prevents rainbow tables)
  *
  * Output format: `salt:iv:ciphertext:authTag` (all hex-encoded)
@@ -89,7 +98,13 @@ export function encrypt(text: string): string {
 
   // Derive key using PBKDF2 (expensive operation, but can't be cached for encryption
   // since each encryption uses a new random salt)
-  const derivedKey = crypto.pbkdf2Sync(key, salt, 100000, KEY_LENGTH, 'sha256')
+  const derivedKey = crypto.pbkdf2Sync(
+    key,
+    salt,
+    PBKDF2_ITERATIONS,
+    KEY_LENGTH,
+    'sha256'
+  )
 
   // Create cipher and encrypt
   const cipher = crypto.createCipheriv(ALGORITHM, derivedKey, iv)
@@ -147,8 +162,14 @@ export function decrypt(encryptedData: string): string {
   let derivedKey = derivedKeyCache.get(saltKey)
 
   if (!derivedKey) {
-    // Derive key using same parameters as encryption (expensive: 100,000 PBKDF2 iterations)
-    derivedKey = crypto.pbkdf2Sync(key, salt, 100000, KEY_LENGTH, 'sha256')
+    // Derive key using same parameters as encryption (expensive: 600,000 PBKDF2 iterations)
+    derivedKey = crypto.pbkdf2Sync(
+      key,
+      salt,
+      PBKDF2_ITERATIONS,
+      KEY_LENGTH,
+      'sha256'
+    )
 
     // Cache derived key (LRU: evict oldest if cache full)
     if (derivedKeyCache.size >= MAX_DERIVED_KEY_CACHE_SIZE) {

@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger'
+import { logger, security } from '@/lib/logger'
 /**
  * Redis-based Rate Limiter
  *
@@ -286,9 +286,14 @@ export class RedisRateLimiter {
         const nextWindow =
           Math.floor(now / this.config.windowMinute + 1) *
           this.config.windowMinute
+        const retryAfter = Math.ceil((nextWindow - now) / 1000)
+
+        // OWASP A09: Log rate limit violation for security monitoring
+        security.rateLimitExceeded(userId, 'ai-generation', retryAfter)
+
         return {
           allowed: false,
-          retryAfter: Math.ceil((nextWindow - now) / 1000),
+          retryAfter,
           reason: 'rate_limit_minute',
           requestsRemaining: 0,
           resetTime: nextWindow,
@@ -298,9 +303,14 @@ export class RedisRateLimiter {
       if (hourCount >= this.config.requestsPerHour) {
         const nextWindow =
           Math.floor(now / this.config.windowHour + 1) * this.config.windowHour
+        const retryAfter = Math.ceil((nextWindow - now) / 1000)
+
+        // OWASP A09: Log rate limit violation for security monitoring
+        security.rateLimitExceeded(userId, 'ai-generation', retryAfter)
+
         return {
           allowed: false,
-          retryAfter: Math.ceil((nextWindow - now) / 1000),
+          retryAfter,
           reason: 'rate_limit_hour',
           requestsRemaining: 0,
           resetTime: nextWindow,
@@ -451,9 +461,14 @@ export class RedisRateLimiter {
       const nextWindow =
         Math.floor(now / this.config.windowMinute + 1) *
         this.config.windowMinute
+      const retryAfter = Math.ceil((nextWindow - now) / 1000)
+
+      // OWASP A09: Log rate limit violation for security monitoring
+      security.rateLimitExceeded(userId, 'ai-generation', retryAfter)
+
       return {
         allowed: false,
-        retryAfter: Math.ceil((nextWindow - now) / 1000),
+        retryAfter,
         reason: 'rate_limit_minute',
         requestsRemaining: 0,
         resetTime: nextWindow,
@@ -465,9 +480,14 @@ export class RedisRateLimiter {
     if (hourCount >= this.config.requestsPerHour) {
       const nextWindow =
         Math.floor(now / this.config.windowHour + 1) * this.config.windowHour
+      const retryAfter = Math.ceil((nextWindow - now) / 1000)
+
+      // OWASP A09: Log rate limit violation for security monitoring
+      security.rateLimitExceeded(userId, 'ai-generation', retryAfter)
+
       return {
         allowed: false,
-        retryAfter: Math.ceil((nextWindow - now) / 1000),
+        retryAfter,
         reason: 'rate_limit_hour',
         requestsRemaining: 0,
         resetTime: nextWindow,

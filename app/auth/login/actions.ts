@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { logger } from '@/lib/logger'
+import { logger, security } from '@/lib/logger'
 import { headers } from 'next/headers'
 
 export interface LoginResult {
@@ -93,14 +93,10 @@ export async function secureLogin(
         }
       )
 
-      logger.warn({
-        type: 'security',
-        context: 'failed_login_attempt',
-        email,
-        ip: ipAddress,
-        attempts: attemptResult?.attempts || 1,
-        locked: attemptResult?.locked || false,
-        msg: 'Failed login attempt recorded',
+      // OWASP A09: Log security event with structured logging
+      security.loginFailure(email, signInError.message || 'invalid_credentials', {
+        ip: ipAddress || undefined,
+        userAgent: userAgent || undefined,
       })
 
       // Send lockout notification email if threshold reached
@@ -130,6 +126,8 @@ export async function secureLogin(
       p_email: email,
     })
 
+    // OWASP A09: Log successful login for security monitoring
+    // Note: userId not available until after getUser() call, so we log with email for now
     logger.info({
       type: 'security',
       context: 'successful_login',
