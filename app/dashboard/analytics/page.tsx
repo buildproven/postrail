@@ -1,10 +1,69 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { StatsCard } from '@/components/analytics/stats-card'
-import { UsageProgress } from '@/components/analytics/usage-progress'
-import { ActivityTimeline } from '@/components/analytics/activity-timeline'
-import { PlatformChart } from '@/components/analytics/platform-chart'
-import { EngagementPlaceholder } from '@/components/analytics/engagement-placeholder'
+// L15 FIX: Dynamic imports for heavy analytics components to reduce initial bundle size
+import dynamic from 'next/dynamic'
+
+const UsageProgress = dynamic(
+  () =>
+    import('@/components/analytics/usage-progress').then(mod => ({
+      default: mod.UsageProgress,
+    })),
+  {
+    loading: () => (
+      <div className="border rounded-lg p-6 bg-white animate-pulse">
+        <div className="h-24 bg-gray-100 rounded"></div>
+      </div>
+    ),
+  }
+)
+
+const ActivityTimeline = dynamic(
+  () =>
+    import('@/components/analytics/activity-timeline').then(mod => ({
+      default: mod.ActivityTimeline,
+    })),
+  {
+    loading: () => (
+      <div className="border rounded-lg p-6 bg-white animate-pulse">
+        <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+        <div className="space-y-3">
+          <div className="h-16 bg-gray-100 rounded"></div>
+          <div className="h-16 bg-gray-100 rounded"></div>
+        </div>
+      </div>
+    ),
+  }
+)
+
+const PlatformChart = dynamic(
+  () =>
+    import('@/components/analytics/platform-chart').then(mod => ({
+      default: mod.PlatformChart,
+    })),
+  {
+    loading: () => (
+      <div className="border rounded-lg p-6 bg-white animate-pulse">
+        <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+        <div className="h-64 bg-gray-100 rounded"></div>
+      </div>
+    ),
+  }
+)
+
+const EngagementPlaceholder = dynamic(
+  () =>
+    import('@/components/analytics/engagement-placeholder').then(mod => ({
+      default: mod.EngagementPlaceholder,
+    })),
+  {
+    loading: () => (
+      <div className="border rounded-lg p-6 bg-white animate-pulse">
+        <div className="h-32 bg-gray-100 rounded"></div>
+      </div>
+    ),
+  }
+)
 
 export const revalidate = 300
 

@@ -513,29 +513,42 @@ export class RedisRateLimiter {
 
   /**
    * Store deduplication result (Redis or memory)
+   * Falls back to memory store if Redis fails to ensure deduplication always works
    */
   async storeDedupResult(
     userId: string,
     contentHash: string,
     result: GenerationResult
-  ): Promise<void> {
+  ): Promise<{ stored: boolean; backend: 'redis' | 'memory' }> {
     const dedupKey = `dedup:${userId}:${contentHash}`
 
     if (this.enabled && this.redis) {
       try {
         await this.redis.set(dedupKey, JSON.stringify(result), { ex: 600 }) // 10 minutes TTL
+        return { stored: true, backend: 'redis' }
       } catch (error) {
-        observability.warn('Failed to store dedup result in Redis:', {
-          error: error instanceof Error ? error : new Error(String(error)),
-        })
+        observability.error(
+          'Failed to store dedup result in Redis, falling back to memory:',
+          {
+            error: error instanceof Error ? error : new Error(String(error)),
+            userId,
+            metadata: { contentHash },
+          }
+        )
+        // CRITICAL FIX: Fall back to memory store instead of failing silently
+        // This ensures deduplication still works even when Redis is unavailable
+        this.memoryStore.set(dedupKey, { result, timestamp: Date.now() })
+        return { stored: true, backend: 'memory' }
       }
     } else {
       this.memoryStore.set(dedupKey, { result, timestamp: Date.now() })
+      return { stored: true, backend: 'memory' }
     }
   }
 
   /**
    * Get cached deduplication result (Redis or memory)
+   * Falls back to memory store if Redis fails
    */
   async getCachedResult(
     userId: string,
@@ -548,9 +561,27 @@ export class RedisRateLimiter {
         const cached = await this.redis.get(dedupKey)
         return cached && typeof cached === 'string' ? JSON.parse(cached) : null
       } catch (error) {
-        observability.warn('Failed to get cached result from Redis:', {
-          error: error instanceof Error ? error : new Error(String(error)),
-        })
+        observability.error(
+          'Failed to get cached result from Redis, checking memory fallback:',
+          {
+            error: error instanceof Error ? error : new Error(String(error)),
+            userId,
+            metadata: { contentHash },
+          }
+        )
+        // CRITICAL FIX: Fall back to memory store instead of returning null
+        // This allows deduplication to work even when Redis is unavailable
+        const cached = this.memoryStore.get(dedupKey)
+        if (
+          cached &&
+          typeof cached === 'object' &&
+          'timestamp' in cached &&
+          'result' in cached
+        ) {
+          if (Date.now() - cached.timestamp < 10 * 60 * 1000) {
+            return cached.result
+          }
+        }
         return null
       }
     } else {
@@ -581,6 +612,7 @@ export class RedisRateLimiter {
 
   /**
    * Get user status (for API responses)
+   * Falls back to memory store if Redis fails
    */
   async getUserStatus(userId: string): Promise<{
     requestsRemaining: number
@@ -593,14 +625,24 @@ export class RedisRateLimiter {
     const minuteKey = `rate_limit:${userId}:minute:${Math.floor(now / this.config.windowMinute)}`
 
     let minuteCount = 0
+    let usedBackend: 'redis' | 'memory' = this.enabled ? 'redis' : 'memory'
 
     if (this.enabled && this.redis) {
       try {
         minuteCount = (await this.redis.get(minuteKey)) || 0
       } catch (error) {
-        observability.warn('Failed to get user status from Redis:', {
-          error: error instanceof Error ? error : new Error(String(error)),
-        })
+        observability.error(
+          'Failed to get user status from Redis, falling back to memory:',
+          {
+            error: error instanceof Error ? error : new Error(String(error)),
+            userId,
+          }
+        )
+        // CRITICAL FIX: Fall back to memory store to prevent rate limit bypass
+        const memoryKey = `${userId}:minute:${Math.floor(now / this.config.windowMinute)}`
+        const value = this.memoryStore.get(memoryKey)
+        minuteCount = typeof value === 'number' ? value : 0
+        usedBackend = 'memory'
       }
     } else {
       const memoryKey = `${userId}:minute:${Math.floor(now / this.config.windowMinute)}`
@@ -619,8 +661,8 @@ export class RedisRateLimiter {
       requestsRemaining,
       resetTime,
       isLimited: requestsRemaining === 0,
-      degraded: !this.enabled, // Indicate if running on degraded in-memory fallback
-      backend: this.enabled ? 'redis' : 'memory',
+      degraded: usedBackend === 'memory' && this.enabled, // Degraded if we wanted Redis but used memory
+      backend: usedBackend,
     }
   }
 
@@ -757,6 +799,33 @@ export class RedisRateLimiter {
       }
     }
   }
+}
+
+/**
+ * Create standard rate limit headers from RateLimitResult
+ * Use this helper to ensure consistent header formatting across all endpoints
+ */
+export function createRateLimitHeaders(
+  result: RateLimitResult
+): Record<string, string> {
+  const headers: Record<string, string> = {
+    'X-RateLimit-Remaining': String(result.requestsRemaining),
+    'X-RateLimit-Reset': String(result.resetTime),
+  }
+
+  if (result.retryAfter) {
+    headers['Retry-After'] = String(result.retryAfter)
+  }
+
+  if (result.backend) {
+    headers['X-RateLimit-Backend'] = result.backend
+  }
+
+  if (result.degraded) {
+    headers['Warning'] = '199 - "Rate limiting degraded to in-memory fallback"'
+  }
+
+  return headers
 }
 
 // Export singleton instance
