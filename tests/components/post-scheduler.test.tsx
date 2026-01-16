@@ -327,4 +327,611 @@ describe('PostScheduler', () => {
       screen.getByText(/some platforms are not connected/i)
     ).toBeInTheDocument()
   })
+
+  describe('Smart Timing Logic', () => {
+    it('schedules posts at optimal times when smart timing enabled', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/api/user/timezone')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ timezone: 'America/New_York' }),
+          })
+        }
+        if (url.includes('/api/posts/schedule')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                results: [
+                  {
+                    postId: 'post-1',
+                    platform: 'linkedin',
+                    status: 'scheduled',
+                    scheduledTime: new Date().toISOString(),
+                    isOptimal: true,
+                    reason: 'Optimal engagement time for LinkedIn',
+                  },
+                ],
+              }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      render(<PostScheduler {...defaultProps} />)
+
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const dateInput = screen.getByLabelText('Date')
+      await user.clear(dateInput)
+      await user.type(dateInput, tomorrow.toISOString().split('T')[0])
+
+      const scheduleButton = screen.getByRole('button', {
+        name: /schedule all posts/i,
+      })
+      await user.click(scheduleButton)
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          '/api/posts/schedule',
+          expect.objectContaining({
+            body: expect.stringContaining('"useSmartTiming":true'),
+          })
+        )
+      })
+    })
+
+    it('disables smart timing and uses fixed times', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/api/user/timezone')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ timezone: 'America/New_York' }),
+          })
+        }
+        if (url.includes('/api/posts/schedule')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                results: [
+                  {
+                    postId: 'post-1',
+                    platform: 'linkedin',
+                    status: 'scheduled',
+                    scheduledTime: new Date().toISOString(),
+                    isOptimal: false,
+                  },
+                ],
+              }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      render(<PostScheduler {...defaultProps} />)
+
+      // Toggle smart timing off
+      const smartTimingSwitch = screen.getByRole('switch')
+      await user.click(smartTimingSwitch)
+
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const dateInput = screen.getByLabelText('Date')
+      await user.clear(dateInput)
+      await user.type(dateInput, tomorrow.toISOString().split('T')[0])
+
+      const scheduleButton = screen.getByRole('button', {
+        name: /schedule all posts/i,
+      })
+      await user.click(scheduleButton)
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          '/api/posts/schedule',
+          expect.objectContaining({
+            body: expect.stringContaining('"useSmartTiming":false'),
+          })
+        )
+      })
+    })
+
+    it('shows schedule preview when smart timing disabled', async () => {
+      const user = userEvent.setup()
+      render(<PostScheduler {...defaultProps} />)
+
+      // Toggle smart timing off
+      const smartTimingSwitch = screen.getByRole('switch')
+      await user.click(smartTimingSwitch)
+
+      // Set date
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const dateInput = screen.getByLabelText('Date')
+      await user.clear(dateInput)
+      await user.type(dateInput, tomorrow.toISOString().split('T')[0])
+
+      await waitFor(() => {
+        expect(screen.getByText('Schedule Preview:')).toBeInTheDocument()
+        expect(screen.getByText(/Pre-CTA:/)).toBeInTheDocument()
+        expect(screen.getByText(/Post-CTA:/)).toBeInTheDocument()
+      })
+    })
+
+    it('displays optimal time indicator for scheduled posts', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/api/user/timezone')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ timezone: 'America/New_York' }),
+          })
+        }
+        if (url.includes('/api/posts/schedule')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                results: [
+                  {
+                    postId: 'post-1',
+                    platform: 'linkedin',
+                    status: 'scheduled',
+                    scheduledTime: new Date().toISOString(),
+                    isOptimal: true,
+                    reason: 'Peak engagement time',
+                  },
+                ],
+              }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      render(<PostScheduler {...defaultProps} />)
+
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const dateInput = screen.getByLabelText('Date')
+      await user.clear(dateInput)
+      await user.type(dateInput, tomorrow.toISOString().split('T')[0])
+
+      const scheduleButton = screen.getByRole('button', {
+        name: /schedule all posts/i,
+      })
+      await user.click(scheduleButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Peak engagement time')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Error Handling and Edge Cases', () => {
+    it('handles network errors during scheduling', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/api/user/timezone')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ timezone: 'America/New_York' }),
+          })
+        }
+        if (url.includes('/api/posts/schedule')) {
+          return Promise.reject(new Error('Network error'))
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      render(<PostScheduler {...defaultProps} />)
+
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const dateInput = screen.getByLabelText('Date')
+      await user.clear(dateInput)
+      await user.type(dateInput, tomorrow.toISOString().split('T')[0])
+
+      const scheduleButton = screen.getByRole('button', {
+        name: /schedule all posts/i,
+      })
+      await user.click(scheduleButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Failed to schedule posts')).toBeInTheDocument()
+      })
+    })
+
+    it('handles API error responses', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/api/user/timezone')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ timezone: 'America/New_York' }),
+          })
+        }
+        if (url.includes('/api/posts/schedule')) {
+          return Promise.resolve({
+            ok: false,
+            json: () =>
+              Promise.resolve({
+                error: 'Subscription tier limit reached',
+              }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      render(<PostScheduler {...defaultProps} />)
+
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const dateInput = screen.getByLabelText('Date')
+      await user.clear(dateInput)
+      await user.type(dateInput, tomorrow.toISOString().split('T')[0])
+
+      const scheduleButton = screen.getByRole('button', {
+        name: /schedule all posts/i,
+      })
+      await user.click(scheduleButton)
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Subscription tier limit reached')
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('handles empty posts array', () => {
+      const props = {
+        ...defaultProps,
+        posts: [],
+      }
+
+      render(<PostScheduler {...props} />)
+
+      expect(screen.getByText('Pre-CTA Teaser Posts')).toBeInTheDocument()
+      expect(screen.getByText('Post-CTA Engagement Posts')).toBeInTheDocument()
+    })
+
+    it('handles timezone API failure with fallback', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/api/user/timezone')) {
+          return Promise.reject(new Error('Timezone API unavailable'))
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      render(<PostScheduler {...defaultProps} />)
+
+      // Component should still render and use browser timezone as fallback
+      await waitFor(() => {
+        expect(screen.getByText('Pre-CTA Teaser Posts')).toBeInTheDocument()
+      })
+    })
+
+    it('handles retry failure', async () => {
+      const user = userEvent.setup()
+      const props = {
+        ...defaultProps,
+        posts: [
+          {
+            id: 'post-failed',
+            platform: 'twitter',
+            post_type: 'pre_cta',
+            content: 'Failed post',
+            character_count: 40,
+            status: 'failed',
+            scheduled_time: null,
+          },
+        ],
+      }
+
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/api/posts/post-failed/retry')) {
+          return Promise.resolve({
+            ok: false,
+            json: () =>
+              Promise.resolve({
+                error: 'Rate limit exceeded',
+              }),
+          })
+        }
+        if (url.includes('/api/user/timezone')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ timezone: 'UTC' }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      render(<PostScheduler {...props} />)
+
+      const retryButton = screen.getByRole('button', { name: /retry/i })
+      await user.click(retryButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Rate limit exceeded')).toBeInTheDocument()
+      })
+    })
+
+    it('prevents scheduling without required date', () => {
+      render(<PostScheduler {...defaultProps} />)
+
+      const scheduleButton = screen.getByRole('button', {
+        name: /schedule all posts/i,
+      })
+
+      // Button should be disabled without date
+      expect(scheduleButton).toBeDisabled()
+    })
+
+    it('shows loading state during scheduling', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/api/user/timezone')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ timezone: 'America/New_York' }),
+          })
+        }
+        if (url.includes('/api/posts/schedule')) {
+          // Delay to ensure loading state is visible
+          return new Promise(resolve =>
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  json: () => Promise.resolve({ results: [] }),
+                }),
+              100
+            )
+          )
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      render(<PostScheduler {...defaultProps} />)
+
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const dateInput = screen.getByLabelText('Date')
+      await user.clear(dateInput)
+      await user.type(dateInput, tomorrow.toISOString().split('T')[0])
+
+      const scheduleButton = screen.getByRole('button', {
+        name: /schedule all posts/i,
+      })
+      await user.click(scheduleButton)
+
+      // Check for loading state
+      expect(screen.getByText('Scheduling...')).toBeInTheDocument()
+      expect(scheduleButton).toBeDisabled()
+    })
+
+    it('handles skipped posts in results', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/api/user/timezone')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ timezone: 'America/New_York' }),
+          })
+        }
+        if (url.includes('/api/posts/schedule')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                results: [
+                  {
+                    postId: 'post-1',
+                    platform: 'linkedin',
+                    status: 'skipped',
+                    error: 'Platform not connected',
+                  },
+                ],
+              }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      render(<PostScheduler {...defaultProps} />)
+
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const dateInput = screen.getByLabelText('Date')
+      await user.clear(dateInput)
+      await user.type(dateInput, tomorrow.toISOString().split('T')[0])
+
+      const scheduleButton = screen.getByRole('button', {
+        name: /schedule all posts/i,
+      })
+      await user.click(scheduleButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Platform not connected')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Accessibility', () => {
+    it('has proper ARIA labels on interactive elements', () => {
+      render(<PostScheduler {...defaultProps} />)
+
+      expect(screen.getByLabelText('Date')).toBeInTheDocument()
+      expect(screen.getByLabelText('Time')).toBeInTheDocument()
+      expect(screen.getByLabelText('Smart Timing')).toBeInTheDocument()
+    })
+
+    it('provides semantic HTML structure', () => {
+      render(<PostScheduler {...defaultProps} />)
+
+      // Check for fieldset with legend
+      const dateInput = screen.getByLabelText('Date')
+      const fieldset = dateInput.closest('fieldset')
+      expect(fieldset).toBeInTheDocument()
+    })
+
+    it('has accessible retry button labels', () => {
+      const props = {
+        ...defaultProps,
+        posts: [
+          {
+            id: 'post-failed',
+            platform: 'twitter',
+            post_type: 'pre_cta',
+            content: 'Failed post',
+            character_count: 40,
+            status: 'failed',
+            scheduled_time: null,
+          },
+        ],
+      }
+
+      render(<PostScheduler {...props} />)
+
+      const retryButton = screen.getByRole('button', {
+        name: /retry failed twitter post/i,
+      })
+      expect(retryButton).toBeInTheDocument()
+    })
+
+    it('uses time elements for datetime display', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/api/user/timezone')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ timezone: 'America/New_York' }),
+          })
+        }
+        if (url.includes('/api/posts/schedule')) {
+          const scheduledTime = new Date().toISOString()
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                results: [
+                  {
+                    postId: 'post-1',
+                    platform: 'linkedin',
+                    status: 'scheduled',
+                    scheduledTime,
+                  },
+                ],
+              }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      render(<PostScheduler {...defaultProps} />)
+
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const dateInput = screen.getByLabelText('Date')
+      await user.clear(dateInput)
+      await user.type(dateInput, tomorrow.toISOString().split('T')[0])
+
+      const scheduleButton = screen.getByRole('button', {
+        name: /schedule all posts/i,
+      })
+      await user.click(scheduleButton)
+
+      await waitFor(() => {
+        const timeElements = document.querySelectorAll('time[datetime]')
+        expect(timeElements.length).toBeGreaterThan(0)
+      })
+    })
+
+    it('provides screen reader text for loading states', async () => {
+      const user = userEvent.setup()
+      const props = {
+        ...defaultProps,
+        posts: [
+          {
+            id: 'post-failed',
+            platform: 'twitter',
+            post_type: 'pre_cta',
+            content: 'Failed post',
+            character_count: 40,
+            status: 'failed',
+            scheduled_time: null,
+          },
+        ],
+      }
+
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/api/posts/post-failed/retry')) {
+          return new Promise(resolve =>
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  json: () => Promise.resolve({ status: 'scheduled' }),
+                }),
+              100
+            )
+          )
+        }
+        if (url.includes('/api/user/timezone')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ timezone: 'UTC' }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      render(<PostScheduler {...props} />)
+
+      const retryButton = screen.getByRole('button', { name: /retry/i })
+      await user.click(retryButton)
+
+      // Check for screen reader text during loading
+      expect(
+        screen.getByText('Retrying...', { selector: '.sr-only' })
+      ).toBeInTheDocument()
+    })
+
+    it('includes aria-hidden on decorative icons', () => {
+      render(<PostScheduler {...defaultProps} />)
+
+      // All lucide icons should have aria-hidden="true"
+      const decorativeIcons = document.querySelectorAll('[aria-hidden="true"]')
+      expect(decorativeIcons.length).toBeGreaterThan(0)
+    })
+
+    it('keyboard navigation works for interactive elements', async () => {
+      const user = userEvent.setup()
+      render(<PostScheduler {...defaultProps} />)
+
+      // Test that inputs can receive focus
+      const dateInput = screen.getByLabelText('Date')
+      const timeInput = screen.getByLabelText('Time')
+      const smartTimingSwitch = screen.getByRole('switch')
+
+      // Test date input can be focused
+      dateInput.focus()
+      expect(dateInput).toHaveFocus()
+
+      // Test time input can be focused
+      timeInput.focus()
+      expect(timeInput).toHaveFocus()
+
+      // Test switch can be focused and activated
+      smartTimingSwitch.focus()
+      expect(smartTimingSwitch).toHaveFocus()
+      expect(smartTimingSwitch).toBeChecked()
+
+      // Toggle switch with click (simulates keyboard activation)
+      await user.click(smartTimingSwitch)
+      expect(smartTimingSwitch).not.toBeChecked()
+    })
+  })
 })

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { logger } from '@/lib/logger'
+import { getValidAccessToken } from '@/lib/oauth-refresh'
 
 /**
  * Twitter Post Publishing Endpoint
@@ -33,6 +34,7 @@ interface TwitterOAuthMetadata {
 
 /**
  * Get Twitter client for user - supports both OAuth 2.0 and BYOK
+ * VBL5: Now includes automatic token refresh
  */
 async function getTwitterClient(userId: string): Promise<TwitterApi> {
   const supabase = await createClient()
@@ -55,8 +57,9 @@ async function getTwitterClient(userId: string): Promise<TwitterApi> {
   const metadata = connection.metadata as TwitterOAuthMetadata
 
   // OAuth 2.0 format (new): has accessToken in metadata, no apiKey
+  // VBL5: Use getValidAccessToken for automatic refresh
   if (metadata.accessToken && !metadata.apiKey) {
-    const accessToken = decrypt(metadata.accessToken)
+    const accessToken = await getValidAccessToken(userId, 'twitter')
     return new TwitterApi(accessToken)
   }
 
@@ -75,9 +78,9 @@ async function getTwitterClient(userId: string): Promise<TwitterApi> {
     })
   }
 
-  // Fallback: try oauth_token field
+  // Fallback: try oauth_token field with automatic refresh
   if (connection.oauth_token) {
-    const accessToken = decrypt(connection.oauth_token)
+    const accessToken = await getValidAccessToken(userId, 'twitter')
     return new TwitterApi(accessToken)
   }
 

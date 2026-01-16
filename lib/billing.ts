@@ -16,6 +16,7 @@ import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
+import { userProfileCache } from '@/lib/user-profile-cache'
 
 /**
  * Check if billing/trial limits are enabled
@@ -286,8 +287,41 @@ class BillingService {
 
   /**
    * Get subscription status for a user
+   * L14: Now with Redis caching for performance
    */
   async getSubscriptionStatus(userId: string): Promise<SubscriptionStatus> {
+    // L14: Try cache first
+    const cached = await userProfileCache.get(userId)
+    if (cached) {
+      // Check if trial has expired (even for cached data)
+      if (cached.subscription_status === 'trial' && cached.trial_ends_at) {
+        const trialEnds = new Date(cached.trial_ends_at)
+        if (new Date() > trialEnds) {
+          return { tier: 'trial', status: 'expired' }
+        }
+      }
+
+      // H12 FIX: Validate cached values before using them
+      const validatedTier = subscriptionTierSchema.safeParse(
+        cached.subscription_tier
+      )
+      const validatedStatus = subscriptionStatusSchema.safeParse(
+        cached.subscription_status
+      )
+
+      return {
+        tier: validatedTier.success ? validatedTier.data : 'trial',
+        status: validatedStatus.success ? validatedStatus.data : 'trial',
+        stripeCustomerId: cached.stripe_customer_id ?? undefined,
+        stripeSubscriptionId: cached.subscription_id ?? undefined,
+        currentPeriodEnd: cached.subscription_current_period_end
+          ? new Date(cached.subscription_current_period_end)
+          : undefined,
+        cancelAtPeriodEnd: cached.subscription_cancel_at_period_end || false,
+      }
+    }
+
+    // Cache miss - fetch from database
     const supabase = createServiceClient()
 
     const { data: profile } = await supabase
@@ -301,6 +335,18 @@ class BillingService {
     if (!profile) {
       return { tier: 'trial', status: 'trial' }
     }
+
+    // L14: Store in cache for next time
+    await userProfileCache.set(userId, {
+      subscription_status: profile.subscription_status,
+      subscription_tier: profile.subscription_tier,
+      subscription_id: profile.subscription_id,
+      stripe_customer_id: profile.stripe_customer_id,
+      trial_ends_at: profile.trial_ends_at,
+      subscription_current_period_end: profile.subscription_current_period_end,
+      subscription_cancel_at_period_end:
+        profile.subscription_cancel_at_period_end,
+    })
 
     // Check if trial has expired
     if (profile.subscription_status === 'trial') {
@@ -321,8 +367,8 @@ class BillingService {
     return {
       tier: validatedTier.success ? validatedTier.data : 'trial',
       status: validatedStatus.success ? validatedStatus.data : 'trial',
-      stripeCustomerId: profile.stripe_customer_id,
-      stripeSubscriptionId: profile.subscription_id,
+      stripeCustomerId: profile.stripe_customer_id ?? undefined,
+      stripeSubscriptionId: profile.subscription_id ?? undefined,
       currentPeriodEnd: profile.subscription_current_period_end
         ? new Date(profile.subscription_current_period_end)
         : undefined,
@@ -367,7 +413,7 @@ class BillingService {
     const firstItem = subscription.items?.data?.[0]
     const currentPeriodEnd = firstItem?.current_period_end
 
-    const { error: updateError } = await supabase
+    const { data: updatedProfile, error: updateError } = await supabase
       .from('user_profiles')
       .update({
         subscription_status: statusMap[subscription.status] || 'trial',
@@ -379,6 +425,8 @@ class BillingService {
         subscription_cancel_at_period_end: subscription.cancel_at_period_end,
       })
       .eq('stripe_customer_id', customerId)
+      .select('id')
+      .single()
 
     if (updateError) {
       logger.error(
@@ -395,21 +443,34 @@ class BillingService {
         `Failed to update subscription status for customer ${customerId}. Database update failed: ${updateError.message}`
       )
     }
+
+    // L14: Invalidate cache after subscription update
+    if (updatedProfile?.id) {
+      await userProfileCache.invalidate(updatedProfile.id)
+    }
   }
 
   /**
    * Handle subscription cancellation
+   * L14: Now with cache invalidation
    */
   async handleSubscriptionCancelled(customerId: string): Promise<void> {
     const supabase = createServiceClient()
 
-    await supabase
+    const { data: updatedProfile } = await supabase
       .from('user_profiles')
       .update({
         subscription_status: 'cancelled',
         subscription_tier: 'trial',
       })
       .eq('stripe_customer_id', customerId)
+      .select('id')
+      .single()
+
+    // L14: Invalidate cache after cancellation
+    if (updatedProfile?.id) {
+      await userProfileCache.invalidate(updatedProfile.id)
+    }
   }
 
   /**

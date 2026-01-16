@@ -1,5 +1,7 @@
 /**
- * Alert Integration
+ * Alert Integration with Escalation Policies
+ *
+ * L13: Enhanced alert system with configurable escalation policies
  *
  * Sends critical alerts to external monitoring systems (Slack, PagerDuty, etc.)
  * Used for production incidents that require immediate attention.
@@ -7,6 +9,20 @@
  * Configuration via environment variables:
  * - SLACK_WEBHOOK_URL: Slack incoming webhook for critical alerts
  * - PAGERDUTY_INTEGRATION_KEY: PagerDuty Events API v2 integration key
+ * - ALERT_ESCALATION_POLICY: JSON config for escalation rules (optional)
+ *
+ * Escalation Policy Example:
+ * {
+ *   "critical": {
+ *     "immediate": ["slack", "pagerduty"],
+ *     "after_5min": ["email"],
+ *     "after_15min": ["sms"]
+ *   },
+ *   "warning": {
+ *     "immediate": ["slack"],
+ *     "after_30min": ["email"]
+ *   }
+ * }
  */
 
 import { logger } from '@/lib/logger'
@@ -17,22 +33,78 @@ export interface AlertOptions {
   message: string
   metadata?: Record<string, unknown>
   timestamp?: string
+  tags?: string[] // For categorizing alerts (e.g., ['redis', 'rate-limit'])
+}
+
+export interface EscalationRule {
+  immediate?: string[] // Channels to notify immediately
+  after_5min?: string[] // Channels to notify after 5 minutes
+  after_15min?: string[] // Channels to notify after 15 minutes
+  after_30min?: string[] // Channels to notify after 30 minutes
+}
+
+export interface EscalationPolicy {
+  critical?: EscalationRule
+  warning?: EscalationRule
+  info?: EscalationRule
 }
 
 class AlertManager {
   private readonly slackWebhookUrl: string | undefined
   private readonly pagerDutyKey: string | undefined
+  private readonly escalationPolicy: EscalationPolicy
+  private pendingEscalations: Map<
+    string,
+    { options: AlertOptions; timers: NodeJS.Timeout[] }
+  >
 
   constructor() {
     this.slackWebhookUrl = process.env.SLACK_WEBHOOK_URL
     this.pagerDutyKey = process.env.PAGERDUTY_INTEGRATION_KEY
+    this.escalationPolicy = this.loadEscalationPolicy()
+    this.pendingEscalations = new Map()
   }
 
   /**
-   * Send critical alert to all configured channels
+   * L13: Load escalation policy from environment or use defaults
+   */
+  private loadEscalationPolicy(): EscalationPolicy {
+    const policyEnv = process.env.ALERT_ESCALATION_POLICY
+
+    if (policyEnv) {
+      try {
+        return JSON.parse(policyEnv) as EscalationPolicy
+      } catch (error) {
+        logger.warn(
+          { error },
+          'Failed to parse ALERT_ESCALATION_POLICY, using defaults'
+        )
+      }
+    }
+
+    // Default escalation policy
+    return {
+      critical: {
+        immediate: ['slack', 'pagerduty'],
+        after_15min: ['slack'], // Reminder after 15 minutes
+      },
+      warning: {
+        immediate: ['slack'],
+        after_30min: ['slack'], // Reminder after 30 minutes if not resolved
+      },
+      info: {
+        immediate: ['slack'],
+      },
+    }
+  }
+
+  /**
+   * Send critical alert to all configured channels with escalation
+   * L13: Now supports escalation policies
    */
   async sendAlert(options: AlertOptions): Promise<void> {
     const timestamp = options.timestamp || new Date().toISOString()
+    const alertKey = `${options.severity}-${options.title}-${timestamp}`
 
     // Log locally first
     logger.error(
@@ -41,11 +113,108 @@ class AlertManager {
         severity: options.severity,
         message: options.message,
         metadata: options.metadata,
+        tags: options.tags,
         timestamp,
       },
       `[ALERT] ${options.title}`
     )
 
+    // Get escalation rule for this severity
+    const rule = this.escalationPolicy[options.severity]
+
+    if (!rule) {
+      // Fallback to legacy behavior
+      await this.sendImmediateAlerts(options)
+      return
+    }
+
+    // Send immediate alerts
+    if (rule.immediate && rule.immediate.length > 0) {
+      await this.sendToChannels(rule.immediate, options)
+    }
+
+    // Schedule escalated alerts
+    const timers: NodeJS.Timeout[] = []
+
+    if (rule.after_5min && rule.after_5min.length > 0) {
+      const timer = setTimeout(() => {
+        this.sendToChannels(rule.after_5min!, {
+          ...options,
+          title: `[ESCALATION] ${options.title}`,
+          message: `Alert not acknowledged after 5 minutes. ${options.message}`,
+        })
+      }, 5 * 60 * 1000)
+      timers.push(timer)
+    }
+
+    if (rule.after_15min && rule.after_15min.length > 0) {
+      const timer = setTimeout(() => {
+        this.sendToChannels(rule.after_15min!, {
+          ...options,
+          title: `[ESCALATION] ${options.title}`,
+          message: `Alert not acknowledged after 15 minutes. ${options.message}`,
+        })
+      }, 15 * 60 * 1000)
+      timers.push(timer)
+    }
+
+    if (rule.after_30min && rule.after_30min.length > 0) {
+      const timer = setTimeout(() => {
+        this.sendToChannels(rule.after_30min!, {
+          ...options,
+          title: `[ESCALATION] ${options.title}`,
+          message: `Alert not acknowledged after 30 minutes. ${options.message}`,
+        })
+      }, 30 * 60 * 1000)
+      timers.push(timer)
+    }
+
+    // Store timers for potential cancellation
+    if (timers.length > 0) {
+      this.pendingEscalations.set(alertKey, { options, timers })
+    }
+
+    // If no alerting configured, log warning
+    if (!this.slackWebhookUrl && !this.pagerDutyKey) {
+      logger.warn(
+        '⚠️  Alert sent but no external alerting configured (Slack/PagerDuty)'
+      )
+    }
+  }
+
+  /**
+   * L13: Send alerts to specified channels
+   */
+  private async sendToChannels(
+    channels: string[],
+    options: AlertOptions
+  ): Promise<void> {
+    for (const channel of channels) {
+      switch (channel.toLowerCase()) {
+        case 'slack':
+          if (this.slackWebhookUrl) {
+            await this.sendSlackAlert(options).catch(error => {
+              logger.error({ error, channel }, 'Failed to send alert')
+            })
+          }
+          break
+        case 'pagerduty':
+          if (this.pagerDutyKey) {
+            await this.sendPagerDutyAlert(options).catch(error => {
+              logger.error({ error, channel }, 'Failed to send alert')
+            })
+          }
+          break
+        default:
+          logger.warn({ channel }, 'Unsupported alert channel')
+      }
+    }
+  }
+
+  /**
+   * Legacy immediate alert behavior
+   */
+  private async sendImmediateAlerts(options: AlertOptions): Promise<void> {
     // Send to Slack if configured
     if (this.slackWebhookUrl) {
       await this.sendSlackAlert(options).catch(error => {
@@ -59,13 +228,25 @@ class AlertManager {
         logger.error({ error }, 'Failed to send PagerDuty alert')
       })
     }
+  }
 
-    // If no alerting configured, log warning
-    if (!this.slackWebhookUrl && !this.pagerDutyKey) {
-      logger.warn(
-        '⚠️  Alert sent but no external alerting configured (Slack/PagerDuty)'
-      )
+  /**
+   * L13: Acknowledge an alert and cancel pending escalations
+   */
+  acknowledgeAlert(alertKey: string): void {
+    const pending = this.pendingEscalations.get(alertKey)
+    if (pending) {
+      pending.timers.forEach(timer => clearTimeout(timer))
+      this.pendingEscalations.delete(alertKey)
+      logger.info({ alertKey }, 'Alert acknowledged, escalations cancelled')
     }
+  }
+
+  /**
+   * L13: Get current escalation policy
+   */
+  getEscalationPolicy(): EscalationPolicy {
+    return this.escalationPolicy
   }
 
   /**

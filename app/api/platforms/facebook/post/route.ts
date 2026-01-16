@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { logger } from '@/lib/logger'
+import { getValidAccessToken } from '@/lib/oauth-refresh'
 
 /**
  * Facebook Post Publishing Endpoint
@@ -37,6 +38,7 @@ interface FacebookOAuthMetadata {
 /**
  * Get decrypted Facebook credentials for user
  * Supports both OAuth and BYOK formats
+ * VBL5: Now includes automatic token refresh
  */
 async function getFacebookCredentials(
   userId: string,
@@ -61,16 +63,15 @@ async function getFacebookCredentials(
 
   const metadata = connection.metadata as FacebookOAuthMetadata
 
+  // VBL5: Get valid access token with automatic refresh
+  const pageAccessToken = await getValidAccessToken(userId, 'facebook')
+
   // If a specific page is requested and we have multiple pages, find it
   if (requestedPageId && metadata.allPages) {
     const requestedPage = metadata.allPages.find(p => p.id === requestedPageId)
     if (requestedPage) {
-      // For now, we use the stored page token (all pages share same token in our flow)
-      // In a more complex setup, each page would have its own token
       return {
-        pageAccessToken: metadata.pageAccessToken
-          ? decrypt(metadata.pageAccessToken)
-          : decrypt(connection.oauth_token),
+        pageAccessToken,
         pageId: requestedPage.id,
         pageName: requestedPage.name,
         allPages: metadata.allPages,
@@ -81,7 +82,7 @@ async function getFacebookCredentials(
   // OAuth format: pageAccessToken in metadata
   if (metadata.pageAccessToken) {
     return {
-      pageAccessToken: decrypt(metadata.pageAccessToken),
+      pageAccessToken,
       pageId: metadata.pageId || connection.platform_user_id,
       pageName: metadata.pageName,
       allPages: metadata.allPages,
@@ -91,7 +92,7 @@ async function getFacebookCredentials(
   // Fallback: token in oauth_token field (BYOK format)
   if (connection.oauth_token) {
     return {
-      pageAccessToken: decrypt(connection.oauth_token),
+      pageAccessToken,
       pageId: metadata.pageId || connection.platform_user_id,
       pageName: metadata.pageName,
       allPages: metadata.allPages,
