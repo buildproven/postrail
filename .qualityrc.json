@@ -1,57 +1,11 @@
 {
-  "version": "1.0.0",
-  "maturity": "auto",
-  "detected": {
-    "level": "production-ready",
-    "sourceFiles": 123,
-    "testFiles": 57,
-    "hasReadme": true,
-    "hasRequirements": true,
-    "hasCiConfig": true,
-    "detectedAt": "2025-12-27T22:05:08.651Z"
-  },
-  "checks": {
-    "prettier": {
-      "enabled": true,
-      "required": true
-    },
-    "eslint": {
-      "enabled": "auto",
-      "required": false
-    },
-    "stylelint": {
-      "enabled": "auto",
-      "required": false
-    },
-    "tests": {
-      "enabled": "auto",
-      "required": false
-    },
-    "coverage": {
-      "enabled": true,
-      "required": false,
-      "threshold": 80
-    },
-    "security-audit": {
-      "enabled": "auto",
-      "required": false
-    },
-    "documentation": {
-      "enabled": false,
-      "required": false
-    },
-    "lighthouse": {
-      "enabled": false,
-      "required": false
-    }
-  },
   "history": {
-    "lastPerfect": {
-      "timestamp": "2026-01-09T05:04:27Z",
-      "commit": "03643ebc4faaa8e8a4cb581f4a42ef1258b2aa2c",
+    "lastReady": {
+      "timestamp": "2026-01-16T00:40:00Z",
+      "commit": "d5771a8",
       "passed": true,
-      "coverage": 97,
-      "issuesFixed": 185
+      "coverage": 0,
+      "issuesFixed": 3
     }
   }
 }
