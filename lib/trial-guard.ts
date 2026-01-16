@@ -16,6 +16,8 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { logger, security } from '@/lib/logger'
 import { isBillingEnabled } from '@/lib/billing'
+import { classifyError } from '@/lib/error-classification'
+import { sendCriticalAlert } from '@/lib/alerts'
 
 export interface TrialStatus {
   allowed: boolean
@@ -32,6 +34,8 @@ export interface TrialStatus {
 export interface TrialCheckResult {
   allowed: boolean
   error?: string
+  retryable?: boolean
+  suggestedAction?: string
   status?: TrialStatus
   headers?: Record<string, string>
 }
@@ -50,6 +54,14 @@ let cachedLimits: {
 
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
+/**
+ * L12 FIX: Clear system limits cache
+ * Call this when system_limits are updated to ensure fresh data
+ */
+export function clearSystemLimitsCache(): void {
+  cachedLimits = null
+}
+
 async function getSystemLimits() {
   const now = Date.now()
 
@@ -65,6 +77,33 @@ async function getSystemLimits() {
     .single()
 
   if (error || !data) {
+    // CRITICAL FIX: Log error prominently and alert in production
+    logger.error(
+      { error },
+      'Failed to fetch system_limits from database, falling back to hardcoded defaults - THIS IS A CONFIGURATION ISSUE'
+    )
+
+    // Send critical alert in production
+    if (process.env.NODE_ENV === 'production') {
+      sendCriticalAlert(
+        'System Limits Database Access Failed',
+        'Unable to fetch system_limits from database. Using hardcoded fallback values. Admin configuration changes will not take effect until database access is restored.',
+        {
+          error: error?.message || 'unknown',
+          table: 'system_limits',
+          impact: 'Configuration changes ignored',
+        }
+      ).catch(alertError => {
+        logger.fatal({
+          originalError: error?.message,
+          alertError:
+            alertError instanceof Error
+              ? alertError.message
+              : String(alertError),
+        }, 'CRITICAL: Alert system failure for system_limits fetch error')
+      })
+    }
+
     // Return defaults if fetch fails
     return {
       trialDailyLimitPerUser: 3,
@@ -263,10 +302,20 @@ async function checkTrialAccessWithProfile(
     .gte('created_at', startOfDay.toISOString())
 
   if (countError) {
-    logger.error({ error: countError }, 'Error counting daily generations')
+    // CRITICAL FIX: Classify error to distinguish retryable vs permanent failures
+    const classified = classifyError(
+      countError.message || 'Database error counting generations'
+    )
+    logger.error(
+      { error: countError, classified, userId: profile.user_id },
+      'Error counting daily generations'
+    )
+
     return {
       allowed: false,
-      error: 'Unable to verify trial limits. Please try again.',
+      error: classified.userMessage,
+      retryable: classified.retryable,
+      suggestedAction: classified.suggestedAction,
       status: buildTrialStatus(
         false,
         profile,
@@ -384,10 +433,20 @@ export async function checkAndRecordTrialGeneration(
   )
 
   if (error) {
-    logger.error({ error: error }, 'Trial generation check failed')
+    // CRITICAL FIX: Classify RPC error to provide actionable feedback
+    const classified = classifyError(
+      error.message || 'RPC call failed for trial generation check'
+    )
+    logger.error(
+      { error, classified, userId },
+      'Trial generation check failed (RPC error)'
+    )
+
     return {
       allowed: false,
-      error: 'Failed to check trial limits. Please try again.',
+      error: classified.userMessage,
+      retryable: classified.retryable,
+      suggestedAction: classified.suggestedAction,
     }
   }
 

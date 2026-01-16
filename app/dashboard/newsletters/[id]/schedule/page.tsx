@@ -2,8 +2,23 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { PostScheduler } from '@/components/post-scheduler'
 import { logger } from '@/lib/logger'
+// L15 FIX: Dynamic import for PostScheduler (740 lines) to reduce initial bundle size
+import dynamic from 'next/dynamic'
+
+const PostScheduler = dynamic(
+  () =>
+    import('@/components/post-scheduler').then(mod => ({
+      default: mod.PostScheduler,
+    })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    ),
+  }
+)
 
 export default async function SchedulePage({
   params,
@@ -20,14 +35,28 @@ export default async function SchedulePage({
     redirect('/auth/login')
   }
 
-  // Fetch newsletter
-  // M16 FIX: Add error logging for DB query failures
-  const { data: newsletter, error: newsletterError } = await supabase
-    .from('newsletters')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single()
+  // L9 FIX: Parallelize independent database queries for better performance
+  const [
+    { data: newsletter, error: newsletterError },
+    { data: posts, error: postsError },
+    { data: connections, error: connectionsError },
+  ] = await Promise.all([
+    supabase
+      .from('newsletters')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single(),
+    supabase
+      .from('social_posts')
+      .select('*')
+      .eq('newsletter_id', id)
+      .order('platform'),
+    supabase
+      .from('platform_connections')
+      .select('platform, is_active')
+      .eq('user_id', user.id),
+  ])
 
   if (!newsletter) {
     if (newsletterError) {
@@ -39,12 +68,8 @@ export default async function SchedulePage({
     redirect('/dashboard/newsletters')
   }
 
-  // Fetch posts
-  const { data: posts, error: postsError } = await supabase
-    .from('social_posts')
-    .select('*')
-    .eq('newsletter_id', id)
-    .order('platform')
+  // CRITICAL FIX: Show error state for database failures instead of treating as empty
+  const hasDatabaseError = postsError || connectionsError
 
   if (postsError) {
     logger.error(
@@ -52,12 +77,6 @@ export default async function SchedulePage({
       'Failed to fetch posts for schedule page'
     )
   }
-
-  // Check platform connections
-  const { data: connections, error: connectionsError } = await supabase
-    .from('platform_connections')
-    .select('platform, is_active')
-    .eq('user_id', user.id)
 
   if (connectionsError) {
     logger.error(
@@ -102,7 +121,31 @@ export default async function SchedulePage({
         </p>
       </div>
 
-      {posts && posts.length > 0 ? (
+      {hasDatabaseError ? (
+        <div className="text-center py-12 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-700 font-medium mb-2">
+            Unable to load scheduling data
+          </p>
+          <p className="text-red-600 text-sm mb-4">
+            {postsError
+              ? 'Failed to fetch posts from database. '
+              : 'Failed to fetch platform connections. '}
+            Please try refreshing the page.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Button
+              variant="outline"
+              onClick={() => window.location.reload()}
+              className="border-red-300 text-red-700 hover:bg-red-100"
+            >
+              Refresh Page
+            </Button>
+            <Link href={`/dashboard/newsletters/${id}/preview`}>
+              <Button variant="outline">Back to Preview</Button>
+            </Link>
+          </div>
+        </div>
+      ) : posts && posts.length > 0 ? (
         <PostScheduler
           newsletterId={id}
           posts={posts}
