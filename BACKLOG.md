@@ -6,17 +6,20 @@
 
 ## Recent Work
 
+- **2026-01-15**: Scalability architecture documentation (VBL3)
+  - Created comprehensive SCALABILITY.md covering all systems
+  - Documented QStash queue system (async processing, scheduling, webhooks)
+  - Documented Redis rate limiting with circuit breaker and fallback
+  - Documented Supabase three-layer pattern (client/server/service)
+  - Documented caching strategies (trial limits, deduplication, encryption keys)
+  - Documented monitoring/observability (Pino logger, in-memory metrics, health checks)
+  - Documented system interactions and flows (AI generation, scheduling, degradation)
+  - Identified known gaps and scaling roadmap (phases 1-3)
 - **2026-01-15**: Security improvements (VBL1, VBL2, L11)
   - VBL1: Added OWASP A09 security logging to login actions and rate limiter
   - VBL2: Increased PBKDF2 iterations from 100k → 600k (OWASP 2024 recommendation)
   - L11: Fixed weak IPv6 regex in SSRF protection (now uses Node.js built-in net.isIP())
   - All 617 tests passing, TypeScript strict mode clean, 0 ESLint errors
-- **2026-01-14**: Created VBL-QUALITY-INTEGRATION-PROPOSAL.md (ARCH1)
-  - Analysis: Why /bs:perfect didn't catch VBL findings (code vs architecture gap)
-  - Proposal: Enhance /bs:perfect with architecture-documentation-generator agent (+10-15 min)
-  - Proposal: Enhance VBL Adopt with actionable output (auto-generate backlog, skeleton docs, decision frameworks)
-  - Value Score: 5.0 (Rev:3 Ret:4 Diff:3 ÷ M) - closes strategic documentation gap
-  - Effort: M (16-26 hours total) - preserves separation of concerns while eliminating manual work
 - **2026-01-14**: Added 12 VBL adoption findings to backlog (Architecture Review 62/100, Security Audit OWASP gaps)
   - 6 High Priority: OWASP compliance (A09, A02, A03), scalability docs, OAuth refresh, platform rate limits
   - 5 Medium Priority: API versioning, AI fallback, security audit, API consolidation, data retention
@@ -96,26 +99,24 @@ See VBL-prefixed items below for prioritized remediation plan.
 
 ### 🔥 High Value - Next Up
 
-| ID    | Item                                                        | Type        | Value Drivers      | Effort | Score | Status  |
-| ----- | ----------------------------------------------------------- | ----------- | ------------------ | ------ | ----- | ------- |
-| ARCH1 | Enhance /bs:perfect + VBL Adopt for architecture coverage   | Feature     | Rev:3 Ret:4 Diff:3 | M      | 5.0   | Pending |
-| VBL3  | Scalability architecture documentation (queue, DB, caching) | Docs        | Rev:3 Ret:4 Diff:2 | M      | 4.5   | Pending |
-| L6    | Missing rate limit headers on some endpoints                | Tech Debt   | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Pending |
-| L9    | Parallel rate limit/feature checks                          | Perf        | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Pending |
-| L12   | Missing cache invalidation for trial limits                 | Bug         | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Pending |
-| L15   | Dynamic imports for heavy components                        | Perf        | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Pending |
-| L2    | Missing test coverage for post-scheduler                    | Tech Debt   | Rev:2 Ret:3 Diff:2 | M      | 3.5   | Pending |
-| L13   | Alert system failures not escalated                         | Bug         | Rev:2 Ret:4 Diff:1 | M      | 3.5   | Pending |
-| L14   | User profile caching opportunity (Redis)                    | Perf        | Rev:2 Ret:3 Diff:2 | M      | 3.5   | Pending |
-| VBL4  | OWASP A03: Injection prevention review (AI content)         | Security    | Rev:2 Ret:4 Diff:1 | M      | 3.5   | Pending |
-| VBL5  | OAuth token rotation/refresh strategy                       | Security    | Rev:2 Ret:4 Diff:1 | M      | 3.5   | Pending |
-| VBL6  | Social platform rate limit coordination strategy            | Tech Debt   | Rev:3 Ret:5 Diff:2 | L      | 3.3   | Pending |
-| L1    | ESLint object injection warnings (15)                       | Tech Debt   | Rev:1 Ret:3 Diff:2 | M      | 3.0   | Pending |
-| L4    | Props drilling in PostPreviewCard                           | Refactor    | Rev:0 Ret:2 Diff:1 | S      | 3.0   | Pending |
-| L5    | Client-side auth re-fetch in settings                       | Bug         | Rev:0 Ret:2 Diff:1 | S      | 3.0   | Pending |
-| L7    | Create shared types directory                               | Refactor    | Rev:1 Ret:3 Diff:2 | M      | 3.0   | Pending |
-| VBL7  | API versioning strategy (54 endpoints → /v1/...)            | Tech Debt   | Rev:2 Ret:3 Diff:1 | M      | 3.0   | Pending |
-| VBL8  | AI provider fallback strategy (OpenAI/Gemini)               | Feature     | Rev:2 Ret:4 Diff:3 | L      | 3.0   | Pending |
+| ID   | Item                                                | Type      | Value Drivers      | Effort | Score | Status  |
+| ---- | --------------------------------------------------- | --------- | ------------------ | ------ | ----- | ------- |
+| L6   | Missing rate limit headers on some endpoints        | Tech Debt | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Pending |
+| L9   | Parallel rate limit/feature checks                  | Perf      | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Pending |
+| L12  | Missing cache invalidation for trial limits         | Bug       | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Pending |
+| L15  | Dynamic imports for heavy components                | Perf      | Rev:1 Ret:2 Diff:1 | S      | 4.0   | Pending |
+| L2   | Missing test coverage for post-scheduler            | Tech Debt | Rev:2 Ret:3 Diff:2 | M      | 3.5   | Pending |
+| L13  | Alert system failures not escalated                 | Bug       | Rev:2 Ret:4 Diff:1 | M      | 3.5   | Pending |
+| L14  | User profile caching opportunity (Redis)            | Perf      | Rev:2 Ret:3 Diff:2 | M      | 3.5   | Pending |
+| VBL4 | OWASP A03: Injection prevention review (AI content) | Security  | Rev:2 Ret:4 Diff:1 | M      | 3.5   | Pending |
+| VBL5 | OAuth token rotation/refresh strategy               | Security  | Rev:2 Ret:4 Diff:1 | M      | 3.5   | Pending |
+| VBL6 | Social platform rate limit coordination strategy    | Tech Debt | Rev:3 Ret:5 Diff:2 | L      | 3.3   | Pending |
+| L1   | ESLint object injection warnings (15)               | Tech Debt | Rev:1 Ret:3 Diff:2 | M      | 3.0   | Pending |
+| L4   | Props drilling in PostPreviewCard                   | Refactor  | Rev:0 Ret:2 Diff:1 | S      | 3.0   | Pending |
+| L5   | Client-side auth re-fetch in settings               | Bug       | Rev:0 Ret:2 Diff:1 | S      | 3.0   | Pending |
+| L7   | Create shared types directory                       | Refactor  | Rev:1 Ret:3 Diff:2 | M      | 3.0   | Pending |
+| VBL7 | API versioning strategy (54 endpoints → /v1/...)    | Tech Debt | Rev:2 Ret:3 Diff:1 | M      | 3.0   | Pending |
+| VBL8 | AI provider fallback strategy (OpenAI/Gemini)       | Feature   | Rev:2 Ret:4 Diff:3 | L      | 3.0   | Pending |
 
 ### 📊 Medium Value - Worth Doing
 
@@ -130,9 +131,9 @@ See VBL-prefixed items below for prioritized remediation plan.
 
 ### 📚 Low Value - When Needed
 
-| ID    | Item                                     | Type      | Value Drivers      | Effort | Score | Status  |
-| ----- | ---------------------------------------- | --------- | ------------------ | ------ | ----- | ------- |
-| VBL12 | Gitleaks false positives in test files  | Tech Debt | Rev:0 Ret:1 Diff:0 | S      | 1.0   | Pending |
+| ID    | Item                                   | Type      | Value Drivers      | Effort | Score | Status  |
+| ----- | -------------------------------------- | --------- | ------------------ | ------ | ----- | ------- |
+| VBL12 | Gitleaks false positives in test files | Tech Debt | Rev:0 Ret:1 Diff:0 | S      | 1.0   | Pending |
 
 ---
 
@@ -140,6 +141,7 @@ See VBL-prefixed items below for prioritized remediation plan.
 
 | ID   | Item                                              | Type      | Completed  |
 | ---- | ------------------------------------------------- | --------- | ---------- |
+| VBL3 | Scalability architecture documentation            | Docs      | 2026-01-15 |
 | VBL1 | OWASP A09 security logging (login, rate limits)   | Security  | 2026-01-15 |
 | VBL2 | OWASP A02 crypto compliance (PBKDF2 600k)         | Security  | 2026-01-15 |
 | L11  | IPv6 validation fix (net.isIP())                  | Security  | 2026-01-15 |
