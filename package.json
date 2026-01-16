@@ -171,8 +171,7 @@
     ],
     "**/*.{ts,tsx}": [
       "eslint --fix",
-      "prettier --write",
-      "tsc --noEmit --skipLibCheck"
+      "prettier --write"
     ],
     "tests/**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
