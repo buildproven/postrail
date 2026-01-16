@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 import { redisRateLimiter } from '@/lib/redis-rate-limiter'
 import { logger } from '@/lib/logger'
+import { getValidAccessToken } from '@/lib/oauth-refresh'
 
 /**
  * LinkedIn Post Publishing Endpoint
@@ -37,6 +38,7 @@ interface LinkedInOAuthMetadata {
 /**
  * Get decrypted LinkedIn credentials for user
  * Supports both OAuth and BYOK formats
+ * VBL5: Now includes automatic token refresh
  */
 async function getLinkedInCredentials(
   userId: string
@@ -61,17 +63,19 @@ async function getLinkedInCredentials(
   const metadata = connection.metadata as LinkedInOAuthMetadata
 
   // OAuth format: accessToken is in metadata
+  // VBL5: Use getValidAccessToken for automatic refresh
   if (metadata.accessToken) {
     try {
+      const accessToken = await getValidAccessToken(userId, 'linkedin')
       return {
-        accessToken: decrypt(metadata.accessToken),
+        accessToken,
         organizations: metadata.organizations,
         organizationId: metadata.organizationId,
       }
-    } catch (decryptError) {
+    } catch (refreshError) {
       logger.error(
-        { error: decryptError, userId },
-        'Failed to decrypt LinkedIn access token'
+        { error: refreshError, userId },
+        'Failed to get valid LinkedIn access token'
       )
       throw new Error(
         'Unable to access your LinkedIn credentials. Please reconnect your LinkedIn account in Settings → Connected Accounts'
@@ -82,15 +86,16 @@ async function getLinkedInCredentials(
   // Fallback: token might be in oauth_token field
   if (connection.oauth_token) {
     try {
+      const accessToken = await getValidAccessToken(userId, 'linkedin')
       return {
-        accessToken: decrypt(connection.oauth_token),
+        accessToken,
         organizations: metadata.organizations,
         organizationId: metadata.organizationId,
       }
-    } catch (decryptError) {
+    } catch (refreshError) {
       logger.error(
-        { error: decryptError, userId },
-        'Failed to decrypt LinkedIn oauth_token'
+        { error: refreshError, userId },
+        'Failed to get valid LinkedIn oauth_token'
       )
       throw new Error(
         'Unable to access your LinkedIn credentials. Please reconnect your LinkedIn account in Settings → Connected Accounts'
