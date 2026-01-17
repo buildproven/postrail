@@ -10,6 +10,7 @@ import { checkFeatureAccess, checkUsageLimits } from '@/lib/feature-gate'
 import { checkTrialAccess, recordTrialGeneration } from '@/lib/trial-guard'
 import { logger, logError } from '@/lib/logger'
 import { sanitizeAIContent } from '@/lib/content-sanitization'
+import { userProfileCache } from '@/lib/user-profile-cache'
 import { z } from 'zod'
 
 // M6 fix: Zod schema for request validation
@@ -469,6 +470,8 @@ export async function POST(request: NextRequest) {
           newsletterId: newsletter.id,
           postsCount: posts.length,
         })
+        // L12: Invalidate user profile cache after trial quota increment
+        await userProfileCache.invalidate(userId)
       } else {
         await supabase.from('generation_events').insert({
           user_id: userId,

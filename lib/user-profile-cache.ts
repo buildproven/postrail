@@ -6,9 +6,12 @@
  * Caches:
  * - Subscription status (tier, status, expiry dates)
  * - Feature access checks
+ * - Trial quota status (total generations, daily limits)
  *
  * TTL: 5 minutes (300 seconds)
- * Invalidation: On subscription updates via Stripe webhooks
+ * Invalidation:
+ * - On subscription updates via Stripe webhooks
+ * - L12: After trial quota increments (recordTrialGeneration)
  */
 
 import { Redis } from '@upstash/redis'
@@ -129,7 +132,10 @@ class UserProfileCache {
   }
 
   /**
-   * L14: Invalidate cached profile (called on subscription updates)
+   * L14: Invalidate cached profile
+   * Called on:
+   * - Subscription updates (Stripe webhooks)
+   * - L12: Trial quota increments (recordTrialGeneration)
    */
   async invalidate(userId: string): Promise<void> {
     if (!this.isRedisAvailable || !this.redis) {
