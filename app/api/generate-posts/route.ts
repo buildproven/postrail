@@ -9,7 +9,12 @@ import {
 import { checkFeatureAccess, checkUsageLimits } from '@/lib/feature-gate'
 import { checkTrialAccess, recordTrialGeneration } from '@/lib/trial-guard'
 import { logger, logError } from '@/lib/logger'
-import { sanitizeAIContent } from '@/lib/content-sanitization'
+import {
+  sanitizeAIContent,
+  sanitizePromptInput,
+  delimiterWrapUserContent,
+} from '@/lib/content-sanitization'
+import { userProfileCache } from '@/lib/user-profile-cache'
 import { z } from 'zod'
 
 // M6 fix: Zod schema for request validation
@@ -142,10 +147,20 @@ STRICT REQUIREMENTS:
 - For post-CTA: Use platform-appropriate trigger words (LinkedIn: "SEND", Threads: "YES", Facebook: "INTERESTED", X: "DM")
 `
 
-  const userPrompt = `Newsletter Title: ${newsletterTitle}
+  // VBL4: Sanitize user input to prevent prompt injection
+  const sanitizedTitle = sanitizePromptInput(
+    newsletterTitle,
+    'newsletter_title'
+  )
+  const sanitizedContent = sanitizePromptInput(
+    newsletterContent.slice(0, 2000),
+    'newsletter_content'
+  )
 
-Newsletter Content Summary:
-${newsletterContent.slice(0, 2000)}
+  // VBL4: Use delimiters to clearly separate user content from instructions
+  const userPrompt = `${delimiterWrapUserContent(sanitizedTitle, 'Newsletter Title')}
+
+${delimiterWrapUserContent(sanitizedContent, 'Newsletter Content Summary')}
 
 Generate a ${postType} post for ${platform}.`
 
@@ -469,6 +484,8 @@ export async function POST(request: NextRequest) {
           newsletterId: newsletter.id,
           postsCount: posts.length,
         })
+        // L12: Invalidate user profile cache after trial quota increment
+        await userProfileCache.invalidate(userId)
       } else {
         await supabase.from('generation_events').insert({
           user_id: userId,

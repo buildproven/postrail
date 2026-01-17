@@ -12,6 +12,7 @@ import {
   RedisRateLimiter,
   createRateLimitHeaders,
 } from '@/lib/redis-rate-limiter'
+import { alertManager } from '@/lib/alerts'
 
 // Rate limiting for monitoring endpoint to prevent DoS via expensive log queries
 const monitoringRateLimiter = new RedisRateLimiter()
@@ -277,6 +278,31 @@ export async function GET(request: NextRequest) {
       response.optimization = {
         recommendations,
         summary: `${recommendations.length} optimization opportunities identified`,
+      }
+    }
+
+    // L13: Failed alerts section for alert system health monitoring
+    if (section === 'all' || section === 'failed-alerts') {
+      const failedAlerts = alertManager.getFailedAlerts()
+      const alertHealth = await alertManager.healthCheck()
+
+      response.failedAlerts = {
+        count: failedAlerts.length,
+        healthy: alertHealth.healthy,
+        channels: alertHealth.channels,
+        items: failedAlerts.map(alert => ({
+          severity: alert.options.severity,
+          title: alert.options.title,
+          message: alert.options.message,
+          failedChannels: alert.failedChannels,
+          error: alert.error,
+          timestamp: alert.timestamp,
+          retryCount: alert.retryCount,
+        })),
+        warning:
+          failedAlerts.length > 0
+            ? 'Alert system has failed to deliver one or more alerts'
+            : undefined,
       }
     }
 

@@ -3,6 +3,7 @@
  *
  * VBL4: OWASP A03 Injection Prevention
  * Sanitizes AI-generated content to prevent XSS and injection attacks
+ * Sanitizes user input to prevent prompt injection attacks
  */
 
 import DOMPurify from 'isomorphic-dompurify'
@@ -99,7 +100,11 @@ export function sanitizeMetadata(
       sanitized[key] = value.map(item =>
         typeof item === 'string' ? sanitizeAIContent(item, 'metadata') : item
       )
-    } else if (value && typeof value === 'object' && value.constructor === Object) {
+    } else if (
+      value &&
+      typeof value === 'object' &&
+      value.constructor === Object
+    ) {
       // Only recurse for plain objects, not Date, RegExp, etc.
       sanitized[key] = sanitizeMetadata(value as Record<string, unknown>)
     } else {
@@ -141,4 +146,128 @@ export function validateContentLength(
   }
 
   return { isValid: true, content }
+}
+
+/**
+ * VBL4: Prompt Injection Prevention Patterns
+ *
+ * These patterns attempt to manipulate AI behavior by injecting instructions
+ */
+const PROMPT_INJECTION_PATTERNS = [
+  // Direct instruction injection
+  /ignore\s+(previous|all|above|prior)\s+(instructions?|prompts?|rules?|commands?)/gi,
+  /disregard\s+(previous|all|above|prior)\s+(instructions?|prompts?|rules?)/gi,
+  /forget\s+(previous|all|above|prior)\s+(instructions?|prompts?|rules?)/gi,
+
+  // Role manipulation
+  /you\s+are\s+now\s+(a|an)\s+/gi,
+  /act\s+as\s+(a|an)\s+/gi,
+  /pretend\s+to\s+be\s+/gi,
+  /roleplay\s+as\s+/gi,
+
+  // System prompt leakage attempts
+  // VBL4: Split into multiple patterns to avoid ReDoS vulnerability
+  /show\s+me\s+your\s+system\s+prompt/gi,
+  /show\s+me\s+the\s+system\s+prompt/gi,
+  /show\s+your\s+system\s+prompt/gi,
+  /show\s+the\s+system\s+prompt/gi,
+  /what\s+is\s+your\s+instruction/gi,
+  /what\s+are\s+your\s+instruction/gi,
+  /what\s+is\s+your\s+rule/gi,
+  /what\s+are\s+your\s+rule/gi,
+  /what\s+is\s+your\s+prompt/gi,
+  /what\s+are\s+your\s+prompt/gi,
+  /repeat\s+your\s+instruction/gi,
+  /repeat\s+the\s+instruction/gi,
+  /repeat\s+your\s+system\s+prompt/gi,
+  /repeat\s+the\s+system\s+prompt/gi,
+
+  // Output format manipulation
+  /output\s+(in|as)\s+(json|xml|html|code)/gi,
+  /format\s+(as|in)\s+(json|xml|html|code)/gi,
+  /return\s+(only|just)\s+(json|xml|html|code)/gi,
+]
+
+/**
+ * Sanitize user input to prevent prompt injection attacks
+ *
+ * This function:
+ * 1. Detects and logs potential injection attempts
+ * 2. Escapes special characters that could break prompt structure
+ * 3. Removes/neutralizes dangerous instruction patterns
+ *
+ * @param input - User-provided text that will be used in AI prompts
+ * @param context - Context for logging (e.g., 'newsletter_title', 'newsletter_content')
+ * @returns Sanitized input safe for use in AI prompts
+ */
+export function sanitizePromptInput(
+  input: string,
+  context: string = 'unknown'
+): string {
+  if (!input || typeof input !== 'string') {
+    return ''
+  }
+
+  // Detect injection patterns before sanitization for logging
+  const detectedPatterns: string[] = []
+  for (const pattern of PROMPT_INJECTION_PATTERNS) {
+    if (pattern.test(input)) {
+      detectedPatterns.push(pattern.source)
+    }
+  }
+
+  // Log if injection patterns detected (potential attack or accidental trigger)
+  if (detectedPatterns.length > 0) {
+    logger.warn({
+      type: 'security.prompt_injection_attempt',
+      context,
+      patternsDetected: detectedPatterns,
+      inputLength: input.length,
+      inputPreview: input.substring(0, 150),
+      msg: 'Potential prompt injection patterns detected in user input',
+    })
+  }
+
+  // Sanitization strategy:
+  // 1. Keep the content readable (don't aggressively strip)
+  // 2. Add clear delimiters to separate user content from instructions
+  // 3. Escape characters that could break out of prompt structure
+
+  // Replace newlines with explicit markers to prevent multi-line injection
+  let sanitized = input.replace(/\n{3,}/g, '\n\n') // Collapse excessive newlines
+
+  // Escape characters that could be used to break prompt structure
+  // We preserve most content but escape quote marks that could close strings
+  sanitized = sanitized
+    .replace(/```/g, "'''") // Escape code blocks
+    .replace(/"""/g, "'\"'") // Escape triple quotes
+
+  // For detected injection patterns, prepend warning marker
+  // This makes the AI treat them as data, not instructions
+  for (const pattern of PROMPT_INJECTION_PATTERNS) {
+    sanitized = sanitized.replace(pattern, match => `[USER_TEXT: ${match}]`)
+  }
+
+  return sanitized.trim()
+}
+
+/**
+ * VBL4: Wrap user content with clear delimiters for AI prompts
+ *
+ * This creates a clear boundary between system instructions and user content,
+ * making it harder for injection attacks to escape the content section.
+ *
+ * @param content - User-provided content
+ * @param label - Label for the content (e.g., 'Newsletter Title', 'Newsletter Content')
+ * @returns Delimited content safe for AI prompts
+ */
+export function delimiterWrapUserContent(
+  content: string,
+  label: string
+): string {
+  // Use clear XML-style delimiters that are easy for AI to parse
+  // and hard for users to escape from
+  return `<${label.toLowerCase().replace(/\s+/g, '_')}>
+${content}
+</${label.toLowerCase().replace(/\s+/g, '_')}>`
 }

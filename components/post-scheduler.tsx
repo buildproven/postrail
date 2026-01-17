@@ -1,5 +1,24 @@
 'use client'
 
+/**
+ * L4: Refactoring Opportunity - Code Duplication
+ *
+ * This component has ~140 lines of duplicated post card rendering across 3 sections:
+ * - Failed posts (lines 500-550)
+ * - Pre-CTA posts (lines 566-636)
+ * - Post-CTA posts (lines 651-699)
+ *
+ * Recommendation: Extract a ScheduledPostCard component to eliminate duplication.
+ * This would reduce this file from 740 lines to ~400 lines.
+ *
+ * Benefits:
+ * - Single source of truth for post card UI
+ * - Easier to maintain and test
+ * - Consistent styling across all post types
+ *
+ * Note: This is not traditional "props drilling" but rather code organization debt.
+ */
+
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

@@ -8,6 +8,7 @@ import {
 } from '@/lib/redis-rate-limiter'
 import { logger } from '@/lib/logger'
 import { getValidAccessToken } from '@/lib/oauth-refresh'
+import { checkPlatformRateLimit } from '@/lib/platform-rate-limiter'
 
 /**
  * Twitter Post Publishing Endpoint
@@ -17,6 +18,7 @@ import { getValidAccessToken } from '@/lib/oauth-refresh'
  * - Text posts (up to 280 characters)
  * - OAuth 2.0 (1-click connect)
  * - BYOK (bring your own keys) for legacy connections
+ * VBL6: Now includes platform-specific rate limit coordination
  */
 
 interface TwitterPostRequest {
@@ -106,7 +108,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Rate limit check
+    // Application-level rate limit check
     const rateLimitResult = await redisRateLimiter.checkRateLimit(user.id)
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
@@ -119,6 +121,28 @@ export async function POST(request: NextRequest) {
           status: 429,
           headers: createRateLimitHeaders(rateLimitResult),
         }
+      )
+    }
+
+    // VBL6: Platform-specific rate limit check (Twitter API limits)
+    const platformRateLimit = await checkPlatformRateLimit(user.id, 'twitter')
+    if (!platformRateLimit.allowed) {
+      logger.warn({
+        type: 'platform_rate_limit.blocked',
+        platform: 'twitter',
+        userId: user.id,
+        reason: platformRateLimit.reason,
+        remaining: platformRateLimit.remaining,
+        msg: 'Twitter platform rate limit exceeded',
+      })
+
+      return NextResponse.json(
+        {
+          error: platformRateLimit.reason || 'Twitter rate limit exceeded',
+          remaining: platformRateLimit.remaining,
+          resetTimes: platformRateLimit.resetTimes,
+        },
+        { status: 429 }
       )
     }
 

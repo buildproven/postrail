@@ -34,10 +34,17 @@ const COMMON_TIMEZONES = [
   { value: 'Australia/Sydney', label: 'Sydney (AEST)', offset: 'UTC+10/11' },
 ]
 
-export function TimezoneSettings() {
-  const [timezone, setTimezone] = useState<string>('')
-  const [detectedTimezone, setDetectedTimezone] = useState<string>('')
-  const [loading, setLoading] = useState(true)
+interface TimezoneSettingsProps {
+  initialTimezone?: string | null
+}
+
+export function TimezoneSettings({ initialTimezone }: TimezoneSettingsProps) {
+  // Detect browser timezone immediately (needed for fallback)
+  const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+  // L5: Use initialTimezone from server if provided, otherwise use browserTz temporarily
+  const [timezone, setTimezone] = useState<string>(initialTimezone || browserTz)
+  const [loading, setLoading] = useState(!initialTimezone) // Skip loading if we have initial data
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{
     type: 'success' | 'error'
@@ -45,9 +52,11 @@ export function TimezoneSettings() {
   } | null>(null)
 
   useEffect(() => {
-    // Detect browser timezone
-    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone
-    setDetectedTimezone(browserTz)
+    // L5: Only fetch if initial timezone not provided
+    if (initialTimezone) {
+      setLoading(false)
+      return
+    }
 
     // Fetch saved timezone
     const fetchTimezone = async () => {
@@ -74,7 +83,7 @@ export function TimezoneSettings() {
       }
     }
     fetchTimezone()
-  }, [])
+  }, [initialTimezone, browserTz])
 
   const handleSave = async () => {
     setSaving(true)
@@ -110,7 +119,7 @@ export function TimezoneSettings() {
   }
 
   const handleUseDetected = () => {
-    setTimezone(detectedTimezone)
+    setTimezone(browserTz)
   }
 
   if (loading) {
@@ -165,23 +174,21 @@ export function TimezoneSettings() {
               </option>
             ))}
             {/* Add detected timezone if not in common list */}
-            {!COMMON_TIMEZONES.find(tz => tz.value === detectedTimezone) && (
-              <option value={detectedTimezone}>
-                {detectedTimezone} (Detected)
-              </option>
+            {!COMMON_TIMEZONES.find(tz => tz.value === browserTz) && (
+              <option value={browserTz}>{browserTz} (Detected)</option>
             )}
           </select>
         </div>
 
         {/* Use detected button */}
-        {timezone !== detectedTimezone && (
+        {timezone !== browserTz && (
           <Button
             variant="outline"
             size="sm"
             onClick={handleUseDetected}
             className="text-sm"
           >
-            Use detected: {detectedTimezone}
+            Use detected: {browserTz}
           </Button>
         )}
 

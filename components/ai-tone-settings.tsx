@@ -44,25 +44,109 @@ interface ToneOptions {
   hashtag_style: ToneOption[]
 }
 
-export function AiToneSettings() {
-  const [tone, setTone] = useState<ToneSettings | null>(null)
-  const [options, setOptions] = useState<ToneOptions | null>(null)
-  const [loading, setLoading] = useState(true)
+// L5: Extract static options as constants to avoid API call overhead
+const TONE_OPTIONS: ToneOptions = {
+  voice: [
+    {
+      value: 'professional',
+      label: 'Professional',
+      description: 'Business-focused, authoritative tone',
+    },
+    {
+      value: 'casual',
+      label: 'Casual',
+      description: 'Friendly, conversational approach',
+    },
+    {
+      value: 'witty',
+      label: 'Witty',
+      description: 'Clever, engaging with personality',
+    },
+    {
+      value: 'inspirational',
+      label: 'Inspirational',
+      description: 'Motivating, uplifting messages',
+    },
+  ],
+  formality: [
+    {
+      value: 'formal',
+      label: 'Formal',
+      description: 'Structured, proper language',
+    },
+    {
+      value: 'balanced',
+      label: 'Balanced',
+      description: 'Mix of professional and approachable',
+    },
+    {
+      value: 'casual',
+      label: 'Casual',
+      description: 'Relaxed, everyday language',
+    },
+  ],
+  emoji_level: [
+    { value: 'none', label: 'None', description: 'No emojis' },
+    { value: 'minimal', label: 'Minimal', description: '1-2 emojis max' },
+    {
+      value: 'moderate',
+      label: 'Moderate',
+      description: '2-4 strategic emojis',
+    },
+    { value: 'liberal', label: 'Liberal', description: 'Emoji-rich posts' },
+  ],
+  hashtag_style: [
+    { value: 'none', label: 'None', description: 'No hashtags' },
+    { value: 'minimal', label: 'Minimal', description: '1-2 hashtags' },
+    { value: 'relevant', label: 'Relevant', description: '3-5 topic hashtags' },
+    {
+      value: 'trending',
+      label: 'Trending',
+      description: 'Include popular hashtags',
+    },
+  ],
+}
+
+const DEFAULT_TONE: ToneSettings = {
+  voice: 'professional',
+  formality: 'balanced',
+  emoji_level: 'moderate',
+  hashtag_style: 'relevant',
+  custom_instructions: null,
+}
+
+interface AiToneSettingsProps {
+  initialTone?: ToneSettings | null
+}
+
+export function AiToneSettings({ initialTone }: AiToneSettingsProps) {
+  // L5: Use initialTone from server if provided, otherwise fetch
+  const [tone, setTone] = useState<ToneSettings | null>(
+    initialTone || DEFAULT_TONE
+  )
+  const [loading, setLoading] = useState(!initialTone) // Skip loading if we have initial data
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{
     type: 'success' | 'error'
     text: string
   } | null>(null)
-  const [customInstructions, setCustomInstructions] = useState('')
+  const [customInstructions, setCustomInstructions] = useState(
+    initialTone?.custom_instructions || ''
+  )
 
   useEffect(() => {
+    // L5: Only fetch if initial tone not provided
+    if (initialTone) {
+      setLoading(false)
+      return
+    }
+
     const fetchTone = async () => {
       try {
         const res = await fetch('/api/user/ai-tone')
         if (res.ok) {
           const data = await res.json()
           setTone(data.tone)
-          setOptions(data.options)
           setCustomInstructions(data.tone.custom_instructions || '')
         }
       } catch (error) {
@@ -135,7 +219,7 @@ export function AiToneSettings() {
     )
   }
 
-  if (!tone || !options) {
+  if (!tone) {
     return null
   }
 
@@ -158,7 +242,7 @@ export function AiToneSettings() {
             <Label className="font-medium">Voice</Label>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {options.voice.map(opt => (
+            {TONE_OPTIONS.voice.map(opt => (
               <button
                 key={opt.value}
                 type="button"
@@ -185,7 +269,7 @@ export function AiToneSettings() {
             <Label className="font-medium">Formality</Label>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {options.formality.map(opt => (
+            {TONE_OPTIONS.formality.map(opt => (
               <button
                 key={opt.value}
                 type="button"
@@ -212,7 +296,7 @@ export function AiToneSettings() {
             <Label className="font-medium">Emoji Usage</Label>
           </div>
           <div className="grid grid-cols-4 gap-2">
-            {options.emoji_level.map(opt => (
+            {TONE_OPTIONS.emoji_level.map(opt => (
               <button
                 key={opt.value}
                 type="button"
@@ -236,7 +320,7 @@ export function AiToneSettings() {
             <Label className="font-medium">Hashtag Style</Label>
           </div>
           <div className="grid grid-cols-4 gap-2">
-            {options.hashtag_style.map(opt => (
+            {TONE_OPTIONS.hashtag_style.map(opt => (
               <button
                 key={opt.value}
                 type="button"

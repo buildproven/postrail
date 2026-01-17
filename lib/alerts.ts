@@ -49,14 +49,25 @@ export interface EscalationPolicy {
   info?: EscalationRule
 }
 
+export interface FailedAlert {
+  options: AlertOptions
+  failedChannels: string[]
+  error: string
+  timestamp: string
+  retryCount: number
+}
+
 class AlertManager {
   private readonly slackWebhookUrl: string | undefined
   private readonly pagerDutyKey: string | undefined
   private readonly escalationPolicy: EscalationPolicy
   private pendingEscalations: Map<
     string,
-    { options: AlertOptions; timers: NodeJS.Timeout[] }
+    { options: AlertOptions; timers: ReturnType<typeof setTimeout>[] }
   >
+  // L13: Track failed alerts for manual review and escalation
+  private failedAlerts: FailedAlert[] = []
+  private readonly MAX_FAILED_ALERTS = 100 // Prevent memory leak
 
   constructor() {
     this.slackWebhookUrl = process.env.SLACK_WEBHOOK_URL
@@ -134,38 +145,47 @@ class AlertManager {
     }
 
     // Schedule escalated alerts
-    const timers: NodeJS.Timeout[] = []
+    const timers: ReturnType<typeof setTimeout>[] = []
 
     if (rule.after_5min && rule.after_5min.length > 0) {
-      const timer = setTimeout(() => {
-        this.sendToChannels(rule.after_5min!, {
-          ...options,
-          title: `[ESCALATION] ${options.title}`,
-          message: `Alert not acknowledged after 5 minutes. ${options.message}`,
-        })
-      }, 5 * 60 * 1000)
+      const timer = setTimeout(
+        () => {
+          this.sendToChannels(rule.after_5min!, {
+            ...options,
+            title: `[ESCALATION] ${options.title}`,
+            message: `Alert not acknowledged after 5 minutes. ${options.message}`,
+          })
+        },
+        5 * 60 * 1000
+      )
       timers.push(timer)
     }
 
     if (rule.after_15min && rule.after_15min.length > 0) {
-      const timer = setTimeout(() => {
-        this.sendToChannels(rule.after_15min!, {
-          ...options,
-          title: `[ESCALATION] ${options.title}`,
-          message: `Alert not acknowledged after 15 minutes. ${options.message}`,
-        })
-      }, 15 * 60 * 1000)
+      const timer = setTimeout(
+        () => {
+          this.sendToChannels(rule.after_15min!, {
+            ...options,
+            title: `[ESCALATION] ${options.title}`,
+            message: `Alert not acknowledged after 15 minutes. ${options.message}`,
+          })
+        },
+        15 * 60 * 1000
+      )
       timers.push(timer)
     }
 
     if (rule.after_30min && rule.after_30min.length > 0) {
-      const timer = setTimeout(() => {
-        this.sendToChannels(rule.after_30min!, {
-          ...options,
-          title: `[ESCALATION] ${options.title}`,
-          message: `Alert not acknowledged after 30 minutes. ${options.message}`,
-        })
-      }, 30 * 60 * 1000)
+      const timer = setTimeout(
+        () => {
+          this.sendToChannels(rule.after_30min!, {
+            ...options,
+            title: `[ESCALATION] ${options.title}`,
+            message: `Alert not acknowledged after 30 minutes. ${options.message}`,
+          })
+        },
+        30 * 60 * 1000
+      )
       timers.push(timer)
     }
 
@@ -183,17 +203,24 @@ class AlertManager {
   }
 
   /**
-   * L13: Send alerts to specified channels
+   * L13: Send alerts to specified channels with failure tracking
    */
   private async sendToChannels(
     channels: string[],
     options: AlertOptions
   ): Promise<void> {
+    const failedChannels: string[] = []
+    const errors: string[] = []
+
     for (const channel of channels) {
       switch (channel.toLowerCase()) {
         case 'slack':
           if (this.slackWebhookUrl) {
             await this.sendSlackAlert(options).catch(error => {
+              const errorMsg =
+                error instanceof Error ? error.message : String(error)
+              failedChannels.push(channel)
+              errors.push(errorMsg)
               logger.error({ error, channel }, 'Failed to send alert')
             })
           }
@@ -201,6 +228,10 @@ class AlertManager {
         case 'pagerduty':
           if (this.pagerDutyKey) {
             await this.sendPagerDutyAlert(options).catch(error => {
+              const errorMsg =
+                error instanceof Error ? error.message : String(error)
+              failedChannels.push(channel)
+              errors.push(errorMsg)
               logger.error({ error, channel }, 'Failed to send alert')
             })
           }
@@ -208,6 +239,14 @@ class AlertManager {
         default:
           logger.warn({ channel }, 'Unsupported alert channel')
       }
+    }
+
+    // L13: Escalate when ALL channels fail for critical alerts
+    if (
+      failedChannels.length > 0 &&
+      failedChannels.length === channels.length
+    ) {
+      this.recordFailedAlert(options, failedChannels, errors.join('; '))
     }
   }
 
@@ -340,6 +379,91 @@ class AlertManager {
    */
   isConfigured(): boolean {
     return !!(this.slackWebhookUrl || this.pagerDutyKey)
+  }
+
+  /**
+   * L13: Record failed alert for manual review and escalation
+   */
+  private recordFailedAlert(
+    options: AlertOptions,
+    failedChannels: string[],
+    error: string
+  ): void {
+    const failedAlert: FailedAlert = {
+      options,
+      failedChannels,
+      error,
+      timestamp: new Date().toISOString(),
+      retryCount: 0,
+    }
+
+    // Add to failed alerts list (with limit to prevent memory leak)
+    this.failedAlerts.push(failedAlert)
+    if (this.failedAlerts.length > this.MAX_FAILED_ALERTS) {
+      this.failedAlerts.shift() // Remove oldest
+    }
+
+    // Critical escalation: Log as fatal for manual review
+    logger.fatal(
+      {
+        type: 'alert.system.failure',
+        severity: options.severity,
+        title: options.title,
+        failedChannels,
+        error,
+        alertCount: this.failedAlerts.length,
+      },
+      'ALERT SYSTEM FAILURE: Unable to send alert through configured channels'
+    )
+
+    // If this is a critical alert failure, log extra warning
+    if (options.severity === 'critical') {
+      logger.fatal(
+        {
+          type: 'alert.system.critical_failure',
+          title: options.title,
+          message: options.message,
+          metadata: options.metadata,
+        },
+        'CRITICAL ALERT COULD NOT BE SENT - MANUAL INTERVENTION REQUIRED'
+      )
+    }
+  }
+
+  /**
+   * L13: Get all failed alerts for manual review
+   */
+  getFailedAlerts(): FailedAlert[] {
+    return [...this.failedAlerts] // Return copy to prevent mutation
+  }
+
+  /**
+   * L13: Clear failed alerts (after manual review)
+   */
+  clearFailedAlerts(): void {
+    const count = this.failedAlerts.length
+    this.failedAlerts = []
+    logger.info({ count }, 'Failed alerts cleared')
+  }
+
+  /**
+   * L13: Health check for alert system
+   */
+  async healthCheck(): Promise<{
+    healthy: boolean
+    configured: boolean
+    failedAlertsCount: number
+    channels: { slack: boolean; pagerduty: boolean }
+  }> {
+    return {
+      healthy: this.failedAlerts.length < 10, // Unhealthy if >10 failed alerts
+      configured: this.isConfigured(),
+      failedAlertsCount: this.failedAlerts.length,
+      channels: {
+        slack: !!this.slackWebhookUrl,
+        pagerduty: !!this.pagerDutyKey,
+      },
+    }
   }
 }
 
