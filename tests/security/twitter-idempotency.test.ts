@@ -55,6 +55,23 @@ vi.mock('@/lib/redis-rate-limiter', () => ({
   }),
 }))
 
+// Mock OAuth refresh (VBL5)
+vi.mock('@/lib/oauth-refresh', () => ({
+  getValidAccessToken: vi.fn().mockResolvedValue('mock-access-token-123'),
+}))
+
+// Mock platform rate limiter (VBL6)
+vi.mock('@/lib/platform-rate-limiter', () => ({
+  checkPlatformRateLimit: vi.fn().mockResolvedValue({
+    allowed: true,
+    remaining: { daily: 50, hourly: 17 },
+    resetTimes: {
+      daily: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      hourly: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    },
+  }),
+}))
+
 describe('Twitter Post Idempotency Race Condition', () => {
   let mockSupabase: any
 
@@ -270,28 +287,22 @@ describe('Twitter Post Idempotency Race Condition', () => {
 
       let releaseLockCalled = false
 
-      mockSupabase.from.mockReturnValue({
-        update: vi.fn().mockImplementation((data: any) => {
-          if (data.status === 'draft') {
-            // This is the lock release call
-            releaseLockCalled = true
-            return {
-              eq: vi.fn().mockResolvedValue({ data: null, error: null }),
-            }
-          }
-
-          // Lock acquisition succeeds but with wrong user
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'platform_connections') {
+          // Mock Twitter connection
           return {
-            eq: vi.fn().mockReturnValue({
-              in: vi.fn().mockReturnValue({
-                select: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
                   single: vi.fn().mockResolvedValue({
                     data: {
-                      id: socialPostId,
-                      platform: 'twitter',
-                      newsletter_id: 'newsletter-123',
-                      status: 'publishing',
-                      newsletters: { user_id: 'different-user-456' }, // Wrong user
+                      metadata: {
+                        apiKey: 'enc_key',
+                        apiSecret: 'enc_secret',
+                        accessToken: 'enc_token',
+                        accessTokenSecret: 'enc_token_secret',
+                      },
+                      is_active: true,
                     },
                     error: null,
                   }),
@@ -299,7 +310,40 @@ describe('Twitter Post Idempotency Race Condition', () => {
               }),
             }),
           }
-        }),
+        }
+
+        // table === 'social_posts'
+        return {
+          update: vi.fn().mockImplementation((data: any) => {
+            if (data.status === 'draft') {
+              // This is the lock release call
+              releaseLockCalled = true
+              return {
+                eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+              }
+            }
+
+            // Lock acquisition succeeds but with wrong user
+            return {
+              eq: vi.fn().mockReturnValue({
+                in: vi.fn().mockReturnValue({
+                  select: vi.fn().mockReturnValue({
+                    single: vi.fn().mockResolvedValue({
+                      data: {
+                        id: socialPostId,
+                        platform: 'twitter',
+                        newsletter_id: 'newsletter-123',
+                        status: 'publishing',
+                        newsletters: { user_id: 'different-user-456' }, // Wrong user
+                      },
+                      error: null,
+                    }),
+                  }),
+                }),
+              }),
+            }
+          }),
+        }
       })
 
       const request = new NextRequest(
@@ -325,26 +369,22 @@ describe('Twitter Post Idempotency Race Condition', () => {
 
       let releaseLockCalled = false
 
-      mockSupabase.from.mockReturnValue({
-        update: vi.fn().mockImplementation((data: any) => {
-          if (data.status === 'draft') {
-            releaseLockCalled = true
-            return {
-              eq: vi.fn().mockResolvedValue({ data: null, error: null }),
-            }
-          }
-
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'platform_connections') {
+          // Mock Twitter connection
           return {
-            eq: vi.fn().mockReturnValue({
-              in: vi.fn().mockReturnValue({
-                select: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
                   single: vi.fn().mockResolvedValue({
                     data: {
-                      id: socialPostId,
-                      platform: 'linkedin', // Wrong platform
-                      newsletter_id: 'newsletter-123',
-                      status: 'publishing',
-                      newsletters: { user_id: 'test-user-123' },
+                      metadata: {
+                        apiKey: 'enc_key',
+                        apiSecret: 'enc_secret',
+                        accessToken: 'enc_token',
+                        accessTokenSecret: 'enc_token_secret',
+                      },
+                      is_active: true,
                     },
                     error: null,
                   }),
@@ -352,7 +392,38 @@ describe('Twitter Post Idempotency Race Condition', () => {
               }),
             }),
           }
-        }),
+        }
+
+        // table === 'social_posts'
+        return {
+          update: vi.fn().mockImplementation((data: any) => {
+            if (data.status === 'draft') {
+              releaseLockCalled = true
+              return {
+                eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+              }
+            }
+
+            return {
+              eq: vi.fn().mockReturnValue({
+                in: vi.fn().mockReturnValue({
+                  select: vi.fn().mockReturnValue({
+                    single: vi.fn().mockResolvedValue({
+                      data: {
+                        id: socialPostId,
+                        platform: 'linkedin', // Wrong platform
+                        newsletter_id: 'newsletter-123',
+                        status: 'publishing',
+                        newsletters: { user_id: 'test-user-123' },
+                      },
+                      error: null,
+                    }),
+                  }),
+                }),
+              }),
+            }
+          }),
+        }
       })
 
       const request = new NextRequest(
@@ -380,60 +451,69 @@ describe('Twitter Post Idempotency Race Condition', () => {
 
       const stateTransitions: string[] = []
 
-      mockSupabase.from.mockReturnValue({
-        update: vi.fn().mockImplementation((data: any) => {
-          stateTransitions.push(data.status)
-
-          if (data.status === 'publishing') {
-            // Lock acquisition
-            return {
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'platform_connections') {
+          // Mock Twitter connection
+          return {
+            select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                in: vi.fn().mockReturnValue({
-                  select: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({
-                      data: {
-                        id: socialPostId,
-                        platform: 'twitter',
-                        newsletter_id: 'newsletter-123',
-                        status: 'publishing',
-                        newsletters: { user_id: 'test-user-123' },
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({
+                    data: {
+                      metadata: {
+                        apiKey: 'enc_key',
+                        apiSecret: 'enc_secret',
+                        accessToken: 'enc_token',
+                        accessTokenSecret: 'enc_token_secret',
                       },
-                      error: null,
-                    }),
+                      is_active: true,
+                    },
+                    error: null,
                   }),
                 }),
               }),
-            }
-          } else if (data.status === 'published') {
-            // Success update
-            return {
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: null,
-                  error: null,
-                }),
-              }),
-            }
-          }
-        }),
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: {
-                  metadata: {
-                    apiKey: 'enc_key',
-                    apiSecret: 'enc_secret',
-                    accessToken: 'enc_token',
-                    accessTokenSecret: 'enc_token_secret',
-                  },
-                  is_active: true,
-                },
-                error: null,
-              }),
             }),
+          }
+        }
+
+        // table === 'social_posts'
+        return {
+          update: vi.fn().mockImplementation((data: any) => {
+            stateTransitions.push(data.status)
+
+            if (data.status === 'publishing') {
+              // Lock acquisition
+              return {
+                eq: vi.fn().mockReturnValue({
+                  in: vi.fn().mockReturnValue({
+                    select: vi.fn().mockReturnValue({
+                      single: vi.fn().mockResolvedValue({
+                        data: {
+                          id: socialPostId,
+                          platform: 'twitter',
+                          newsletter_id: 'newsletter-123',
+                          status: 'publishing',
+                          newsletters: { user_id: 'test-user-123' },
+                        },
+                        error: null,
+                      }),
+                    }),
+                  }),
+                }),
+              }
+            } else if (data.status === 'published') {
+              // Success update
+              return {
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({
+                    data: null,
+                    error: null,
+                  }),
+                }),
+              }
+            }
           }),
-        }),
+        }
       })
 
       const request = new NextRequest(

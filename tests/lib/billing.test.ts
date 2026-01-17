@@ -457,10 +457,14 @@ describe('BillingService', () => {
   describe('updateSubscriptionFromWebhook', () => {
     it('should update database with subscription data', async () => {
       const mockUpdate = vi.fn().mockReturnThis()
-      const mockEq = vi.fn().mockResolvedValue({ error: null })
+      const mockEq = vi.fn().mockReturnThis()
+      const mockSelect = vi.fn().mockReturnThis()
+      const mockSingle = vi.fn().mockResolvedValue({ error: null })
       mockSupabase.from.mockReturnValue({
         update: mockUpdate,
         eq: mockEq,
+        select: mockSelect,
+        single: mockSingle,
       })
 
       const mockSubscription = {
@@ -494,9 +498,14 @@ describe('BillingService', () => {
 
     it('should correctly identify growth tier from price ID', async () => {
       const mockUpdate = vi.fn().mockReturnThis()
+      const mockEq = vi.fn().mockReturnThis()
+      const mockSelect = vi.fn().mockReturnThis()
+      const mockSingle = vi.fn().mockResolvedValue({ error: null })
       mockSupabase.from.mockReturnValue({
         update: mockUpdate,
-        eq: vi.fn().mockResolvedValue({ error: null }),
+        eq: mockEq,
+        select: mockSelect,
+        single: mockSingle,
       })
 
       const mockSubscription = {
@@ -549,9 +558,14 @@ describe('BillingService', () => {
   describe('handleSubscriptionCancelled', () => {
     it('should reset subscription to trial tier', async () => {
       const mockUpdate = vi.fn().mockReturnThis()
+      const mockEq = vi.fn().mockReturnThis()
+      const mockSelect = vi.fn().mockReturnThis()
+      const mockSingle = vi.fn().mockResolvedValue({ error: null })
       mockSupabase.from.mockReturnValue({
         update: mockUpdate,
-        eq: vi.fn().mockResolvedValue({ error: null }),
+        eq: mockEq,
+        select: mockSelect,
+        single: mockSingle,
       })
 
       await service.handleSubscriptionCancelled('cus_test_123')
