@@ -54,3 +54,6 @@ next-env.d.ts
 /playwright-report/
 /playwright/.auth/*.json
 .npm-cache/
+
+# QA Architect license files
+.qa-architect/
