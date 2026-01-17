@@ -3,12 +3,82 @@
  *
  * VBL5: OWASP A07 - Identification and Authentication Failures
  * Handles automatic token refresh for Twitter, LinkedIn, and Facebook OAuth connections
+ *
+ * Features:
+ * - Automatic token expiration detection (5-minute buffer)
+ * - Platform-specific refresh implementations (Twitter, LinkedIn, Facebook)
+ * - Token rotation support (updates refresh tokens when rotated)
+ * - Retry logic for transient network failures (3 attempts with exponential backoff)
+ * - Refresh token expiry tracking (LinkedIn)
+ * - Comprehensive logging and error handling
+ * - Automatic connection deactivation on fatal refresh failures
  */
 
 import { createClient } from '@/lib/supabase/server'
 import { encrypt, decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
+
+/**
+ * VBL5: Retry configuration for token refresh operations
+ */
+const RETRY_CONFIG = {
+  maxAttempts: 3,
+  initialDelayMs: 1000,
+  backoffMultiplier: 2,
+}
+
+/**
+ * VBL5: Retry helper with exponential backoff
+ */
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  context: { platform: string; userId: string }
+): Promise<T> {
+  let lastError: Error | null = null
+
+  for (let attempt = 1; attempt <= RETRY_CONFIG.maxAttempts; attempt++) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error as Error
+
+      // Don't retry on 4xx errors (client errors like invalid credentials)
+      if (error instanceof Error && error.message.includes('4')) {
+        logger.warn({
+          type: 'oauth.refresh.no_retry',
+          ...context,
+          attempt,
+          error: error.message,
+          msg: 'Client error detected, skipping retry',
+        })
+        throw error
+      }
+
+      // Retry on network errors or 5xx errors
+      if (attempt < RETRY_CONFIG.maxAttempts) {
+        const delayMs =
+          RETRY_CONFIG.initialDelayMs *
+          Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1)
+
+        logger.warn({
+          type: 'oauth.refresh.retry',
+          ...context,
+          attempt,
+          maxAttempts: RETRY_CONFIG.maxAttempts,
+          delayMs,
+          error: error instanceof Error ? error.message : String(error),
+          msg: 'Token refresh failed, retrying with backoff',
+        })
+
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+    }
+  }
+
+  // All retries failed
+  throw lastError || new Error('Token refresh failed after all retries')
+}
 
 /**
  * Check if a token is expired or will expire soon (within 5 minutes)
@@ -134,6 +204,7 @@ const LinkedInRefreshResponseSchema = z.object({
 
 /**
  * Refresh LinkedIn OAuth token
+ * VBL5: Now tracks refresh token expiry
  */
 export async function refreshLinkedInToken(
   userId: string,
@@ -142,6 +213,7 @@ export async function refreshLinkedInToken(
   accessToken: string
   refreshToken?: string
   expiresAt: string
+  refreshTokenExpiresAt?: string
 }> {
   const clientId = process.env.LINKEDIN_CLIENT_ID
   const clientSecret = process.env.LINKEDIN_CLIENT_SECRET
@@ -201,10 +273,18 @@ export async function refreshLinkedInToken(
       Date.now() + tokenData.expires_in * 1000
     ).toISOString()
 
+    // VBL5: Track refresh token expiry if provided
+    const refreshTokenExpiresAt = tokenData.refresh_token_expires_in
+      ? new Date(
+          Date.now() + tokenData.refresh_token_expires_in * 1000
+        ).toISOString()
+      : undefined
+
     logger.info({
       type: 'oauth.refresh.success',
       platform: 'linkedin',
       userId,
+      hasRefreshTokenExpiry: !!refreshTokenExpiresAt,
       msg: 'LinkedIn token refreshed successfully',
     })
 
@@ -212,6 +292,7 @@ export async function refreshLinkedInToken(
       accessToken: tokenData.access_token,
       refreshToken: tokenData.refresh_token,
       expiresAt,
+      refreshTokenExpiresAt,
     }
   } catch (error) {
     logger.error({
@@ -251,12 +332,14 @@ export async function refreshFacebookToken(
   try {
     // Step 1: Exchange short-lived user token for long-lived user token
     const userTokenResponse = await fetch(
-      `https://graph.facebook.com/v21.0/oauth/access_token?${new URLSearchParams({
-        grant_type: 'fb_exchange_token',
-        client_id: appId,
-        client_secret: appSecret,
-        fb_exchange_token: userToken,
-      }).toString()}`
+      `https://graph.facebook.com/v21.0/oauth/access_token?${new URLSearchParams(
+        {
+          grant_type: 'fb_exchange_token',
+          client_id: appId,
+          client_secret: appSecret,
+          fb_exchange_token: userToken,
+        }
+      ).toString()}`
     )
 
     if (!userTokenResponse.ok) {
@@ -407,20 +490,34 @@ export async function getValidAccessToken(
   const refreshToken = decrypt(connection.oauth_refresh_token)
 
   try {
-    // Refresh token based on platform
+    // VBL5: Refresh token with retry logic for transient failures
     let refreshData:
-      | { accessToken: string; refreshToken?: string; expiresAt: string }
+      | {
+          accessToken: string
+          refreshToken?: string
+          expiresAt: string
+          refreshTokenExpiresAt?: string
+        }
       | { accessToken: string; expiresAt: string }
 
     switch (platform) {
       case 'twitter':
-        refreshData = await refreshTwitterToken(userId, refreshToken)
+        refreshData = await retryWithBackoff(
+          () => refreshTwitterToken(userId, refreshToken),
+          { platform, userId }
+        )
         break
       case 'linkedin':
-        refreshData = await refreshLinkedInToken(userId, refreshToken)
+        refreshData = await retryWithBackoff(
+          () => refreshLinkedInToken(userId, refreshToken),
+          { platform, userId }
+        )
         break
       case 'facebook':
-        refreshData = await refreshFacebookToken(userId, refreshToken)
+        refreshData = await retryWithBackoff(
+          () => refreshFacebookToken(userId, refreshToken),
+          { platform, userId }
+        )
         break
       default:
         throw new Error(`Unsupported platform: ${platform}`)
