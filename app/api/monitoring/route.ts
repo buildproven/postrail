@@ -8,7 +8,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { observability } from '@/lib/observability'
 import { requireAdmin } from '@/lib/rbac'
-import { RedisRateLimiter } from '@/lib/redis-rate-limiter'
+import {
+  RedisRateLimiter,
+  createRateLimitHeaders,
+} from '@/lib/redis-rate-limiter'
 
 // Rate limiting for monitoring endpoint to prevent DoS via expensive log queries
 const monitoringRateLimiter = new RedisRateLimiter()
@@ -58,11 +61,7 @@ export async function GET(request: NextRequest) {
         },
         {
           status: 429,
-          headers: {
-            'Retry-After': String(rateLimitResult.retryAfter || 60),
-            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
-            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-          },
+          headers: createRateLimitHeaders(rateLimitResult),
         }
       )
     }
@@ -281,7 +280,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(response)
+    return NextResponse.json(response, {
+      headers: createRateLimitHeaders(rateLimitResult),
+    })
   } catch (error) {
     observability.error('Monitoring endpoint error', {
       error: error as Error,

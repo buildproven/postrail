@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { TwitterApi } from 'twitter-api-v2'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
-import { redisRateLimiter } from '@/lib/redis-rate-limiter'
+import {
+  redisRateLimiter,
+  createRateLimitHeaders,
+} from '@/lib/redis-rate-limiter'
 import { logger } from '@/lib/logger'
 import { getValidAccessToken } from '@/lib/oauth-refresh'
 
@@ -114,11 +117,7 @@ export async function POST(request: NextRequest) {
         },
         {
           status: 429,
-          headers: {
-            'Retry-After': String(rateLimitResult.retryAfter || 60),
-            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
-            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-          },
+          headers: createRateLimitHeaders(rateLimitResult),
         }
       )
     }
@@ -194,14 +193,17 @@ export async function POST(request: NextRequest) {
         currentPost.status === 'published' &&
         currentPostTyped.platform_post_id
       ) {
-        return NextResponse.json({
-          success: true,
-          tweetId: currentPostTyped.platform_post_id,
-          url: `https://twitter.com/i/web/status/${currentPostTyped.platform_post_id}`,
-          fromCache: true,
-          message: 'Post was already published successfully',
-          publishedAt: currentPostTyped.published_at,
-        })
+        return NextResponse.json(
+          {
+            success: true,
+            tweetId: currentPostTyped.platform_post_id,
+            url: `https://twitter.com/i/web/status/${currentPostTyped.platform_post_id}`,
+            fromCache: true,
+            message: 'Post was already published successfully',
+            publishedAt: currentPostTyped.published_at,
+          },
+          { headers: createRateLimitHeaders(rateLimitResult) }
+        )
       }
 
       if (currentPost.status === 'publishing') {
@@ -271,12 +273,15 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', socialPostId)
 
-      return NextResponse.json({
-        success: true,
-        tweetId: tweet.id,
-        tweetText: tweet.text,
-        url: `https://twitter.com/i/web/status/${tweet.id}`,
-      })
+      return NextResponse.json(
+        {
+          success: true,
+          tweetId: tweet.id,
+          tweetText: tweet.text,
+          url: `https://twitter.com/i/web/status/${tweet.id}`,
+        },
+        { headers: createRateLimitHeaders(rateLimitResult) }
+      )
     } catch (twitterError: unknown) {
       logger.error({ error: twitterError }, 'Twitter API error:')
 

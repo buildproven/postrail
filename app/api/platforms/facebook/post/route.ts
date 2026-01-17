@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { decrypt } from '@/lib/crypto'
-import { redisRateLimiter } from '@/lib/redis-rate-limiter'
+import {
+  redisRateLimiter,
+  createRateLimitHeaders,
+} from '@/lib/redis-rate-limiter'
 import { logger } from '@/lib/logger'
 import { getValidAccessToken } from '@/lib/oauth-refresh'
 
@@ -129,11 +131,7 @@ export async function POST(request: NextRequest) {
         },
         {
           status: 429,
-          headers: {
-            'Retry-After': String(rateLimitResult.retryAfter || 60),
-            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
-            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-          },
+          headers: createRateLimitHeaders(rateLimitResult),
         }
       )
     }
@@ -210,13 +208,16 @@ export async function POST(request: NextRequest) {
         currentPost.status === 'published' &&
         currentPostTyped.platform_post_id
       ) {
-        return NextResponse.json({
-          success: true,
-          postId: currentPostTyped.platform_post_id,
-          fromCache: true,
-          message: 'Post was already published successfully',
-          publishedAt: currentPostTyped.published_at,
-        })
+        return NextResponse.json(
+          {
+            success: true,
+            postId: currentPostTyped.platform_post_id,
+            fromCache: true,
+            message: 'Post was already published successfully',
+            publishedAt: currentPostTyped.published_at,
+          },
+          { headers: createRateLimitHeaders(rateLimitResult) }
+        )
       }
 
       if (currentPost.status === 'publishing') {
@@ -327,12 +328,15 @@ export async function POST(request: NextRequest) {
       // Facebook post IDs are in format "pageId_postId"
       const postUrl = `https://www.facebook.com/${fbPostId.replace('_', '/posts/')}`
 
-      return NextResponse.json({
-        success: true,
-        postId: fbPostId,
-        url: postUrl,
-        pageName: credentials.pageName,
-      })
+      return NextResponse.json(
+        {
+          success: true,
+          postId: fbPostId,
+          url: postUrl,
+          pageName: credentials.pageName,
+        },
+        { headers: createRateLimitHeaders(rateLimitResult) }
+      )
     } catch (facebookError: unknown) {
       logger.error({ error: facebookError }, 'Facebook API error:')
 

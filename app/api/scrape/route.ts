@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
       clientIP
     )
     if (!rateLimitResult.allowed) {
+      const resetTime = Date.now() + (rateLimitResult.retryAfter || 60) * 1000
       return NextResponse.json(
         {
           error: 'Rate limit exceeded',
@@ -97,6 +98,8 @@ export async function POST(request: NextRequest) {
           status: 429,
           headers: {
             'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': resetTime.toString(),
           },
         }
       )

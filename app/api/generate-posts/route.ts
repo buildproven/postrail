@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { redisRateLimiter } from '@/lib/redis-rate-limiter'
+import {
+  redisRateLimiter,
+  createRateLimitHeaders,
+} from '@/lib/redis-rate-limiter'
 import { checkFeatureAccess, checkUsageLimits } from '@/lib/feature-gate'
 import { checkTrialAccess, recordTrialGeneration } from '@/lib/trial-guard'
 import { logger, logError } from '@/lib/logger'
@@ -308,11 +311,7 @@ export async function POST(request: NextRequest) {
         },
         {
           status: 429,
-          headers: {
-            'Retry-After': String(rateLimitResult.retryAfter || 60),
-            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
-            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-          },
+          headers: createRateLimitHeaders(rateLimitResult),
         }
       )
     }
@@ -492,22 +491,25 @@ export async function POST(request: NextRequest) {
       count: posts.length,
       failureCount: failures.length,
     })
-    return NextResponse.json({
-      newsletterId: newsletter.id,
-      postsGenerated: posts.length,
-      posts,
-      // M2 fix: Show users which posts failed (partial failure visibility)
-      ...(failures.length > 0 && {
-        partialFailure: true,
-        failures: failures.map(f => ({
-          platform: f.platform,
-          postType: f.postType,
-          reason:
-            'Generation timeout or AI error - please try regenerating this post',
-        })),
-        warning: `${failures.length} out of ${expectedPosts.length} posts failed to generate. You can regenerate failed posts later.`,
-      }),
-    })
+    return NextResponse.json(
+      {
+        newsletterId: newsletter.id,
+        postsGenerated: posts.length,
+        posts,
+        // M2 fix: Show users which posts failed (partial failure visibility)
+        ...(failures.length > 0 && {
+          partialFailure: true,
+          failures: failures.map(f => ({
+            platform: f.platform,
+            postType: f.postType,
+            reason:
+              'Generation timeout or AI error - please try regenerating this post',
+          })),
+          warning: `${failures.length} out of ${expectedPosts.length} posts failed to generate. You can regenerate failed posts later.`,
+        }),
+      },
+      { headers: createRateLimitHeaders(rateLimitResult) }
+    )
   } catch (error) {
     logError(error instanceof Error ? error : new Error(String(error)), {
       context: 'generate_posts',

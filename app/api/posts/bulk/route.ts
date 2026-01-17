@@ -7,6 +7,7 @@ import {
   checkServiceRateLimit,
 } from '@/lib/service-auth'
 import { logger } from '@/lib/logger'
+import { createRateLimitHeaders } from '@/lib/redis-rate-limiter'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60 // Allow up to 60s for bulk operations
@@ -69,11 +70,7 @@ export async function POST(request: NextRequest) {
         },
         {
           status: 429,
-          headers: {
-            'Retry-After': String(rateLimitResult.retryAfter || 60),
-            'X-RateLimit-Remaining': String(rateLimitResult.requestsRemaining),
-            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-          },
+          headers: createRateLimitHeaders(rateLimitResult),
         }
       )
     }
@@ -173,12 +170,15 @@ export async function POST(request: NextRequest) {
       scheduledFor: p.scheduled_time,
     }))
 
-    return NextResponse.json({
-      success: true,
-      clientId: body.clientId,
-      created: results.length,
-      posts: results,
-    })
+    return NextResponse.json(
+      {
+        success: true,
+        clientId: body.clientId,
+        created: results.length,
+        posts: results,
+      },
+      { headers: createRateLimitHeaders(rateLimitResult) }
+    )
   } catch (error) {
     logger.error({ error }, 'Bulk post error')
     return NextResponse.json(

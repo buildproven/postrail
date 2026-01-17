@@ -31,6 +31,11 @@ vi.mock('@/lib/redis-rate-limiter', () => ({
       resetTime: Date.now() + 60000,
     }),
   },
+  createRateLimitHeaders: vi.fn().mockReturnValue({
+    'X-RateLimit-Remaining': '10',
+    'X-RateLimit-Reset': String(Date.now() + 60000),
+    'X-RateLimit-Backend': 'redis',
+  }),
 }))
 
 // Mock global fetch for Facebook API
