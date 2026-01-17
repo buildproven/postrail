@@ -33,7 +33,7 @@ const TimezoneSettings = dynamic(
   }
 )
 
-// L5 fix: Convert to server component to avoid redundant client-side auth fetch
+// L5 fix: Fetch all user data server-side to avoid client-side API calls
 // Dashboard layout already handles auth and redirects
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -42,14 +42,16 @@ export default async function SettingsPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Get user's subscription status
+  // L5: Fetch all settings data in parallel (single DB roundtrip)
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('subscription_status')
-    .eq('id', user?.id)
+    .select('subscription_status, ai_tone, timezone')
+    .eq('user_id', user?.id)
     .single()
 
   const currentPlan = profile?.subscription_status || 'trial'
+  const aiTone = profile?.ai_tone || null
+  const timezone = profile?.timezone || null
 
   return (
     <div className="space-y-6">
@@ -93,10 +95,12 @@ export default async function SettingsPage() {
         </div>
 
         {/* AI Writing Style */}
-        <AiToneSettings />
+        {/* L5: Pass server-fetched data as props to avoid client-side API call */}
+        <AiToneSettings initialTone={aiTone} />
 
         {/* Timezone Settings */}
-        <TimezoneSettings />
+        {/* L5: Pass server-fetched data as props to avoid client-side API call */}
+        <TimezoneSettings initialTimezone={timezone} />
 
         {/* Subscription */}
         <div className="border rounded-lg p-6 bg-white">

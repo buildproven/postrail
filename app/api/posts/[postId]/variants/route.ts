@@ -6,7 +6,11 @@ import {
   createRateLimitHeaders,
 } from '@/lib/redis-rate-limiter'
 import { checkFeatureAccess } from '@/lib/feature-gate'
-import { sanitizeAIContent } from '@/lib/content-sanitization'
+import {
+  sanitizeAIContent,
+  sanitizePromptInput,
+  delimiterWrapUserContent,
+} from '@/lib/content-sanitization'
 import { z } from 'zod'
 import { logger } from '@/lib/logger'
 
@@ -151,10 +155,14 @@ REQUIREMENTS:
 - Stay under character limit
 - Return ONLY the post text, no explanations`
 
-  const userPrompt = `Original post to create a variant of:
----
-${originalContent}
----
+  // VBL4: Sanitize original content to prevent prompt injection
+  const sanitizedContent = sanitizePromptInput(
+    originalContent,
+    'variant_original_content'
+  )
+
+  // VBL4: Use delimiters to clearly separate content from instructions
+  const userPrompt = `${delimiterWrapUserContent(sanitizedContent, 'Original Post')}
 
 Create a ${style.name} variant of this post. Make it distinctly different while conveying the same core value proposition.`
 
