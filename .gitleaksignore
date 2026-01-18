@@ -2,5 +2,6 @@
 # Add specific secrets that are false positives or test data
 # Format: <rule-id>:<file-path>:<line-number>:<commit-hash>
 
-# Example:
-# jwt-token:tests/fixtures/example.js:15:abc123def456
+# Test fixtures - dummy keys used in CI scripts
+b5109faf9faf7f0bf80ae587d20b6cf18cb0659c:scripts/ci-local.sh:generic-api-key:41
+b5109faf9faf7f0bf80ae587d20b6cf18cb0659c:scripts/ci-local.sh:generic-api-key:44
