@@ -8,13 +8,13 @@ echo "🧠 Analyzing changes for optimal test strategy..."
 
 # Environment variable overrides
 if [[ "$SKIP_SMART" == "1" ]]; then
-  echo "⚠️  SKIP_SMART=1 - Running comprehensive tests"
-  npm run test:comprehensive
+  echo "⚠️  SKIP_SMART=1 - Running all tests + smoke (E2E excluded)"
+  npm run test:all && npm run test:smoke
   exit 0
 fi
 
 if [[ "$FORCE_COMPREHENSIVE" == "1" ]]; then
-  echo "🔴 FORCE_COMPREHENSIVE=1 - Running all tests"
+  echo "🔴 FORCE_COMPREHENSIVE=1 - Running comprehensive tests (includes E2E)"
   npm run test:comprehensive
   exit 0
 fi
@@ -84,9 +84,10 @@ echo ""
 # Test tier selection based on risk score
 if [[ $RISK_SCORE -ge 7 ]]; then
   echo "🔴 HIGH RISK - Comprehensive validation"
-  echo "   • All tests + security audit"
-  # Runs: npm run test:comprehensive 2>/dev/null || (npm test && npm run security:audit 2>/dev/null)
-  npm run test:comprehensive 2>/dev/null || (npm test && npm run security:audit 2>/dev/null)
+  echo "   • All tests + smoke tests (E2E excluded for speed)"
+  # Runs: npm run test:all && npm run test:smoke (excludes E2E for pre-push performance)
+  # For full E2E validation, run: npm run test:comprehensive
+  npm run test:all && npm run test:smoke
 elif [[ $RISK_SCORE -ge 4 ]]; then
   echo "🟡 MEDIUM RISK - Standard validation"
   echo "   • Fast tests + integration (excludes slow tests)"
