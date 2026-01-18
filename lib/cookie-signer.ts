@@ -8,11 +8,11 @@
 import crypto from 'crypto'
 import { logger } from '@/lib/logger'
 
-const COOKIE_SECRET = process.env.COOKIE_SECRET || process.env.ENCRYPTION_KEY
+const COOKIE_SECRET = process.env.COOKIE_SECRET
 
 if (!COOKIE_SECRET && process.env.NODE_ENV === 'production') {
   logger.error(
-    'CRITICAL: COOKIE_SECRET or ENCRYPTION_KEY must be set for cookie signing'
+    'CRITICAL: COOKIE_SECRET must be set for cookie signing (separate from ENCRYPTION_KEY)'
   )
 }
 

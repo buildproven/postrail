@@ -64,3 +64,7 @@ e2e/
 - **Timeouts**: Increase timeouts in Vitest/Playwright config or narrow test selection.
 - **Mocks not applied**: Ensure `vi.mock` is defined before imports; clear mocks between tests.
 - **Flaky network**: Skip `.real.test.ts` when credentials are absent; favor mocks for CI.
+
+---
+
+> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)

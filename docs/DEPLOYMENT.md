@@ -92,3 +92,5 @@ Ensure env vars are injected (e.g., `docker run --env-file .env.production`).
 ---
 
 Last Updated: 2025-12-17
+
+> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)

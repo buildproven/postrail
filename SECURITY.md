@@ -95,4 +95,4 @@ If you deploy PostRail to your own cloud account:
 
 ---
 
-> **Vibe Build Lab LLC** - [vibebuildlab.com](https://vibebuildlab.com)
+> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)

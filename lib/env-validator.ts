@@ -8,6 +8,8 @@
  * during development and deployment.
  */
 
+import { logger } from '@/lib/logger'
+
 interface EnvConfig {
   name: string
   required: boolean
@@ -80,6 +82,31 @@ const ENV_CONFIGS: EnvConfig[] = [
       'AES-256 encryption key (64 hex chars). Generate with crypto.randomBytes(32).toString("hex")',
   },
   {
+    name: 'COOKIE_SECRET',
+    required: true,
+    validator: (value: string) => {
+      // Must be at least 32 characters for sufficient entropy
+      if (value.length < 32) {
+        return {
+          valid: false,
+          message:
+            'Must be at least 32 characters for security. Generate with: openssl rand -base64 32',
+        }
+      }
+      // Must be different from ENCRYPTION_KEY to maintain defense in depth
+      if (value === process.env.ENCRYPTION_KEY) {
+        return {
+          valid: false,
+          message:
+            'COOKIE_SECRET must be different from ENCRYPTION_KEY. Use separate secrets for different purposes.',
+        }
+      }
+      return { valid: true }
+    },
+    description:
+      'HMAC secret for OAuth state cookie signing (separate from ENCRYPTION_KEY). Generate with: openssl rand -base64 32',
+  },
+  {
     name: 'RATE_LIMIT_MODE',
     required: false,
     validator: (value: string) => {
@@ -130,7 +157,7 @@ export function validateEnvironment(): ValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
 
-  console.log('🔍 Validating environment variables...')
+  logger.info('Validating environment variables...')
 
   for (const config of ENV_CONFIGS) {
     const value = process.env[config.name]
@@ -150,7 +177,7 @@ export function validateEnvironment(): ValidationResult {
     }
 
     if (value) {
-      console.log(`✅ ${config.name}: OK`)
+      logger.debug(`${config.name}: OK`)
     }
   }
 
@@ -180,10 +207,10 @@ export function validateEnvironment(): ValidationResult {
   }
 
   if (result.valid) {
-    console.log('✅ Environment validation passed')
+    logger.info('Environment validation passed')
   } else {
-    console.error('❌ Environment validation failed')
-    result.errors.forEach(error => console.error(error))
+    logger.error({ errors }, 'Environment validation failed')
+    result.errors.forEach(error => logger.error(error))
   }
 
   return result
@@ -197,8 +224,10 @@ export function validateEnvironmentOrThrow(): void {
   const result = validateEnvironment()
 
   if (!result.valid) {
-    console.error('\n💥 STARTUP FAILED: Environment validation errors detected')
-    console.error('Fix the above environment variable issues and restart.\n')
+    logger.fatal(
+      { errors: result.errors },
+      'STARTUP FAILED: Environment validation errors detected. Fix the above environment variable issues and restart.'
+    )
     process.exit(1)
   }
 }

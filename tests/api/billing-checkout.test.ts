@@ -7,6 +7,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+// Test app URL for checkout redirects
+const TEST_APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://example.com'
+
 // Mock Stripe
 const mockCheckoutCreate = vi.fn()
 vi.mock('stripe', () => ({
@@ -130,8 +133,8 @@ describe('/api/billing/checkout', () => {
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         line_items: [{ price: 'price_standard_29', quantity: 1 }],
-        success_url: 'https://postrail.vibebuildlab.com/dashboard?success=true',
-        cancel_url: 'https://postrail.vibebuildlab.com/dashboard/settings',
+        success_url: `${TEST_APP_URL}/dashboard?success=true`,
+        cancel_url: `${TEST_APP_URL}/dashboard/settings`,
         customer_email: 'test@example.com',
         metadata: {
           user_id: 'user-123',
@@ -161,8 +164,8 @@ describe('/api/billing/checkout', () => {
       await stripe.checkout.sessions.create({
         mode: 'subscription',
         line_items: [{ price: 'price_growth_59', quantity: 1 }],
-        success_url: 'https://postrail.vibebuildlab.com/dashboard?success=true',
-        cancel_url: 'https://postrail.vibebuildlab.com/dashboard/settings',
+        success_url: `${TEST_APP_URL}/dashboard?success=true`,
+        cancel_url: `${TEST_APP_URL}/dashboard/settings`,
         metadata: {
           user_id: 'user-123',
           tier: 'growth',

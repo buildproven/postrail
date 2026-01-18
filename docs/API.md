@@ -120,3 +120,7 @@ Post publishing endpoints implement idempotency:
 - Posts in `published` status return cached result
 
 This prevents duplicate posts when retrying failed requests.
+
+---
+
+> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)
