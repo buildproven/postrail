@@ -50,10 +50,23 @@ fi
 
 # 2. Dependency audit
 echo "  → Checking dependencies..."
-npm audit --audit-level=high || {
-  echo "❌ Vulnerable dependencies found! Run 'npm audit fix' to resolve."
-  exit 1
-}
+# Detect package manager and use appropriate audit command
+if [ -f "pnpm-lock.yaml" ]; then
+  pnpm audit --audit-level=high || {
+    echo "❌ Vulnerable dependencies found! Run 'pnpm audit --fix' to resolve."
+    exit 1
+  }
+elif [ -f "yarn.lock" ]; then
+  yarn audit || {
+    echo "❌ Vulnerable dependencies found! Run 'yarn audit fix' to resolve."
+    exit 1
+  }
+else
+  npm audit --audit-level=high || {
+    echo "❌ Vulnerable dependencies found! Run 'npm audit fix' to resolve."
+    exit 1
+  }
+fi
 
 # 3. XSS pattern detection
 echo "  → Scanning for XSS patterns..."
