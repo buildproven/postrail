@@ -43,6 +43,8 @@ jobs:
       has-css: ${{ steps.detect.outputs.has-css }}
       package-manager: ${{ steps.detect-pm.outputs.manager }}
       install-cmd: ${{ steps.detect-pm.outputs.install-cmd }}
+      is-turborepo: ${{ steps.detect-pm.outputs.is-turborepo }}
+      turbo-prefix: ${{ steps.detect-pm.outputs.turbo-prefix }}
 
     steps:
       - name: Checkout code
@@ -74,10 +76,19 @@ jobs:
             echo "install-cmd=npm install" >> $GITHUB_OUTPUT
           fi
 
+          # Detect Turborepo
+          if [ -f turbo.json ]; then
+            echo "is-turborepo=true" >> $GITHUB_OUTPUT
+            echo "turbo-prefix=turbo run" >> $GITHUB_OUTPUT
+            echo "📦 Turborepo detected - will use 'turbo run' for tasks"
+          else
+            echo "is-turborepo=false" >> $GITHUB_OUTPUT
+            echo "turbo-prefix=" >> $GITHUB_OUTPUT
+          fi
+
       - name: Detect Project Maturity
         id: detect
         run: |
-          # Use the project maturity detector
           # Use the project maturity detector (local for qa-architect itself, node_modules for other projects)
           if [ -f lib/project-maturity.js ]; then
             node lib/project-maturity.js --github-actions >> $GITHUB_OUTPUT
@@ -90,6 +101,7 @@ jobs:
           echo "📊 Project Detection Results"
           echo "Package Manager: ${{ steps.detect-pm.outputs.manager }}"
           echo "Install Command: ${{ steps.detect-pm.outputs.install-cmd }}"
+          echo "Turborepo: ${{ steps.detect-pm.outputs.is-turborepo }}"
           echo "Maturity: ${{ steps.detect.outputs.maturity }}"
           echo "Source files: ${{ steps.detect.outputs.source-count }}"
           echo "Test files: ${{ steps.detect.outputs.test-count }}"
