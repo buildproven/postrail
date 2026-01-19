@@ -50,7 +50,7 @@
     "validate:comprehensive": "npx create-qa-architect@latest --comprehensive",
     "validate:all": "npm run validate:comprehensive && npm run security:audit",
     "lint:fix": "eslint . --ext .js,.jsx,.mjs,.cjs,.ts,.tsx,.html --fix && stylelint \"app/**/*.{css,scss,sass,less,pcss}\" --fix --allow-empty-input",
-    "prepare": "husky",
+    "prepare": "[ \"$CI\" = \"true\" ] && echo 'Skipping Husky in CI' || husky",
     "type-check": "tsc --noEmit",
     "type-check:tests": "tsc --noEmit --project tests/tsconfig.json",
     "type-check:all": "npm run type-check && npm run type-check:tests",
@@ -171,11 +171,13 @@
     ],
     "**/*.{ts,tsx}": [
       "eslint --fix",
-      "prettier --write"
+      "prettier --write",
+      "tsc --noEmit --skipLibCheck"
     ],
     "tests/**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
-      "prettier --write"
+      "prettier --write",
+      "tsc --noEmit --project tests/tsconfig.json"
     ],
     "**/*.py": [
       "black --check --diff",
