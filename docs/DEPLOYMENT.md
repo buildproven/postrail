@@ -194,24 +194,7 @@ Best for: Simple full-stack deployment
 
 Best for: Custom infrastructure, Kubernetes, self-managed servers
 
-```dockerfile
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Install dependencies
-COPY package*.json ./
-RUN npm ci --omit=dev
-
-# Build application
-COPY . .
-RUN npm run build
-
-# Run
-EXPOSE 3000
-ENV NODE_ENV=production
-CMD ["npm", "start"]
-```
+A production `Dockerfile` is included in the repo using multi-stage builds with standalone output for minimal image size.
 
 Build and run:
 

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { logger, security } from '@/lib/logger'
+import { sendAccountLockoutEmail } from '@/lib/email'
 import { headers } from 'next/headers'
 
 export interface LoginResult {
@@ -108,8 +109,14 @@ export async function secureLogin(
           ip: ipAddress,
           msg: 'Account lockout triggered - 5 failed attempts',
         })
-        // TODO: Send email notification via lib/email.ts
-        // await sendAccountLockoutEmail(email)
+        sendAccountLockoutEmail(email).catch((err) => {
+          logger.error({
+            type: 'security',
+            context: 'account_lockout_email_failed',
+            email,
+            error: String(err),
+          })
+        })
       }
 
       return {

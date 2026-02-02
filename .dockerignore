@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+!.env.local.example
+*.md
+tests
+e2e
+.github
+.vscode
+coverage
+.husky
