@@ -32,8 +32,13 @@ concurrency:
 
 jobs:
   # Step 1: Detect project maturity level and package manager
+  # Skip for Dependabot PRs - they auto-merge based on their own checks
+  # This reduces GitHub Actions minutes by ~50% on active repos
+  # Skip for Dependabot PRs - they auto-merge based on their own checks
+  # This reduces GitHub Actions minutes by ~50% on active repos
   detect-maturity:
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]' || github.event_name == 'schedule'
     outputs:
       maturity: ${{ steps.detect.outputs.maturity }}
       source-count: ${{ steps.detect.outputs.source-count }}
