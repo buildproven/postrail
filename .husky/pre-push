@@ -37,7 +37,7 @@ echo ""
 echo "🔐 Running security scans..."
 
 # 1. Secret scanning with gitleaks
-if command -v gitleaks &> /dev/null; then
+if command -v gitleaks >/dev/null 2>&1; then
   echo "  → Scanning for secrets..."
   gitleaks detect --no-git --verbose --exit-code=1 || {
     echo "❌ Secrets detected! Remove them before pushing."
