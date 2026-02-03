@@ -10,7 +10,7 @@ useDefault = true
 [allowlist]
 description = "Allowlist for false positives"
 
-# Ignore test files and documentation
+# Ignore test files, build artifacts, and documentation
 paths = [
   '''.*\.test\.(ts|tsx|js|jsx)$''',
   '''.*\.spec\.(ts|tsx|js|jsx)$''',
@@ -21,6 +21,18 @@ paths = [
   '''.*\.md$''',
   '''^coverage/.*''',
   '''package-lock\.json$''',
+  # Build artifacts (minified code contains JWT patterns)
+  '''^\.next/.*''',
+  '''^node_modules/.*''',
+  '''^dist/.*''',
+  '''^build/.*''',
+  # Local environment files (never committed, but gitleaks scans working dir)
+  '''\.env\.local$''',
+  '''\.env\.production\.local$''',
+  '''\.env\.development\.local$''',
+  '''^\.vercel/.*''',
+  # CI scripts with test keys
+  '''^scripts/ci-local\.sh$''',
 ]
 
 # Ignore common false positives
