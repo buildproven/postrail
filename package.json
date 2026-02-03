@@ -107,8 +107,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.4.0",
-    "@commitlint/config-conventional": "^19.0.0",
+    "@commitlint/cli": "^20.4.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@eslint/js": "^9.39.1",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.58.1",
@@ -126,6 +126,7 @@
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^4.0.18",
     "axe-core": "^4.11.1",
+    "commitlint": "^20.4.1",
     "create-qa-architect": "^5.10.4",
     "dotenv": "^17.2.3",
     "eslint": "^9",
