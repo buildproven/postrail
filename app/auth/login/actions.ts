@@ -95,10 +95,14 @@ export async function secureLogin(
       )
 
       // OWASP A09: Log security event with structured logging
-      security.loginFailure(email, signInError.message || 'invalid_credentials', {
-        ip: ipAddress || undefined,
-        userAgent: userAgent || undefined,
-      })
+      security.loginFailure(
+        email,
+        signInError.message || 'invalid_credentials',
+        {
+          ip: ipAddress || undefined,
+          userAgent: userAgent || undefined,
+        }
+      )
 
       // Send lockout notification email if threshold reached
       if (attemptResult?.should_notify) {
@@ -109,7 +113,7 @@ export async function secureLogin(
           ip: ipAddress,
           msg: 'Account lockout triggered - 5 failed attempts',
         })
-        sendAccountLockoutEmail(email).catch((err) => {
+        sendAccountLockoutEmail(email).catch(err => {
           logger.error({
             type: 'security',
             context: 'account_lockout_email_failed',

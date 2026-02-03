@@ -179,7 +179,12 @@ export default function Home() {
               </p>
             </div>
             <div className="p-4 border rounded-lg dark:border-gray-700 opacity-60">
-              <p className="font-semibold">Threads <span className="text-xs font-normal text-indigo-600 dark:text-indigo-400">(Coming Soon)</span></p>
+              <p className="font-semibold">
+                Threads{' '}
+                <span className="text-xs font-normal text-indigo-600 dark:text-indigo-400">
+                  (Coming Soon)
+                </span>
+              </p>
               <p className="text-sm text-gray-700 dark:text-gray-400">
                 500 chars
               </p>

@@ -10,12 +10,10 @@ This directory contains integration tests for your frontend-app.
 
 ## Test Types for frontend-app
 
-
 - **Unit Tests**: Components, utilities, hooks
 - **Integration Tests**: Component interactions, forms
 - **E2E Tests**: Browser automation, user flows
 - **Accessibility Tests**: Screen reader, keyboard navigation
-
 
 ## Troubleshooting
 

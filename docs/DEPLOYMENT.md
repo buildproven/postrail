@@ -6,12 +6,12 @@ This guide covers deploying PostRail to your own infrastructure. PostRail is ope
 
 ## Deployment Options Overview
 
-| Option | Best For | Estimated Monthly Cost | Complexity |
-|--------|----------|----------------------|------------|
-| **Vercel** (Recommended) | Production deployments | $0-20 (free tier) | Easy |
-| **Railway** | Full-stack simplicity | $5-20 | Easy |
-| **Docker** | Custom infrastructure | Varies | Medium |
-| **Local** | Development/testing | $0 (+ API costs) | Easy |
+| Option                   | Best For               | Estimated Monthly Cost | Complexity |
+| ------------------------ | ---------------------- | ---------------------- | ---------- |
+| **Vercel** (Recommended) | Production deployments | $0-20 (free tier)      | Easy       |
+| **Railway**              | Full-stack simplicity  | $5-20                  | Easy       |
+| **Docker**               | Custom infrastructure  | Varies                 | Medium     |
+| **Local**                | Development/testing    | $0 (+ API costs)       | Easy       |
 
 **Note:** All options require external services (Supabase, Anthropic API). See [External Services](#external-services-setup) below.
 
@@ -69,6 +69,7 @@ PostRail requires external cloud services. Here's how to set up each one:
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - anon/public key
    - `SUPABASE_SERVICE_ROLE_KEY` - service_role key (keep secret!)
 4. Apply database migrations:
+
    ```bash
    # Install Supabase CLI
    npm install -g supabase
@@ -93,6 +94,7 @@ PostRail requires external cloud services. Here's how to set up each one:
 For 1-click social posting, set up OAuth credentials:
 
 #### Twitter/X
+
 1. Go to [developer.twitter.com](https://developer.twitter.com)
 2. Create a project and app
 3. Enable OAuth 2.0 with Read and Write permissions
@@ -100,6 +102,7 @@ For 1-click social posting, set up OAuth credentials:
 5. Copy Client ID and Secret to `.env.local`
 
 #### LinkedIn
+
 1. Go to [linkedin.com/developers](https://www.linkedin.com/developers/apps)
 2. Create an app and verify with a Company Page
 3. Add products: "Share on LinkedIn" + "Sign In with LinkedIn"
@@ -107,6 +110,7 @@ For 1-click social posting, set up OAuth credentials:
 5. Copy Client ID and Secret to `.env.local`
 
 #### Facebook
+
 1. Go to [developers.facebook.com](https://developers.facebook.com)
 2. Create a Business app
 3. Add "Facebook Login for Business" product
@@ -128,24 +132,24 @@ For production deployments with multiple instances:
 
 ## Required Environment Variables
 
-| Variable | Description | How to Get |
-|----------|-------------|------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Supabase Dashboard > Settings > API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public key | Supabase Dashboard > Settings > API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service key | Supabase Dashboard > Settings > API |
-| `ANTHROPIC_API_KEY` | Claude API key | console.anthropic.com > API Keys |
-| `ENCRYPTION_KEY` | 64 hex chars for token encryption | `npx tsx scripts/generate-encryption-key.ts` |
-| `COOKIE_SECRET` | Random secret (32+ chars) | Any password generator |
-| `NEXT_PUBLIC_APP_URL` | Your app URL | Your domain (no trailing slash) |
+| Variable                        | Description                       | How to Get                                   |
+| ------------------------------- | --------------------------------- | -------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL              | Supabase Dashboard > Settings > API          |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public key               | Supabase Dashboard > Settings > API          |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service key              | Supabase Dashboard > Settings > API          |
+| `ANTHROPIC_API_KEY`             | Claude API key                    | console.anthropic.com > API Keys             |
+| `ENCRYPTION_KEY`                | 64 hex chars for token encryption | `npx tsx scripts/generate-encryption-key.ts` |
+| `COOKIE_SECRET`                 | Random secret (32+ chars)         | Any password generator                       |
+| `NEXT_PUBLIC_APP_URL`           | Your app URL                      | Your domain (no trailing slash)              |
 
 ### Optional Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `BILLING_ENABLED` | Enable Stripe billing | `false` (all features unlocked) |
-| `RATE_LIMIT_MODE` | Rate limiting strategy | `auto` |
-| `UPSTASH_REDIS_REST_URL` | Redis URL for rate limiting | None (uses memory) |
-| `QSTASH_TOKEN` | QStash token for scheduling | None (scheduling disabled) |
+| Variable                 | Description                 | Default                         |
+| ------------------------ | --------------------------- | ------------------------------- |
+| `BILLING_ENABLED`        | Enable Stripe billing       | `false` (all features unlocked) |
+| `RATE_LIMIT_MODE`        | Rate limiting strategy      | `auto`                          |
+| `UPSTASH_REDIS_REST_URL` | Redis URL for rate limiting | None (uses memory)              |
+| `QSTASH_TOKEN`           | QStash token for scheduling | None (scheduling disabled)      |
 
 See `.env.local.example` for the complete list with detailed documentation.
 
@@ -217,7 +221,7 @@ services:
   postrail:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     env_file:
       - .env.production
     restart: unless-stopped
@@ -281,6 +285,7 @@ supabase db push
 ```
 
 The migrations create:
+
 - User profiles and settings
 - Newsletter and post storage
 - Platform connections (encrypted OAuth tokens)
@@ -303,12 +308,14 @@ After deploying, verify these work:
 ## Cost Estimates
 
 ### Minimal Setup (Free Tier)
+
 - Supabase: Free (up to 500MB database)
 - Vercel: Free (hobby tier)
 - Anthropic: ~$5-10/month (light usage)
 - **Total: ~$5-10/month**
 
 ### Production Setup
+
 - Supabase Pro: $25/month
 - Vercel Pro: $20/month
 - Anthropic: ~$20-50/month (moderate usage)
@@ -316,6 +323,7 @@ After deploying, verify these work:
 - **Total: ~$65-95/month**
 
 ### High Volume
+
 - Supabase Team: $599/month
 - Vercel Enterprise: Custom
 - Anthropic: Pay-as-you-go
@@ -327,21 +335,27 @@ After deploying, verify these work:
 ## Troubleshooting
 
 ### "ENCRYPTION_KEY must be 64 hex characters"
+
 ```bash
 npx tsx scripts/generate-encryption-key.ts
 ```
 
 ### "ANTHROPIC_API_KEY is invalid"
+
 Ensure the key starts with `sk-ant-` and is from [console.anthropic.com](https://console.anthropic.com).
 
 ### "OAuth callback failed"
+
 Check that your callback URLs match exactly:
+
 - Twitter: `{NEXT_PUBLIC_APP_URL}/api/platforms/twitter/callback`
 - LinkedIn: `{NEXT_PUBLIC_APP_URL}/api/platforms/linkedin/callback`
 - Facebook: `{NEXT_PUBLIC_APP_URL}/api/platforms/facebook/callback`
 
 ### Rate limiting not working
+
 For production with multiple instances, configure Upstash Redis:
+
 ```
 RATE_LIMIT_MODE=redis
 UPSTASH_REDIS_REST_URL=https://...

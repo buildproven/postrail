@@ -118,12 +118,14 @@ This project uses **qa-architect** with **minimal workflow mode** (~$0-5/mo).
 ### For AI Assistants (Claude, Copilot, etc.)
 
 **❌ DO NOT:**
+
 - Create new workflow files (`.github/workflows/*.yml`)
 - Add jobs to existing `quality.yml`
 - Suggest "comprehensive" CI improvements
 - Add matrix builds or scheduled jobs
 
 **✅ INSTEAD:**
+
 - Use existing `quality.yml` (managed by qa-architect)
 - Update via: `npx create-qa-architect@latest --update --workflow-minimal`
 - Consult user before any CI changes
