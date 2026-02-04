@@ -119,9 +119,7 @@ describe('sanitizeAIContent', () => {
 
     it('should handle null/undefined gracefully', () => {
       expect(sanitizeAIContent(null as unknown as string, 'test')).toBe('')
-      expect(sanitizeAIContent(undefined as unknown as string, 'test')).toBe(
-        ''
-      )
+      expect(sanitizeAIContent(undefined as unknown as string, 'test')).toBe('')
     })
 
     it('should handle non-string input', () => {

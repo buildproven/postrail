@@ -50,7 +50,7 @@ export async function sendTrialExpiryWarning(
           <h3>What you'll keep with a subscription:</h3>
           <ul>
             <li>✅ Unlimited AI post generation</li>
-            <li>✅ All 4 platforms (Twitter, LinkedIn, Threads, Facebook)</li>
+            <li>✅ All platforms (Twitter, LinkedIn, Facebook — Threads coming soon)</li>
             <li>✅ Scheduled posting</li>
             <li>✅ Analytics dashboard</li>
           </ul>
@@ -332,6 +332,68 @@ export async function sendPaymentFailed(
   } catch (err) {
     logError(err instanceof Error ? err : new Error(String(err)), {
       context: 'payment_failed_email',
+    })
+    return { success: false, error: String(err) }
+  }
+}
+
+/**
+ * Send account lockout notification email
+ * Triggered after 5 failed login attempts
+ */
+export async function sendAccountLockoutEmail(
+  email: string
+): Promise<EmailResult> {
+  try {
+    const { data, error } = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: 'PostRail: Your account has been temporarily locked',
+      html: `
+        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #DC2626;">Account Temporarily Locked</h1>
+          <p>Hi,</p>
+          <p>Your PostRail account has been temporarily locked due to <strong>5 failed login attempts</strong>.</p>
+
+          <div style="background: #FEF2F2; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #DC2626;">
+            <p style="margin: 0;"><strong>Your account will automatically unlock in 15 minutes.</strong></p>
+          </div>
+
+          <p>If this was you, simply wait 15 minutes and try again with the correct password.</p>
+
+          <p><strong>If this wasn't you:</strong></p>
+          <ul>
+            <li>Someone may be trying to access your account</li>
+            <li>Consider changing your password after the lockout expires</li>
+            <li>Enable two-factor authentication if available</li>
+          </ul>
+
+          <a href="${BASE_URL}/auth/login"
+             style="display: inline-block; background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+            Go to Login
+          </a>
+
+          <p style="color: #666; font-size: 14px;">
+            If you continue to have trouble accessing your account, reply to this email for help.
+          </p>
+        </div>
+      `,
+    })
+
+    if (error) {
+      logger.error({
+        type: 'email.account_lockout.failed',
+        email,
+        error: error.message,
+      })
+      return { success: false, error: error.message }
+    }
+
+    logger.info({ type: 'email.account_lockout.sent', email, id: data?.id })
+    return { success: true, id: data?.id }
+  } catch (err) {
+    logError(err instanceof Error ? err : new Error(String(err)), {
+      context: 'account_lockout_email',
     })
     return { success: false, error: String(err) }
   }

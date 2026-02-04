@@ -29,6 +29,7 @@ const configs = [
       '**/coverage/**',
       'test-generation.js',
       'test-full-flow.js',
+      'lib/project-maturity.js', // QA Architect generated file
     ],
   },
   js.configs.recommended,

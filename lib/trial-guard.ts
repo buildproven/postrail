@@ -94,13 +94,16 @@ async function getSystemLimits() {
           impact: 'Configuration changes ignored',
         }
       ).catch(alertError => {
-        logger.fatal({
-          originalError: error?.message,
-          alertError:
-            alertError instanceof Error
-              ? alertError.message
-              : String(alertError),
-        }, 'CRITICAL: Alert system failure for system_limits fetch error')
+        logger.fatal(
+          {
+            originalError: error?.message,
+            alertError:
+              alertError instanceof Error
+                ? alertError.message
+                : String(alertError),
+          },
+          'CRITICAL: Alert system failure for system_limits fetch error'
+        )
       })
     }
 

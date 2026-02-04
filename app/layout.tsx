@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://postrail.vibebuildlab.com'),
   title: 'Postrail - Automate Your Newsletter Social Posts',
   description:
-    'AI-powered social media automation for newsletter creators. Generate and schedule posts to LinkedIn, Twitter, Threads, and Facebook automatically.',
+    'AI-powered social media automation for newsletter creators. Generate and schedule posts to LinkedIn, Twitter, and Facebook automatically.',
   keywords: [
     'newsletter automation',
     'social media scheduling',
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     siteName: 'Postrail',
     title: 'Postrail - Turn Your Newsletter Into 8 Social Posts',
     description:
-      'AI-powered social media automation for newsletter creators. Generate platform-perfect posts for LinkedIn, Twitter, Threads, and Facebook in seconds.',
+      'AI-powered social media automation for newsletter creators. Generate platform-perfect posts for LinkedIn, Twitter, and Facebook in seconds.',
     images: [
       {
         url: '/og-image.webp',
