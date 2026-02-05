@@ -1,3 +1,4 @@
+
 echo "🔍 Running smart pre-push validation..."
 
 # Check if smart test strategy script exists
