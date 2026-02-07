@@ -127,7 +127,6 @@
     "@vitest/coverage-v8": "^4.0.18",
     "axe-core": "^4.11.1",
     "commitlint": "^20.4.1",
-    "create-qa-architect": "^5.10.4",
     "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "15.1.4",

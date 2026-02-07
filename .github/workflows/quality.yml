@@ -288,26 +288,29 @@ jobs:
 
       - name: Install dependencies
         run: |
-          echo "⏱️ Performance Budget: Dependency installation must complete within 2 minutes"
-          timeout 120 ${{ needs.detect-maturity.outputs.install-cmd }} || {
-            echo "::error::Dependency installation exceeded 2-minute performance budget!"
+          echo "⏱️ Performance Budget: Dependency installation must complete within 60 seconds"
+          timeout 60 ${{ needs.detect-maturity.outputs.install-cmd }} || {
+            echo "::error::Dependency installation exceeded 60-second performance budget!"
             exit 1
           }
 
       - name: Run tests
+        env:
+          TEST_COUNT_VAL: ${{ needs.detect-maturity.outputs.test-count }}
+          NODE_VER: ${{ matrix.node-version }}
         run: |
-          echo "🧪 Running ${{ needs.detect-maturity.outputs.test-count }} test files on Node.js ${{ matrix.node-version }}..."
+          echo "🧪 Running ${TEST_COUNT_VAL} test files on Node.js ${NODE_VER}..."
 
           # Warn if test count is suspiciously low
-          TEST_COUNT=${{ needs.detect-maturity.outputs.test-count }}
-          if [ "$TEST_COUNT" -lt 5 ]; then
-            echo "::warning::Only $TEST_COUNT test file(s) found - consider adding more tests for better coverage"
+          if [ "${TEST_COUNT_VAL}" -lt 5 ]; then
+            echo "::warning::Only ${TEST_COUNT_VAL} test file(s) found - consider adding more tests for better coverage"
           fi
 
-          # Performance budget: Test suite timeout (5 minutes max)
-          echo "⏱️ Performance Budget: Test suite must complete within 5 minutes"
-          timeout 300 npm test || {
-            echo "::error::Test suite exceeded 5-minute performance budget!"
+          # Performance budget: Test suite must complete within 60 seconds
+          # Local: ~16s, CI runners ~2x slower = ~35s expected
+          echo "⏱️ Performance Budget: Test suite must complete within 60 seconds"
+          timeout 60 npm test || {
+            echo "::error::Test suite exceeded 60-second performance budget!"
             exit 1
           }
 
