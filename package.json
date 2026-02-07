@@ -21,9 +21,9 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:fast": "vitest run --exclude='**/*.{real,crypto,e2e}.test.{ts,tsx}' --exclude='tests/lib/crypto.test.ts' --exclude='tests/execution/**' --exclude='tests/performance/**'",
+    "test:fast": "vitest run --exclude='**/*.{real,e2e}.test.{ts,tsx}' --exclude='tests/execution/**' --exclude='tests/performance/**'",
     "test:medium": "npm run test:fast && npm run test:smoke",
-    "test:slow": "vitest run tests/lib/crypto.test.ts tests/**/*.real.test.ts",
+    "test:slow": "vitest run tests/**/*.real.test.ts",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
@@ -174,11 +174,13 @@
     "**/*.{ts,tsx}": [
       "eslint --fix",
       "prettier --write",
-      "bash -c 'tsc --noEmit'"
+      "bash -c 'tsc --noEmit'",
+      "tsc --noEmit --skipLibCheck"
     ],
     "tests/**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
-      "prettier --write"
+      "prettier --write",
+      "tsc --noEmit --project tests/tsconfig.json"
     ],
     "**/*.py": [
       "black --check --diff",

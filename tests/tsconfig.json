@@ -3,8 +3,21 @@
   "compilerOptions": {
     "rootDir": "..",
     "noEmit": true,
-    "types": ["vitest/globals", "node", "@types/jest"]
+    "types": [
+      "vitest/globals",
+      "node",
+      "@types/jest"
+    ]
   },
-  "include": ["../src/**/*", "../tests/**/*", "../*.ts", "../*.js"],
-  "exclude": ["../node_modules", "../dist", "../build"]
+  "include": [
+    "../src/**/*",
+    "../tests/**/*",
+    "../*.ts",
+    "../*.js"
+  ],
+  "exclude": [
+    "../node_modules",
+    "../dist",
+    "../build"
+  ]
 }

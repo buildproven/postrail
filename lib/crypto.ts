@@ -20,7 +20,12 @@ const SALT_LENGTH = 64
 const KEY_LENGTH = 32
 // OWASP ASVS 4.0.3: PBKDF2-HMAC-SHA256 with 600,000+ iterations recommended
 // See: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
-const PBKDF2_ITERATIONS = 600000
+const PBKDF2_ITERATIONS_PRODUCTION = 600000
+const PBKDF2_ITERATIONS_TEST = 1000
+const PBKDF2_ITERATIONS =
+  process.env.NODE_ENV === 'test' || process.env.VITEST
+    ? PBKDF2_ITERATIONS_TEST
+    : PBKDF2_ITERATIONS_PRODUCTION
 
 // Cache for base encryption key (parsed from env var)
 let cachedEncryptionKey: Buffer | null = null
