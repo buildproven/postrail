@@ -144,6 +144,15 @@ class AlertManager {
       await this.sendToChannels(rule.immediate, options)
     }
 
+    // Skip escalation timers when no alerting channels are configured —
+    // no point scheduling reminders with nowhere to send them
+    if (!this.slackWebhookUrl && !this.pagerDutyKey) {
+      logger.warn(
+        '⚠️  Alert sent but no external alerting configured (Slack/PagerDuty)'
+      )
+      return
+    }
+
     // Schedule escalated alerts
     const timers: ReturnType<typeof setTimeout>[] = []
 
@@ -158,6 +167,7 @@ class AlertManager {
         },
         5 * 60 * 1000
       )
+      timer.unref()
       timers.push(timer)
     }
 
@@ -172,6 +182,7 @@ class AlertManager {
         },
         15 * 60 * 1000
       )
+      timer.unref()
       timers.push(timer)
     }
 
@@ -186,6 +197,7 @@ class AlertManager {
         },
         30 * 60 * 1000
       )
+      timer.unref()
       timers.push(timer)
     }
 
@@ -194,12 +206,7 @@ class AlertManager {
       this.pendingEscalations.set(alertKey, { options, timers })
     }
 
-    // If no alerting configured, log warning
-    if (!this.slackWebhookUrl && !this.pagerDutyKey) {
-      logger.warn(
-        '⚠️  Alert sent but no external alerting configured (Slack/PagerDuty)'
-      )
-    }
+    // Note: "no alerting configured" case handled by early return above
   }
 
   /**

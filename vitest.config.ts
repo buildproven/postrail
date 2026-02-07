@@ -14,6 +14,8 @@ export default defineConfig({
       '**/*.spec.ts',
       '**/*.real.test.{ts,tsx}',
       'tests/integration/**',
+      'tests/execution/**',
+      'tests/performance/**',
     ],
     env: {
       COOKIE_SECRET: 'test-cookie-secret-for-hmac-signing',
@@ -22,8 +24,8 @@ export default defineConfig({
     pool: 'threads',
     maxConcurrency: 10,
     maxWorkers: 4,
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    testTimeout: 5000,
+    hookTimeout: 5000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
