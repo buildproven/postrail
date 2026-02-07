@@ -310,7 +310,6 @@ jobs:
             echo "::error::Test suite exceeded 5-minute performance budget!"
             exit 1
           }
-            gitleaks-8.28.0-linux-x64-
 
   # Step 4: Documentation - run for production-ready projects
   documentation:
