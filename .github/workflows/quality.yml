@@ -305,9 +305,9 @@ jobs:
           fi
 
           # Performance budget: Test suite timeout (5 minutes max)
-          echo "⏱️ Performance Budget: Test suite must complete within 10 minutes"
-          timeout 600 npm test || {
-            echo "::error::Test suite exceeded 10-minute performance budget!"
+          echo "⏱️ Performance Budget: Test suite must complete within 5 minutes"
+          timeout 300 npm test || {
+            echo "::error::Test suite exceeded 5-minute performance budget!"
             exit 1
           }
 
