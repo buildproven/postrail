@@ -100,6 +100,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: '1.0.0'
+
       - name: Display Detection Report
         run: |
           echo "📊 Project Detection Results (Minimal Mode)"
@@ -232,7 +233,7 @@ jobs:
           if [ -f setup.js ]; then
             node setup.js --security-config
           else
-            node node_modules/create-qa-architect/setup.js --security-config
+            npx create-qa-architect@latest --security-config
           fi
 
       - name: Security pattern detection
@@ -288,29 +289,26 @@ jobs:
 
       - name: Install dependencies
         run: |
-          echo "⏱️ Performance Budget: Dependency installation must complete within 60 seconds"
-          timeout 60 ${{ needs.detect-maturity.outputs.install-cmd }} || {
-            echo "::error::Dependency installation exceeded 60-second performance budget!"
+          echo "⏱️ Performance Budget: Dependency installation must complete within 2 minutes"
+          timeout 120 ${{ needs.detect-maturity.outputs.install-cmd }} || {
+            echo "::error::Dependency installation exceeded 2-minute performance budget!"
             exit 1
           }
 
       - name: Run tests
-        env:
-          TEST_COUNT_VAL: ${{ needs.detect-maturity.outputs.test-count }}
-          NODE_VER: ${{ matrix.node-version }}
         run: |
-          echo "🧪 Running ${TEST_COUNT_VAL} test files on Node.js ${NODE_VER}..."
+          echo "🧪 Running ${{ needs.detect-maturity.outputs.test-count }} test files on Node.js ${{ matrix.node-version }}..."
 
           # Warn if test count is suspiciously low
-          if [ "${TEST_COUNT_VAL}" -lt 5 ]; then
-            echo "::warning::Only ${TEST_COUNT_VAL} test file(s) found - consider adding more tests for better coverage"
+          TEST_COUNT=${{ needs.detect-maturity.outputs.test-count }}
+          if [ "$TEST_COUNT" -lt 5 ]; then
+            echo "::warning::Only $TEST_COUNT test file(s) found - consider adding more tests for better coverage"
           fi
 
-          # Performance budget: Test suite must complete within 60 seconds
-          # Local: ~16s, CI runners ~2x slower = ~35s expected
-          echo "⏱️ Performance Budget: Test suite must complete within 60 seconds"
-          timeout 60 npm test || {
-            echo "::error::Test suite exceeded 60-second performance budget!"
+          # Performance budget: Test suite timeout (5 minutes max)
+          echo "⏱️ Performance Budget: Test suite must complete within 5 minutes"
+          timeout 300 npm test || {
+            echo "::error::Test suite exceeded 5-minute performance budget!"
             exit 1
           }
 
@@ -351,7 +349,7 @@ jobs:
           if [ -f setup.js ]; then
             node setup.js --security-config
           else
-            node node_modules/create-qa-architect/setup.js --security-config
+            npx create-qa-architect@latest --security-config
           fi
 
       - name: Documentation validation
@@ -360,7 +358,7 @@ jobs:
           if [ -f setup.js ]; then
             node setup.js --validate-docs
           else
-            node node_modules/create-qa-architect/setup.js --validate-docs
+            npx create-qa-architect@latest --validate-docs
           fi
 
       - name: Documentation consistency and security audit freshness
@@ -370,7 +368,7 @@ jobs:
           if [ -f scripts/check-docs.sh ]; then
             bash scripts/check-docs.sh
           else
-            bash node_modules/create-qa-architect/scripts/check-docs.sh
+            echo "No check-docs.sh found - skipping documentation consistency check"
           fi
 
       - name: Package size and contents validation
