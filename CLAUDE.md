@@ -109,25 +109,6 @@ OAuth tokens stored encrypted in `platform_connections.metadata`:
 
 ---
 
-# GitHub Actions Workflow Policy
+## GitHub Actions Policy
 
-## ⚠️ CRITICAL: Do Not Create Additional Workflows
-
-This project uses **qa-architect** with **minimal workflow mode** (~$0-5/mo).
-
-### For AI Assistants (Claude, Copilot, etc.)
-
-**❌ DO NOT:**
-
-- Create new workflow files (`.github/workflows/*.yml`)
-- Add jobs to existing `quality.yml`
-- Suggest "comprehensive" CI improvements
-- Add matrix builds or scheduled jobs
-
-**✅ INSTEAD:**
-
-- Use existing `quality.yml` (managed by qa-architect)
-- Update via: `npx create-qa-architect@latest --update --workflow-minimal`
-- Consult user before any CI changes
-
-**Why:** Prevents $20-350/mo bloat. Current config: ~$0-5/mo with 60-90% CI savings.
+See `.claude-setup/docs/GITHUB-ACTIONS-POLICY.md` — minimal workflow mode, no new workflows.
