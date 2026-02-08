@@ -1,11 +1,11 @@
 blank_issues_enabled: true
 contact_links:
   - name: 💬 Discussions
-    url: https://github.com/vibebuildlab/postrail/discussions
+    url: https://github.com/buildproven/postrail/discussions
     about: Ask questions and discuss ideas with the community
   - name: 📚 Documentation
-    url: https://github.com/vibebuildlab/postrail#readme
+    url: https://github.com/buildproven/postrail#readme
     about: Read the documentation for setup and usage instructions
   - name: 🔒 Security Issue
-    url: https://github.com/vibebuildlab/postrail/security/advisories/new
+    url: https://github.com/buildproven/postrail/security/advisories/new
     about: Report a security vulnerability privately

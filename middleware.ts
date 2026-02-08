@@ -3,7 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware'
 
 // Strict CORS origin - no fallback to request origin (security)
 const ALLOWED_ORIGIN =
-  process.env.NEXT_PUBLIC_APP_URL || 'https://postrail.vibebuildlab.com'
+  process.env.NEXT_PUBLIC_APP_URL || 'https://postrail.buildproven.ai'
 
 // H9 fix: Generate CSP for production, looser for development
 function generateCSP(nonce: string): string {

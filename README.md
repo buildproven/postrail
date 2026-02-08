@@ -1,8 +1,8 @@
 # Postrail
 
-[![CI](https://github.com/vibebuildlab/postrail/actions/workflows/ci.yml/badge.svg)](https://github.com/vibebuildlab/postrail/actions/workflows/ci.yml)
+[![CI](https://github.com/buildproven/postrail/actions/workflows/ci.yml/badge.svg)](https://github.com/buildproven/postrail/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Built with VBL](https://img.shields.io/badge/Built%20with-Vibe%20Build%20Lab-blueviolet)](https://vibebuildlab.com)
+[![Built with VBL](https://img.shields.io/badge/Built%20with-Vibe%20Build%20Lab-blueviolet)](https://buildproven.ai)
 [![Node.js 20+](https://img.shields.io/badge/node-20%2B-brightgreen)](https://nodejs.org)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org)
@@ -14,8 +14,8 @@ AI-powered social media automation for newsletter creators. Automatically genera
 ---
 
 > **Maintainer & Ownership**
-> This project is maintained by **Vibe Build Lab LLC**, a studio focused on AI-assisted product development, micro-SaaS, and "vibe coding" workflows for solo founders and small teams.
-> Learn more at **https://www.vibebuildlab.com**.
+> This project is maintained by **BuildProven LLC**, a studio focused on AI-assisted product development, micro-SaaS, and "vibe coding" workflows for solo founders and small teams.
+> Learn more at **https://www.buildproven.ai**.
 
 ---
 
@@ -228,9 +228,9 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Legal
 
-- [Privacy Policy](https://vibebuildlab.com/privacy-policy)
-- [Terms of Service](https://vibebuildlab.com/terms)
+- [Privacy Policy](https://buildproven.ai/privacy-policy)
+- [Terms of Service](https://buildproven.ai/terms)
 
 ---
 
-> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)
+> **BuildProven LLC** · [buildproven.ai](https://buildproven.ai)

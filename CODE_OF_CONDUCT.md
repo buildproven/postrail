@@ -32,8 +32,8 @@ Project maintainers have the right to remove, edit, or reject comments, commits,
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by:
 
-- **GitHub Security Advisories**: [Report here](https://github.com/vibebuildlab/postrail/security/advisories/new)
-- **Email**: conduct@vibebuildlab.com
+- **GitHub Security Advisories**: [Report here](https://github.com/buildproven/postrail/security/advisories/new)
+- **Email**: conduct@buildproven.ai
 
 All complaints will be reviewed and investigated promptly and fairly.
 
@@ -49,4 +49,4 @@ This Code of Conduct is adapted from the [Contributor Covenant](https://www.cont
 
 ---
 
-> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)
+> **BuildProven LLC** · [buildproven.ai](https://buildproven.ai)

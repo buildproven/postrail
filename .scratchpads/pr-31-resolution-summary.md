@@ -1,8 +1,8 @@
 # PR #31 Resolution Summary
 
 **Date:** 2026-01-12
-**Issue:** https://github.com/vibebuildlab/postrail/pull/31
-**Resolution PR:** https://github.com/vibebuildlab/postrail/pull/44
+**Issue:** https://github.com/buildproven/postrail/pull/31
+**Resolution PR:** https://github.com/buildproven/postrail/pull/44
 
 ## Executive Summary
 
@@ -174,7 +174,7 @@ or your spending limit needs to be increased.
 
 ## Related Links
 
-- Original PR: https://github.com/vibebuildlab/postrail/pull/31
-- Resolution PR: https://github.com/vibebuildlab/postrail/pull/44
-- Comment on PR #31: https://github.com/vibebuildlab/postrail/pull/31#issuecomment-3741075381
+- Original PR: https://github.com/buildproven/postrail/pull/31
+- Resolution PR: https://github.com/buildproven/postrail/pull/44
+- Comment on PR #31: https://github.com/buildproven/postrail/pull/31#issuecomment-3741075381
 - Quality Audit PR: #32

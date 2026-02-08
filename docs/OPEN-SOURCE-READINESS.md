@@ -49,7 +49,7 @@ PostRail has passed all open source readiness checks. The codebase demonstrates 
 
 | Check          | Status        | Notes                                                            |
 | -------------- | ------------- | ---------------------------------------------------------------- |
-| Company Emails | ⚠️ Acceptable | security@vibebuildlab.com, conduct@vibebuildlab.com (branded OS) |
+| Company Emails | ⚠️ Acceptable | security@buildproven.ai, conduct@buildproven.ai (branded OS) |
 | Personal Paths | ⚠️ Info       | 19 files with `/Users/brettstark/` (mostly .claude-setup/)       |
 | Customer Data  | ✅ Pass       | No customer data in code                                         |
 | Internal URLs  | ✅ Pass       | Only SSRF blocklist references                                   |
@@ -85,13 +85,13 @@ PostRail has passed all open source readiness checks. The codebase demonstrates 
 
 **Recommendation:** Replace absolute paths with relative paths or add `.claude-setup/` to `.gitignore` if it contains personal configuration.
 
-### P2: VibeBuildLab Brand References
+### P2: BuildProven Brand References
 
 **Intentionally Kept (Branded Open Source):**
 
-- `@vibebuildlab.com` emails in SECURITY.md, CODE_OF_CONDUCT.md
-- `vibebuildlab.com` URLs in README, metadata
-- GitHub repo: `vibebuildlab/postrail`
+- `@buildproven.ai` emails in SECURITY.md, CODE_OF_CONDUCT.md
+- `buildproven.ai` URLs in README, metadata
+- GitHub repo: `buildproven/postrail`
 
 **Assessment:** These are acceptable for branded open source under MIT license.
 

@@ -1,7 +1,7 @@
 /**
  * Command Execution Tests - Verify npm scripts actually work in isolation
  *
- * Based on: https://github.com/vibebuildlab/qa-architect/.../TEST_STRATEGY_AUDIT.md
+ * Based on: https://github.com/buildproven/qa-architect/.../TEST_STRATEGY_AUDIT.md
  *
  * Key insight: "Your tests verify that configurations exist, but don't verify they actually work"
  *
