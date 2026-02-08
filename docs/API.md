@@ -123,4 +123,4 @@ This prevents duplicate posts when retrying failed requests.
 
 ---
 
-> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)
+> **BuildProven LLC** · [buildproven.ai](https://buildproven.ai)

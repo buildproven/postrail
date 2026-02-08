@@ -16,8 +16,8 @@ We take security seriously. If you discover a security vulnerability, please rep
 
 Instead:
 
-1. **GitHub Security Advisories** (Preferred): Report via [GitHub Security Advisories](https://github.com/vibebuildlab/postrail/security/advisories/new)
-2. **Email**: security@vibebuildlab.com
+1. **GitHub Security Advisories** (Preferred): Report via [GitHub Security Advisories](https://github.com/buildproven/postrail/security/advisories/new)
+2. **Email**: security@buildproven.ai
 
 Include:
 
@@ -90,9 +90,9 @@ If you deploy PostRail to your own cloud account:
 
 ## Legal
 
-- [Privacy Policy](https://vibebuildlab.com/privacy-policy)
-- [Terms of Service](https://vibebuildlab.com/terms)
+- [Privacy Policy](https://buildproven.ai/privacy-policy)
+- [Terms of Service](https://buildproven.ai/terms)
 
 ---
 
-> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)
+> **BuildProven LLC** · [buildproven.ai](https://buildproven.ai)

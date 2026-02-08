@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://postrail.vibebuildlab.com'
+  const baseUrl = 'https://postrail.buildproven.ai'
 
   return [
     {

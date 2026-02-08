@@ -53,9 +53,9 @@ test.describe('Newsletter Creation Flow', () => {
     }
 
     const urlInput = page.getByPlaceholder(/url|link|newsletter/i)
-    await urlInput.fill('https://www.aisecondact.com/p/test')
+    await urlInput.fill('https://www.buildproven.ai/p/test')
 
-    await expect(urlInput).toHaveValue('https://www.aisecondact.com/p/test')
+    await expect(urlInput).toHaveValue('https://www.buildproven.ai/p/test')
   })
 
   test('scrape button becomes enabled when URL is entered', async ({
@@ -74,7 +74,7 @@ test.describe('Newsletter Creation Flow', () => {
     })
 
     // Initially may be disabled
-    await urlInput.fill('https://www.aisecondact.com/p/test')
+    await urlInput.fill('https://www.buildproven.ai/p/test')
 
     // Button should be enabled after URL entered
     await expect(importButton).toBeEnabled()
@@ -93,7 +93,7 @@ test.describe('Newsletter Creation Flow', () => {
       name: /import|scrape|fetch/i,
     })
 
-    await urlInput.fill('https://www.aisecondact.com/p/test')
+    await urlInput.fill('https://www.buildproven.ai/p/test')
     await importButton.click()
 
     // Should show loading state (spinner, disabled button, or loading text)

@@ -35,11 +35,11 @@ export default function Home() {
     },
     creator: {
       '@type': 'Organization',
-      name: 'Vibe Build Lab LLC',
-      url: 'https://vibebuildlab.com',
+      name: 'BuildProven LLC',
+      url: 'https://buildproven.ai',
     },
     license: 'https://opensource.org/licenses/MIT',
-    codeRepository: 'https://github.com/vibebuildlab/postrail',
+    codeRepository: 'https://github.com/buildproven/postrail',
   }
 
   return (
@@ -75,7 +75,7 @@ export default function Home() {
           <div className="flex gap-4 items-center justify-center flex-col sm:flex-row mb-12">
             <a
               className="rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors text-lg font-medium h-12 px-8 flex items-center justify-center"
-              href="https://github.com/vibebuildlab/postrail"
+              href="https://github.com/buildproven/postrail"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -83,7 +83,7 @@ export default function Home() {
             </a>
             <a
               className="rounded-full border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-lg h-12 px-8 flex items-center justify-center"
-              href="https://github.com/vibebuildlab/postrail#installation"
+              href="https://github.com/buildproven/postrail#installation"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -229,7 +229,7 @@ export default function Home() {
                 <li>Community support</li>
               </ul>
               <a
-                href="https://github.com/vibebuildlab/postrail"
+                href="https://github.com/buildproven/postrail"
                 className="block text-center py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -255,7 +255,7 @@ export default function Home() {
                 <li>Optional: Upstash Redis</li>
               </ul>
               <a
-                href="https://github.com/vibebuildlab/postrail#installation"
+                href="https://github.com/buildproven/postrail#installation"
                 className="block text-center py-2 px-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -282,7 +282,7 @@ export default function Home() {
                 <li>Modern stack</li>
               </ul>
               <a
-                href="https://vibebuildlab.com"
+                href="https://buildproven.ai"
                 className="block text-center py-2 px-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -300,10 +300,10 @@ export default function Home() {
         role="contentinfo"
       >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-700 dark:text-gray-400">
-          <p>© 2025 Vibe Build Lab LLC. All rights reserved.</p>
+          <p>© 2025 BuildProven LLC. All rights reserved.</p>
           <div className="flex gap-6">
             <a
-              href="https://github.com/vibebuildlab/postrail"
+              href="https://github.com/buildproven/postrail"
               className="hover:text-gray-900 dark:hover:text-gray-200"
               target="_blank"
               rel="noopener noreferrer"
@@ -311,13 +311,13 @@ export default function Home() {
               GitHub
             </a>
             <a
-              href="https://vibebuildlab.com/privacy-policy"
+              href="https://buildproven.ai/privacy-policy"
               className="hover:text-gray-900 dark:hover:text-gray-200"
             >
               Privacy
             </a>
             <a
-              href="https://vibebuildlab.com/terms"
+              href="https://buildproven.ai/terms"
               className="hover:text-gray-900 dark:hover:text-gray-200"
             >
               Terms

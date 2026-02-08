@@ -5,12 +5,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vibebuildlab/postrail.git"
+    "url": "https://github.com/buildproven/postrail.git"
   },
   "bugs": {
-    "url": "https://github.com/vibebuildlab/postrail/issues"
+    "url": "https://github.com/buildproven/postrail/issues"
   },
-  "homepage": "https://github.com/vibebuildlab/postrail#readme",
+  "homepage": "https://github.com/buildproven/postrail#readme",
   "engines": {
     "node": ">=20",
     "npm": ">=10.0.0"

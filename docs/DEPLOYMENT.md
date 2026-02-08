@@ -2,7 +2,7 @@
 
 This guide covers deploying PostRail to your own infrastructure. PostRail is open source and designed for self-hosting - you control your data and API keys.
 
-> **Built by [Vibe Build Lab](https://vibebuildlab.com)** - AI-assisted product development for solo founders and small teams.
+> **Built by [BuildProven](https://buildproven.ai)** - AI-assisted product development for solo founders and small teams.
 
 ## Deployment Options Overview
 
@@ -22,7 +22,7 @@ This guide covers deploying PostRail to your own infrastructure. PostRail is ope
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/vibebuildlab/postrail.git
+git clone https://github.com/buildproven/postrail.git
 cd postrail
 npm install
 ```
@@ -366,9 +366,9 @@ UPSTASH_REDIS_REST_TOKEN=...
 
 ## Support
 
-- **Issues:** [github.com/vibebuildlab/postrail/issues](https://github.com/vibebuildlab/postrail/issues)
-- **Discussions:** [github.com/vibebuildlab/postrail/discussions](https://github.com/vibebuildlab/postrail/discussions)
+- **Issues:** [github.com/buildproven/postrail/issues](https://github.com/buildproven/postrail/issues)
+- **Discussions:** [github.com/buildproven/postrail/discussions](https://github.com/buildproven/postrail/discussions)
 
 ---
 
-> **[Vibe Build Lab](https://vibebuildlab.com)** - Building production-ready SaaS with AI-assisted development.
+> **[BuildProven](https://buildproven.ai)** - Building production-ready SaaS with AI-assisted development.

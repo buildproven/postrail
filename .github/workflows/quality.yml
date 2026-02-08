@@ -101,6 +101,7 @@ jobs:
         with:
           bun-version: '1.0.0'
 
+
       - name: Display Detection Report
         run: |
           echo "📊 Project Detection Results (Minimal Mode)"
@@ -311,6 +312,7 @@ jobs:
             echo "::error::Test suite exceeded 5-minute performance budget!"
             exit 1
           }
+
 
   # Step 4: Documentation - run for production-ready projects
   documentation:

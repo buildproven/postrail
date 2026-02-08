@@ -27,7 +27,7 @@ npm install
 1. **Fork the repository**
 
    ```bash
-   git clone https://github.com/vibebuildlab/postrail.git
+   git clone https://github.com/buildproven/postrail.git
    cd postrail
    ```
 
@@ -114,9 +114,9 @@ test(e2e): add newsletter import tests
 
 ## Legal
 
-- [Privacy Policy](https://vibebuildlab.com/privacy-policy)
-- [Terms of Service](https://vibebuildlab.com/terms)
+- [Privacy Policy](https://buildproven.ai/privacy-policy)
+- [Terms of Service](https://buildproven.ai/terms)
 
 ---
 
-> **Vibe Build Lab LLC** - [vibebuildlab.com](https://vibebuildlab.com)
+> **BuildProven LLC** - [buildproven.ai](https://buildproven.ai)

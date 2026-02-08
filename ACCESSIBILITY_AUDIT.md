@@ -302,9 +302,9 @@ PostRail has been audited for WCAG 2.1 AA compliance. After fixes, the applicati
 npm install --save-dev @axe-core/cli pa11y lighthouse
 
 # Run automated tests
-npx axe https://postrail.vibebuildlab.com --save audit.json
-npx pa11y https://postrail.vibebuildlab.com --standard WCAG2AA
-npx lighthouse https://postrail.vibebuildlab.com --only-categories=accessibility
+npx axe https://postrail.buildproven.ai --save audit.json
+npx pa11y https://postrail.buildproven.ai --standard WCAG2AA
+npx lighthouse https://postrail.buildproven.ai --only-categories=accessibility
 ```
 
 ### CI/CD Integration
@@ -322,7 +322,7 @@ jobs:
       - name: Run Pa11y
         run: |
           npm install -g pa11y-ci
-          pa11y-ci --sitemap https://postrail.vibebuildlab.com/sitemap.xml
+          pa11y-ci --sitemap https://postrail.buildproven.ai/sitemap.xml
 ```
 
 ---

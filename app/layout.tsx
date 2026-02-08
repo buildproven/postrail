@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://postrail.vibebuildlab.com'),
+  metadataBase: new URL('https://postrail.buildproven.ai'),
   title: 'Postrail - Automate Your Newsletter Social Posts',
   description:
     'AI-powered social media automation for newsletter creators. Generate and schedule posts to LinkedIn, Twitter, and Facebook automatically.',
@@ -29,12 +29,12 @@ export const metadata: Metadata = {
     'LinkedIn automation',
     'Twitter automation',
   ],
-  authors: [{ name: 'Vibe Build Lab', url: 'https://vibebuildlab.com' }],
-  creator: 'Vibe Build Lab',
+  authors: [{ name: 'BuildProven', url: 'https://buildproven.ai' }],
+  creator: 'BuildProven',
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://postrail.vibebuildlab.com',
+    url: 'https://postrail.buildproven.ai',
     siteName: 'Postrail',
     title: 'Postrail - Turn Your Newsletter Into 8 Social Posts',
     description:
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     description:
       'AI-powered social media automation for newsletter creators. Generate and schedule posts automatically.',
     images: ['/og-image.webp'],
-    creator: '@vibebuildlab',
+    creator: '@buildproven',
   },
   robots: {
     index: true,

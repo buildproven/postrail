@@ -1,6 +1,6 @@
 # PR #31 Investigation - Fix Deployment Errors
 
-**GitHub Issue:** https://github.com/vibebuildlab/postrail/pull/31
+**GitHub Issue:** https://github.com/buildproven/postrail/pull/31
 **Status:** CLOSED (for manual review, needs rebase)
 **Date:** 2026-01-12
 

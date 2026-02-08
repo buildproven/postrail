@@ -150,7 +150,7 @@ gh run watch
 
 ### 6. Monitor usage next month
 
-- Check `https://github.com/organizations/vibebuildlab/settings/billing`
+- Check `https://github.com/organizations/buildproven/settings/billing`
 - Verify usage stays under 2,000 min/month
 
 ## Rollback Plan
@@ -177,7 +177,7 @@ If still over budget after this change:
 
 ## References
 
-- **GitHub Billing**: `https://github.com/organizations/vibebuildlab/settings/billing`
+- **GitHub Billing**: `https://github.com/organizations/buildproven/settings/billing`
 - **CI Usage History**: Jan 8-9, 2026 used 401 minutes (200 min/day rate)
 - **Free Tier Limit**: 2,000 min/month for private repos
 - **Related Commits**:
@@ -186,7 +186,7 @@ If still over budget after this change:
 
 ## Apply to Other Projects
 
-This same optimization should be applied to **all VibeBuildLab projects** with the same workflow setup:
+This same optimization should be applied to **all BuildProven projects** with the same workflow setup:
 
 - postrail ✅ (this repo)
 - qa-architect (source of quality.yml template)

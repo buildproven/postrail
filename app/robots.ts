@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://postrail.vibebuildlab.com'
+  const baseUrl = 'https://postrail.buildproven.ai'
 
   return {
     rules: [

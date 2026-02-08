@@ -181,7 +181,7 @@ test.describe('Importing Issue Investigation', () => {
 
     // Fill in a URL to scrape
     const urlInput = page.getByPlaceholder(/url|link|newsletter/i)
-    await urlInput.fill('https://www.aisecondact.com/p/test')
+    await urlInput.fill('https://www.buildproven.ai/p/test')
 
     // Click the import/scrape button
     const importButton = page.getByRole('button', {
