@@ -1,35 +1,16 @@
-# Dependabot configuration
-# Optimized by qa-architect to reduce CI costs
+# Dependabot DISABLED - repo is dormant
+# Re-enable by setting open-pull-requests-limit > 0
 
 version: 2
 updates:
-  # npm dependencies - monthly, aggressive grouping
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
       interval: 'monthly'
-    open-pull-requests-limit: 2
-    labels:
-      - 'dependencies'
-    commit-message:
-      prefix: 'deps'
-      include: 'scope'
-    groups:
-      all-dependencies:
-        patterns:
-          - '*'
+    open-pull-requests-limit: 0
 
-  # GitHub Actions - monthly
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'monthly'
-    open-pull-requests-limit: 1
-    labels:
-      - 'dependencies'
-    commit-message:
-      prefix: 'deps(actions)'
-    groups:
-      github-actions:
-        patterns:
-          - '*'
+    open-pull-requests-limit: 0
