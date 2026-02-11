@@ -111,4 +111,4 @@ OAuth tokens stored encrypted in `platform_connections.metadata`:
 
 ## GitHub Actions Policy
 
-See `.claude-setup/docs/GITHUB-ACTIONS-POLICY.md` — minimal workflow mode, no new workflows.
+Minimal workflow mode — no new workflows without explicit justification.
