@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/buildproven/postrail/actions/workflows/ci.yml/badge.svg)](https://github.com/buildproven/postrail/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Built with VBL](https://img.shields.io/badge/Built%20with-Vibe%20Build%20Lab-blueviolet)](https://buildproven.ai)
+[![Built by BuildProven](https://img.shields.io/badge/Built%20by-BuildProven-blueviolet)](https://buildproven.ai)
 [![Node.js 20+](https://img.shields.io/badge/node-20%2B-brightgreen)](https://nodejs.org)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org)
@@ -13,9 +13,8 @@ AI-powered social media automation for newsletter creators. Automatically genera
 
 ---
 
-> **Maintainer & Ownership**
-> This project is maintained by **BuildProven LLC**, a studio focused on AI-assisted product development, micro-SaaS, and "vibe coding" workflows for solo founders and small teams.
-> Learn more at **https://www.buildproven.ai**.
+> **Built by [BuildProven](https://buildproven.ai)**
+> AI-assisted product development for experienced professionals. Built by Brett Stark.
 
 ---
 
@@ -226,11 +225,6 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Legal
-
-- [Privacy Policy](https://buildproven.ai/privacy-policy)
-- [Terms of Service](https://buildproven.ai/terms)
-
 ---
 
-> **BuildProven LLC** · [buildproven.ai](https://buildproven.ai)
+> **[BuildProven](https://buildproven.ai)** · Built by Brett Stark
