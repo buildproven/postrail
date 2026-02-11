@@ -137,7 +137,6 @@ configs.push({
     '**/tests/**/*',
     '**/*.spec.{js,ts,tsx}',
     'scripts/**/*',
-    '.claude-setup/scripts/**/*',
     'test-*.js',
   ],
   rules: {
