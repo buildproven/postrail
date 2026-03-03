@@ -47,13 +47,13 @@ PostRail has passed all open source readiness checks. The codebase demonstrates 
 
 ### Privacy Audit ✅ PASSED
 
-| Check          | Status        | Notes                                                            |
-| -------------- | ------------- | ---------------------------------------------------------------- |
+| Check          | Status        | Notes                                                        |
+| -------------- | ------------- | ------------------------------------------------------------ |
 | Company Emails | ⚠️ Acceptable | security@buildproven.ai, conduct@buildproven.ai (branded OS) |
-| Personal Paths | ⚠️ Info       | 19 files with `/Users/brettstark/` (mostly .claude-setup/)       |
-| Customer Data  | ✅ Pass       | No customer data in code                                         |
-| Internal URLs  | ✅ Pass       | Only SSRF blocklist references                                   |
-| Private IPs    | ✅ Pass       | Only in SSRF protection code                                     |
+| Personal Paths | ⚠️ Info       | 19 files with `/Users/brettstark/` (mostly .claude-setup/)   |
+| Customer Data  | ✅ Pass       | No customer data in code                                     |
+| Internal URLs  | ✅ Pass       | Only SSRF blocklist references                               |
+| Private IPs    | ✅ Pass       | Only in SSRF protection code                                 |
 
 ### Architecture Review ✅ PASSED
 

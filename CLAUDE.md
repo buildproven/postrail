@@ -112,3 +112,7 @@ OAuth tokens stored encrypted in `platform_connections.metadata`:
 ## GitHub Actions Policy
 
 Minimal workflow mode — no new workflows without explicit justification.
+
+---
+
+**Last Updated:** 2026-03-01
