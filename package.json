@@ -100,7 +100,7 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.71.1",
-    "resend": "^6.9.1",
+    "resend": "^6.9.3",
     "stripe": "^20.3.0",
     "tailwind-merge": "^3.4.0",
     "twitter-api-v2": "^1.29.0",
