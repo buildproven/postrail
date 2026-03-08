@@ -57,3 +57,4 @@ next-env.d.ts
 
 # QA Architect license files
 .qa-architect/
+.npm-cache/
