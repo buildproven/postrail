@@ -3,3 +3,9 @@ npx --no -- lint-staged
 
 # Check test coverage for new files (warning only)
 ./scripts/check-test-coverage.sh
+
+# Defensive pattern analysis on staged files
+if [ -f "./scripts/pattern-check.sh" ]; then
+  echo "Running defensive pattern analysis..."
+  ./scripts/pattern-check.sh
+fi
