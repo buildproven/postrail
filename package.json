@@ -137,6 +137,7 @@
     "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "15.1.4",
+    "eslint-plugin-n": "^17.24.0",
     "eslint-plugin-security": "^3.0.1",
     "globals": "^15.9.0",
     "happy-dom": "^20.4.0",
