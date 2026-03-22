@@ -10,7 +10,10 @@
     "auth"
   ],
   "safeParseHelpers": ["safeJsonParse", "safeParse", ".safeParse"],
-  "publicRoutes": [],
+  "publicRoutes": [
+    "app/api/health/route.ts",
+    "app/api/generate-posts/process/route.ts"
+  ],
   "excludePaths": [
     "**/test/**",
     "**/__tests__/**",
