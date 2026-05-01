@@ -91,7 +91,7 @@ jobs:
 
       - name: Setup pnpm
         if: steps.detect-pm.outputs.manager == 'pnpm'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: '8.15.0'
 
@@ -140,7 +140,7 @@ jobs:
 
       - name: Setup pnpm
         if: needs.detect-maturity.outputs.package-manager == 'pnpm'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: '8.15.0'
 
@@ -277,7 +277,7 @@ jobs:
 
       - name: Setup pnpm
         if: needs.detect-maturity.outputs.package-manager == 'pnpm'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: '8.15.0'
 
@@ -330,7 +330,7 @@ jobs:
 
       - name: Setup pnpm
         if: needs.detect-maturity.outputs.package-manager == 'pnpm'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: '8.15.0'
 
