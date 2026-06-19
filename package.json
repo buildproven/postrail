@@ -130,8 +130,8 @@
     "@types/react-dom": "^19",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.9.0",
-    "@vitejs/plugin-react": "^5.1.1",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitejs/plugin-react": "^5.2.0",
+    "@vitest/coverage-v8": "^4.1.9",
     "axe-core": "^4.11.1",
     "commitlint": "^20.4.1",
     "dotenv": "^17.2.3",
@@ -155,7 +155,7 @@
     "stylelint-config-standard": "^39.0.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.0.9"
+    "vitest": "^4.1.9"
   },
   "lint-staged": {
     "package.json": [
