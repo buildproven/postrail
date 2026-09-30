@@ -6,5 +6,9 @@
   },
   "testCommand": "npm test",
   "linearProject": "postrail",
-  "dailyBudgetUsd": 5
+  "dailyBudgetUsd": 5,
+  "acceptance": {
+    "audit": "npm audit --audit-level high --omit=dev",
+    "npm10ci": "npx --yes npm@10 ci --dry-run --ignore-scripts"
+  }
 }
