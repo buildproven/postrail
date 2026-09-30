@@ -1,7 +1,7 @@
 {
   "checks": {
     "lint": "npm run lint",
-    "build": "npm run build",
+    "build": "NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder npm run build",
     "test": "npm test"
   },
   "testCommand": "npm test",
@@ -10,5 +10,6 @@
   "acceptance": {
     "audit": "npm audit --audit-level high --omit=dev",
     "npm10ci": "npx --yes npm@10 ci --dry-run --ignore-scripts"
-  }
+  },
+  "install": "npm ci"
 }
