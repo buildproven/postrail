@@ -351,7 +351,9 @@ jobs:
   # Smart skip: Draft PRs skip tests (saves CI costs during WIP)
   tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Selector-policy migrations run the complete suite. Keep the normal
+    # focused-test budget below, but give that rare fail-closed path room.
+    timeout-minutes: 20
     needs: detect-maturity
     if: |
       fromJSON(needs.detect-maturity.outputs.test-count) > 0 &&
@@ -395,7 +397,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
-          CLAUDE_KIT_SHA: 6209610058b95a3d3f2a9d1af7a10f9c69f0dd69
+          AGENT_KIT_SHA: 6209610058b95a3d3f2a9d1af7a10f9c69f0dd69
         run: |
           set -euo pipefail
           if [ -z "$BASE_SHA" ] || ! git cat-file -e "$BASE_SHA:.buildproven/test-impact.json" 2>/dev/null; then
@@ -406,12 +408,12 @@ jobs:
               exit 0
             fi
             echo "Base test-impact policy is absent. Running the complete migration audit once."
-            timeout 300 npm run test
+            timeout 900 npm run test
             exit 0
           fi
 
           POLICY_ROOT="$RUNNER_TEMP/test-impact-policy"
-          KIT_ROOT="$RUNNER_TEMP/claude-kit"
+          KIT_ROOT="$RUNNER_TEMP/agent-kit"
           mkdir -p "$POLICY_ROOT/.buildproven" "$KIT_ROOT"
           git show "$BASE_SHA:.buildproven/test-impact.json" > "$POLICY_ROOT/.buildproven/test-impact.json"
           if ! cmp -s "$POLICY_ROOT/.buildproven/test-impact.json" .buildproven/test-impact.json; then
@@ -422,18 +424,18 @@ jobs:
               exit 0
             fi
             echo "Test-impact policy and application code changed together. Running the complete selector-policy audit."
-            timeout 300 npm run test
+            timeout 900 npm run test
             exit 0
           fi
           git -C "$KIT_ROOT" init --quiet
-          git -C "$KIT_ROOT" remote add origin https://github.com/buildproven/claude-kit.git
+          git -C "$KIT_ROOT" remote add origin https://github.com/buildproven/agent-kit.git
           git -C "$KIT_ROOT" fetch --quiet --filter=blob:none origin main
-          git -C "$KIT_ROOT" merge-base --is-ancestor "$CLAUDE_KIT_SHA" FETCH_HEAD
-          git -C "$KIT_ROOT" checkout --quiet --detach "$CLAUDE_KIT_SHA"
-          test "$(git -C "$KIT_ROOT" rev-parse HEAD)" = "$CLAUDE_KIT_SHA"
+          git -C "$KIT_ROOT" merge-base --is-ancestor "$AGENT_KIT_SHA" FETCH_HEAD
+          git -C "$KIT_ROOT" checkout --quiet --detach "$AGENT_KIT_SHA"
+          test "$(git -C "$KIT_ROOT" rev-parse HEAD)" = "$AGENT_KIT_SHA"
 
           POLICY_SHA256="$(sha256sum "$POLICY_ROOT/.buildproven/test-impact.json" | awk '{print $1}')"
-          timeout 300 node "$KIT_ROOT/scripts/test-impact.js" \
+          timeout 600 node "$KIT_ROOT/scripts/test-impact.js" \
             --execute \
             --policy-root "$POLICY_ROOT" \
             --policy-sha256 "$POLICY_SHA256" \
