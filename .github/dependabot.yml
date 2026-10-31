@@ -14,6 +14,10 @@ updates:
       prefix: 'chore(deps)'
       include: 'scope'
     groups:
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - '*'
       all-dependencies:
         patterns:
           - '*'
@@ -28,3 +32,8 @@ updates:
       - 'github-actions'
     commit-message:
       prefix: 'ci'
+    groups:
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - '*'
