@@ -32,7 +32,7 @@ postrail/
 ├── tests/             # Vitest unit/integration + Playwright E2E
 ├── docs/              # Dev guides and plans
 │   ├── dev_guide/     # This file and other dev references
-│   └── plans/         # Agent planning docs (/bs:plan output)
+│   └── plans/         # Agent planning docs (plan mode output)
 └── .claude/           # Claude Code workspace metadata
 ```
 

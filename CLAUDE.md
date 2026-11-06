@@ -125,6 +125,6 @@ Minimal workflow mode — no new workflows without explicit justification.
 Read docs/dev_guide/CONVENTIONS.md
 ```
 
-### Planning: /bs:plan <name> → docs/plans/
+### Planning: use plan mode, save the plan to docs/plans/<name>.md
 
-### Handoff: /bs:context --save / --resume
+### Handoff: /handoff save / /handoff resume (pushes the branch and leaves a note on its PR; resumable on any computer or in the cloud)
